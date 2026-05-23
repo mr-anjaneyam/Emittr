@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a1b1f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>USB Typer</title>
+  <link rel="manifest" href="/static/manifest.json" />
+  <link rel="icon" type="image/png" href="/static/icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="app-title-group">
+        <h1 class="app-title">USB Typer</h1>
+        <div id="usb-badge" class="connection-badge disconnected">
+          <span class="status-indicator"></span>
+          <span id="usb-status-text">Checking USB...</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button id="btn-settings" class="icon-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+          <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Views Container -->
+  <main class="main-content">
+
+    <!-- ── View 1: Typer (Default) ────────────────────────── -->
+    <section id="view-typer" class="view-panel active">
+      <div class="card editor-card">
+        <div class="card-header">
+          <span class="card-title">Send Text to PC</span>
+          <span id="char-count" class="char-count">0 chars</span>
+        </div>
+        <textarea id="text-input" class="material-textarea" placeholder="Type or paste text, URLs, or commands to send..." rows="7" spellcheck="false"></textarea>
+        
+        <!-- Speed & Delay Controls -->
+        <div class="delay-section">
+          <div class="section-label">Typing Speed</div>
+          <div class="speed-presets">
+            <button class="preset-pill" data-delay="5" onclick="selectPreset(this, 5)">Instant</button>
+            <button class="preset-pill active" data-delay="15" onclick="selectPreset(this, 15)">Fast</button>
+            <button class="preset-pill" data-delay="35" onclick="selectPreset(this, 35)">Normal</button>
+            <button class="preset-pill" data-delay="60" onclick="selectPreset(this, 60)">Human</button>
+          </div>
+          <div class="slider-row">
+            <input type="range" id="delay-slider" min="1" max="150" value="15" oninput="onSliderChange(this.value)" />
+            <span id="delay-val" class="slider-val">15 ms / char</span>
+          </div>
+        </div>
+
+        <!-- Action Row -->
+        <div class="action-row">
+          <button id="btn-send" class="btn-primary" onclick="sendText()">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+            <span>Send to PC</span>
+          </button>
+          <button id="btn-stop" class="btn-secondary" style="display:none;" onclick="stopTyping()">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M6 6h12v12H6z"/>
+            </svg>
+            <span>Stop</span>
+          </button>
+          <button class="btn-tonal" onclick="clearText()" title="Clear">
+            Clear
+          </button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div id="progress-wrapper" class="progress-wrapper" style="display:none;">
+          <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+          <div id="progress-text" class="progress-text">Typing...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── View 2: Live Keyboard (SwiftKey / Gboard Mirror) ── -->
+    <section id="view-live" class="view-panel">
+      <div class="card live-card">
+        <div class="card-header">
+          <span class="card-title">Live Keyboard Mirror</span>
+          <span class="badge-hint">Instant Forward</span>
+        </div>
+        <p class="card-desc">
+          Tap the typing zone below to bring up your device keyboard. Every key is injected immediately into your PC as you press it.
+        </p>
+
+        <!-- Tap-To-Focus Keyboard Input Zone -->
+        <div id="live-target-zone" class="live-target-zone" onclick="focusLiveInput()">
+          <span class="tap-hint" id="live-hint-text">⌨️ Tap to open device keyboard</span>
+          <!-- Hidden transparent text input that captures SwiftKey events directly -->
+          <input type="text" id="live-hidden-input" class="hidden-live-input" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" />
+        </div>
+
+        <!-- Keystroke Visual Feed -->
+        <div class="feed-header">
+          <span>Recent Strokes:</span>
+          <button class="text-link" onclick="clearKeyFeed()">Clear</button>
+        </div>
+        <div id="key-feed" class="key-feed">
+          <span class="empty-feed-hint">Waiting for input...</span>
+        </div>
+
+        <!-- On-Screen Direct Buttons -->
+        <div class="live-helpers">
+          <button class="helper-pill" onclick="sendSingleKey('enter')">Enter ↵</button>
+          <button class="helper-pill" onclick="sendSingleKey('space')">Space ␣</button>
+          <button class="helper-pill" onclick="sendSingleKey('tab')">Tab ⇥</button>
+          <button class="helper-pill" onclick="sendSingleKey('backspace')">Backspace ⌫</button>
+          <button class="helper-pill" onclick="sendSingleKey('esc')">Esc</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── View 3: Shortcuts & Hotkeys ───────────────────── -->
+    <section id="view-shortcuts" class="view-panel">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Desktop Shortcuts</span>
+        </div>
+        <div class="shortcuts-grid">
+          <button class="tile-btn" onclick="sendCombo('win+r')">
+            <span class="tile-title">Run</span>
+            <span class="tile-sub">Win + R</span>
+          </button>
+          <button class="tile-btn" onclick="sendCombo('win+l')">
+            <span class="tile-title">Lock PC</span>
+            <span class="tile-sub">Win + L</span>
+          </button>
+          <button class="tile-btn" onclick="sendCombo('win+d')">
+            <span class="tile-title">Desktop</span>
+            <span class="tile-sub">Win + D</span>
+          </button>
+          <button class="tile-btn" onclick="sendCombo('ctrl+shift+esc')">
+            <span class="tile-title">Task Mgr</span>
+            <span class="tile-sub">Ctrl+Shift+Esc</span>
+          </button>
+          <button class="tile-btn" onclick="sendCombo('ctrl+alt+del')">
+            <span class="tile-title">Security</span>
+            <span class="tile-sub">Ctrl+Alt+Del</span>
+          </button>
+          <button class="tile-btn" onclick="sendCombo('alt+tab')">
+            <span class="tile-title">Switch App</span>
+            <span class="tile-sub">Alt + Tab</span>
+          </button>
+          <button class="tile-btn" onclick="sendCombo('ctrl+c')">
+            <span class="tile-title">Copy</span>
+            <span class="tile-sub">Ctrl + C</span>
+          </button>
+          <button class="tile-btn" onclick="sendCombo('ctrl+v')">
+            <span class="tile-title">Paste</span>
+            <span class="tile-sub">Ctrl + V</span>
+          </button>
+          <button class="tile-btn" onclick="sendCombo('ctrl+a')">
+            <span class="tile-title">Select All</span>
+            <span class="tile-sub">Ctrl + A</span>
+          </button>
+          <button class="tile-btn" onclick="sendCombo('ctrl+z')">
+            <span class="tile-title">Undo</span>
+            <span class="tile-sub">Ctrl + Z</span>
+          </button>
+          <button class="tile-btn" onclick="sendCombo('alt+f4')">
+            <span class="tile-title">Close App</span>
+            <span class="tile-sub">Alt + F4</span>
+          </button>
+          <button class="tile-btn" onclick="sendCombo('win+e')">
+            <span class="tile-title">Explorer</span>
+            <span class="tile-sub">Win + E</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <div class="card-header">
+          <span class="card-title">Directional &amp; Nav</span>
+        </div>
+        <div class="nav-cluster">
+          <div class="nav-cluster-row">
+            <button class="nav-key" onclick="sendSingleKey('up')">▲</button>
+          </div>
+          <div class="nav-cluster-row">
+            <button class="nav-key" onclick="sendSingleKey('left')">◀</button>
+            <button class="nav-key" onclick="sendSingleKey('down')">▼</button>
+            <button class="nav-key" onclick="sendSingleKey('right')">▶</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── View 4: Trackpad ──────────────────────────────── -->
+    <section id="view-trackpad" class="view-panel">
+      <div class="card trackpad-card">
+        <div class="card-header">
+          <span class="card-title">Touchpad</span>
+          <span class="badge-hint">USB Mouse</span>
+        </div>
+        <div id="touchpad-surface" class="touchpad-surface">
+          <span class="touchpad-hint">Glide finger to move cursor<br/>Tap to left click</span>
+        </div>
+        <div class="mouse-buttons-row">
+          <button class="btn-mouse left" onclick="onMouseClick(1)">Left Click</button>
+          <button class="btn-mouse right" onclick="onMouseClick(2)">Right Click</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Material Navigation Bar (Bottom Tabs) -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="switchView('typer', this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+      </svg>
+      <span class="nav-label">Typer</span>
+    </button>
+    <button class="nav-item" onclick="switchView('live', this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+        <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/>
+      </svg>
+      <span class="nav-label">Live Keys</span>
+    </button>
+    <button class="nav-item" onclick="switchView('shortcuts', this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+        <path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/>
+      </svg>
+      <span class="nav-label">Shortcuts</span>
+    </button>
+    <button class="nav-item" onclick="switchView('trackpad', this)">
+      <svg class="nav-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+        <path d="M13 1.07V9h7c0-4.08-3.05-7.44-7-7.93zM4 15c0 4.42 3.58 8 8 8s8-3.58 8-8v-4H4v4zm7-13.93C7.05 1.56 4 4.92 4 9h7V1.07z"/>
+      </svg>
+      <span class="nav-label">Trackpad</span>
+    </button>
+  </nav>
+
+  <!-- Settings Modal Dialog -->
+  <div id="settings-modal" class="modal-backdrop" onclick="closeSettings(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Preferences</h2>
+        <button class="icon-btn" onclick="closeSettings()">✕</button>
+      </div>
+      <div class="modal-body">
+        
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">Auto-clear text on send</span>
+            <span class="setting-sub">Empties the text area after successful typing</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-autoclear" checked onchange="saveConfig()" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">Haptic Feedback</span>
+            <span class="setting-sub">Vibrate phone on keystroke transmission</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-haptic" checked onchange="saveConfig()" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">Initial delay before typing</span>
+            <span class="setting-sub">Seconds to wait before typing begins</span>
+          </div>
+          <select id="cfg-countdown" class="material-select" onchange="saveConfig()">
+            <option value="0">Instant (0s)</option>
+            <option value="1">1 second</option>
+            <option value="2">2 seconds</option>
+            <option value="3">3 seconds</option>
+            <option value="5">5 seconds</option>
+          </select>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">Append Enter at end</span>
+            <span class="setting-sub">Sends Return key after typing text block</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-autoenter" onchange="saveConfig()" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">Dark / Light Mode</span>
+            <span class="setting-sub">Toggle theme appearance</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-theme" checked onchange="toggleTheme()" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="hw-info-card">
+          <div class="hw-title">Hardware Information</div>
+          <div class="hw-line"><span>USB Gadget:</span> <strong id="hw-udc">Checking...</strong></div>
+          <div class="hw-line"><span>Link Speed:</span> <strong id="hw-speed">Checking...</strong></div>
+          <div class="hw-line"><span>Keyboard Node:</span> <strong id="hw-node">/dev/hidg0</strong></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

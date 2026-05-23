@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""
+usbtype — Standalone CLI USB Keystroke Injector
+==============================================
+Usage:
+  usbtype "Text to type directly into PC"
+  usbtype -f script.ps1
+  usbtype --delay 30 "Slow typing text"
+  usbtype --key win+r
+  usbtype --key enter
+"""
+
+import sys
+import os
+import time
+import argparse
+import urllib.request
+import json
+
+SERVER_URL = "http://127.0.0.1:8088"
+
+def send_via_api(endpoint, payload):
+    try:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            f"{SERVER_URL}{endpoint}",
+            data=data,
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return json.loads(resp.read().decode())
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+def main():
+    parser = argparse.ArgumentParser(description="Inject keystrokes over USB to connected PC")
+    parser.add_argument("text", nargs="?", help="Text string to type")
+    parser.add_argument("-f", "--file", help="Path to text or script file to type")
+    parser.add_argument("-d", "--delay", type=int, default=15, help="Typing delay in ms per character (default 15)")
+    parser.add_argument("-k", "--key", help="Special key or combo to inject (e.g. enter, win+r, ctrl+c)")
+    parser.add_argument("--stop", action="store_true", help="Stop any active typing job")
+    parser.add_argument("--status", action="store_true", help="Print USB connection status")
+
+    args = parser.parse_args()
+
+    if args.status:
+        try:
+            with urllib.request.urlopen(f"{SERVER_URL}/api/status", timeout=3) as resp:
+                status = json.loads(resp.read().decode())
+                print(f"USB Host Connected: {status.get('connected')}")
+                print(f"UDC State:          {status.get('udc_state')}")
+                print(f"Speed:              {status.get('speed')}")
+                print(f"Keyboard Node:      {status.get('kbd_node')}")
+        except Exception as e:
+            print(f"Error checking status: {e}")
+        return
+
+    if args.stop:
+        res = send_via_api("/api/stop", {})
+        print(res.get("msg", "Stopped"))
+        return
+
+    if args.key:
+        res = send_via_api("/api/key", {"combo": args.key, "key": args.key})
+        if res.get("ok"):
+            print(f"[+] Key/combo '{args.key}' injected successfully")
+        else:
+            print(f"[-] Error: {res.get('msg', 'Unknown error')}")
+        return
+
+    text_to_type = ""
+    if args.file:
+        if not os.path.exists(args.file):
+            print(f"[-] Error: File not found: {args.file}")
+            sys.exit(1)
+        with open(args.file, "r", encoding="utf-8", errors="ignore") as f:
+            text_to_type = f.read()
+    elif args.text:
+        text_to_type = args.text
+
+    if not text_to_type:
+        parser.print_help()
+        sys.exit(1)
+
+    print(f"[*] Sending {len(text_to_type)} characters to PC (delay={args.delay}ms)...")
+    res = send_via_api("/api/type", {"text": text_to_type, "delay_ms": args.delay})
+    if res.get("ok"):
+        print(f"[+] {res.get('msg', 'Job submitted')}")
+    else:
+        print(f"[-] Error: {res.get('msg', res.get('error', 'Failed'))}")
+
+if __name__ == "__main__":
+    main()
