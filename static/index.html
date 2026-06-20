@@ -7,7 +7,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>USB Typer</title>
+  <title>Emittr</title>
   <link rel="manifest" href="/static/manifest.json" />
   <link rel="icon" type="image/png" href="/static/icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -21,7 +21,10 @@
   <header class="app-header">
     <div class="header-left">
       <div class="app-title-group">
-        <h1 class="app-title">USB Typer</h1>
+        <div class="app-name-row">
+          <h1 class="app-title">Emittr</h1>
+          <span class="version-badge">v1.1.0</span>
+        </div>
         <div id="usb-badge" class="connection-badge disconnected">
           <span class="status-indicator"></span>
           <span id="usb-status-text">Checking USB...</span>
@@ -40,7 +43,7 @@
   <!-- Main Views Container -->
   <main class="main-content">
 
-    <!-- ── View 1: Typer (Default) ────────────────────────── -->
+    <!-- ── View 1: Typer ────────────────────────────────────────── -->
     <section id="view-typer" class="view-panel active">
       <div class="card editor-card">
         <div class="card-header">
@@ -48,7 +51,7 @@
           <span id="char-count" class="char-count">0 chars</span>
         </div>
         <textarea id="text-input" class="material-textarea" placeholder="Type or paste text, URLs, or commands to send..." rows="7" spellcheck="false"></textarea>
-        
+
         <!-- Speed & Delay Controls -->
         <div class="delay-section">
           <div class="section-label">Typing Speed</div>
@@ -78,9 +81,7 @@
             </svg>
             <span>Stop</span>
           </button>
-          <button class="btn-tonal" onclick="clearText()" title="Clear">
-            Clear
-          </button>
+          <button class="btn-tonal" onclick="clearText()" title="Clear">Clear</button>
         </div>
 
         <!-- Progress Bar -->
@@ -93,70 +94,80 @@
       </div>
     </section>
 
-    <!-- ── View 2: Live Keyboard (SwiftKey / Gboard Mirror) ── -->
+    <!-- ── View 2: Live Keyboard ───────────────────────────────── -->
     <section id="view-live" class="view-panel">
       <div class="card live-card">
         <div class="card-header">
           <span class="card-title">Live Keyboard Mirror</span>
-          <span class="badge-hint">Instant Forward</span>
+          <button class="btn-tonal" style="height:34px;padding:0 14px;font-size:13px;" onclick="focusLiveInput()">Tap to Type</button>
         </div>
-        <p class="card-desc">
-          Tap the typing zone below to bring up your device keyboard. Every key is injected immediately into your PC as you press it.
-        </p>
 
-        <!-- Tap-To-Focus Keyboard Input Zone -->
         <div id="live-target-zone" class="live-target-zone" onclick="focusLiveInput()">
-          <span class="tap-hint" id="live-hint-text">⌨️ Tap to open device keyboard</span>
-          <!-- Hidden transparent text input that captures SwiftKey events directly -->
-          <input type="text" id="live-hidden-input" class="hidden-live-input" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" />
+          <span id="live-hint-text" class="tap-hint">⌨️ Tap to open device keyboard</span>
+          <input
+            id="live-hidden-input"
+            class="hidden-live-input"
+            type="text"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            inputmode="text"
+            aria-label="Live keyboard input"
+          />
         </div>
 
-        <!-- Keystroke Visual Feed -->
-        <div class="feed-header">
-          <span>Recent Strokes:</span>
-          <button class="text-link" onclick="clearKeyFeed()">Clear</button>
-        </div>
-        <div id="key-feed" class="key-feed">
-          <span class="empty-feed-hint">Waiting for input...</span>
+        <!-- Key stroke feed — collapsible (Feature 4) -->
+        <div class="feed-section">
+          <button class="feed-toggle" id="feed-toggle-btn" onclick="toggleKeyFeed()" aria-expanded="false">
+            <span class="feed-toggle-label">Recent Strokes</span>
+            <svg class="feed-toggle-arrow" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
+          </button>
+          <div id="feed-collapse" class="feed-collapse collapsed">
+            <div class="feed-header">
+              <span>Last 15 keys</span>
+              <button class="text-link" onclick="clearKeyFeed()">Clear</button>
+            </div>
+            <div id="key-feed" class="key-feed">
+              <span class="empty-feed-hint">Waiting for input...</span>
+            </div>
+          </div>
         </div>
 
-        <!-- On-Screen Direct Buttons -->
+        <!-- Quick helpers -->
         <div class="live-helpers">
-          <button class="helper-pill" onclick="sendSingleKey('enter')">Enter ↵</button>
-          <button class="helper-pill" onclick="sendSingleKey('space')">Space ␣</button>
-          <button class="helper-pill" onclick="sendSingleKey('tab')">Tab ⇥</button>
-          <button class="helper-pill" onclick="sendSingleKey('backspace')">Backspace ⌫</button>
-          <button class="helper-pill" onclick="sendSingleKey('esc')">Esc</button>
+          <button class="helper-pill" onclick="sendSingleKey('Backspace')">⌫ BS</button>
+          <button class="helper-pill" onclick="sendSingleKey('Tab')">⇥ Tab</button>
+          <button class="helper-pill" onclick="sendSingleKey('Enter')">↵ Enter</button>
+          <button class="helper-pill" onclick="sendSingleKey('Esc')">Esc</button>
+          <button class="helper-pill" onclick="sendSingleKey('up')">▲</button>
+          <button class="helper-pill" onclick="sendSingleKey('down')">▼</button>
+          <button class="helper-pill" onclick="sendSingleKey('left')">◀</button>
+          <button class="helper-pill" onclick="sendSingleKey('right')">▶</button>
         </div>
       </div>
     </section>
 
-    <!-- ── View 3: Shortcuts & Hotkeys ───────────────────── -->
+    <!-- ── View 3: Shortcuts ───────────────────────────────────── -->
     <section id="view-shortcuts" class="view-panel">
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Desktop Shortcuts</span>
+          <span class="card-title">Windows Shortcuts</span>
         </div>
         <div class="shortcuts-grid">
           <button class="tile-btn" onclick="sendCombo('win+r')">
             <span class="tile-title">Run</span>
             <span class="tile-sub">Win + R</span>
           </button>
-          <button class="tile-btn" onclick="sendCombo('win+l')">
-            <span class="tile-title">Lock PC</span>
-            <span class="tile-sub">Win + L</span>
-          </button>
-          <button class="tile-btn" onclick="sendCombo('win+d')">
-            <span class="tile-title">Desktop</span>
-            <span class="tile-sub">Win + D</span>
-          </button>
           <button class="tile-btn" onclick="sendCombo('ctrl+shift+esc')">
             <span class="tile-title">Task Mgr</span>
             <span class="tile-sub">Ctrl+Shift+Esc</span>
           </button>
-          <button class="tile-btn" onclick="sendCombo('ctrl+alt+del')">
-            <span class="tile-title">Security</span>
-            <span class="tile-sub">Ctrl+Alt+Del</span>
+          <button class="tile-btn" onclick="sendCombo('win+l')">
+            <span class="tile-title">Lock PC</span>
+            <span class="tile-sub">Win + L</span>
           </button>
           <button class="tile-btn" onclick="sendCombo('alt+tab')">
             <span class="tile-title">Switch App</span>
@@ -206,16 +217,60 @@
       </div>
     </section>
 
-    <!-- ── View 4: Trackpad ──────────────────────────────── -->
+    <!-- ── View 4: Trackpad ───────────────────────────────────── -->
     <section id="view-trackpad" class="view-panel">
       <div class="card trackpad-card">
         <div class="card-header">
           <span class="card-title">Touchpad</span>
           <span class="badge-hint">USB Mouse</span>
         </div>
-        <div id="touchpad-surface" class="touchpad-surface">
-          <span class="touchpad-hint">Glide finger to move cursor<br/>Tap to left click</span>
+
+        <!-- Trackpad layout: scroll wheels + touch surface -->
+        <div class="trackpad-layout">
+
+          <!-- Vertical Scroll Wheel (right side) -->
+          <div class="scroll-wheel-wrap vertical-wheel-wrap">
+            <div class="scroll-wheel-label">↕ Scroll</div>
+            <div id="vwheel" class="scroll-wheel vertical-wheel" data-axis="v">
+              <div class="wheel-drum" id="vwheel-drum">
+                <div class="wheel-ridge"></div>
+                <div class="wheel-ridge"></div>
+                <div class="wheel-ridge"></div>
+                <div class="wheel-ridge"></div>
+                <div class="wheel-ridge"></div>
+                <div class="wheel-ridge"></div>
+                <div class="wheel-ridge"></div>
+                <div class="wheel-ridge"></div>
+              </div>
+              <div class="wheel-center-line"></div>
+            </div>
+          </div>
+
+          <!-- Main touch surface -->
+          <div id="touchpad-surface" class="touchpad-surface">
+            <span class="touchpad-hint">Glide to move<br/>Tap to click</span>
+          </div>
         </div>
+
+        <!-- Horizontal Scroll Wheel (below surface) -->
+        <div class="horizontal-wheel-row">
+          <div class="scroll-wheel-label horiz-label">↔ H-Scroll</div>
+          <div id="hwheel" class="scroll-wheel horizontal-wheel" data-axis="h">
+            <div class="wheel-drum horizontal-drum" id="hwheel-drum">
+              <div class="wheel-ridge h-ridge"></div>
+              <div class="wheel-ridge h-ridge"></div>
+              <div class="wheel-ridge h-ridge"></div>
+              <div class="wheel-ridge h-ridge"></div>
+              <div class="wheel-ridge h-ridge"></div>
+              <div class="wheel-ridge h-ridge"></div>
+              <div class="wheel-ridge h-ridge"></div>
+              <div class="wheel-ridge h-ridge"></div>
+            </div>
+            <div class="wheel-center-line horiz-center-line"></div>
+          </div>
+        </div>
+
+        <!-- Mouse buttons -->
         <div class="mouse-buttons-row">
           <button class="btn-mouse left" onclick="onMouseClick(1)">Left Click</button>
           <button class="btn-mouse right" onclick="onMouseClick(2)">Right Click</button>
@@ -226,29 +281,38 @@
   </main>
 
   <!-- Material Navigation Bar (Bottom Tabs) -->
+  <!-- Feature 5: icons use inline SVG with explicit fill so they render on all Android WebViews -->
   <nav class="bottom-nav">
-    <button class="nav-item active" onclick="switchView('typer', this)">
-      <svg class="nav-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-      </svg>
+    <button class="nav-item active" id="nav-typer" onclick="switchView('typer', this)">
+      <span class="nav-icon-wrap">
+        <svg class="nav-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" fill="currentColor"/>
+        </svg>
+      </span>
       <span class="nav-label">Typer</span>
     </button>
-    <button class="nav-item" onclick="switchView('live', this)">
-      <svg class="nav-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-        <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/>
-      </svg>
+    <button class="nav-item" id="nav-live" onclick="switchView('live', this)">
+      <span class="nav-icon-wrap">
+        <svg class="nav-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 5H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zM8 15H6v-2h2v2zm0-4H6V9h2v2zm4 4h-2v-2h2v2zm0-4h-2V9h2v2zm4 4h-2v-2h2v2zm0-4h-2V9h2v2zm3 4h-2v-2h2v2zm0-4h-2V9h2v2z" fill="currentColor"/>
+        </svg>
+      </span>
       <span class="nav-label">Live Keys</span>
     </button>
-    <button class="nav-item" onclick="switchView('shortcuts', this)">
-      <svg class="nav-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-        <path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/>
-      </svg>
+    <button class="nav-item" id="nav-shortcuts" onclick="switchView('shortcuts', this)">
+      <span class="nav-icon-wrap">
+        <svg class="nav-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z" fill="currentColor"/>
+        </svg>
+      </span>
       <span class="nav-label">Shortcuts</span>
     </button>
-    <button class="nav-item" onclick="switchView('trackpad', this)">
-      <svg class="nav-icon" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-        <path d="M13 1.07V9h7c0-4.08-3.05-7.44-7-7.93zM4 15c0 4.42 3.58 8 8 8s8-3.58 8-8v-4H4v4zm7-13.93C7.05 1.56 4 4.92 4 9h7V1.07z"/>
-      </svg>
+    <button class="nav-item" id="nav-trackpad" onclick="switchView('trackpad', this)">
+      <span class="nav-icon-wrap">
+        <svg class="nav-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 9V7c0-1.1-.9-2-2-2H6C4.9 5 4 5.9 4 7v2H2v8c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9h-2zm-6 7h-4v-2h4v2zm0-4h-4v-2h4v2zm4 4h-2v-2h2v2zm0-4h-2v-2h2v2zm-8 4H8v-2h2v2zm0-4H8v-2h2v2zm-4 4H4v-2h2v2zm0-4H4v-2h2v2zm14 4h-2v-2h2v2zm0-4h-2v-2h2v2z" fill="currentColor"/>
+        </svg>
+      </span>
       <span class="nav-label">Trackpad</span>
     </button>
   </nav>
@@ -261,7 +325,7 @@
         <button class="icon-btn" onclick="closeSettings()">✕</button>
       </div>
       <div class="modal-body">
-        
+
         <div class="setting-item">
           <div class="setting-info">
             <span class="setting-title">Auto-clear text on send</span>
@@ -309,6 +373,18 @@
           </label>
         </div>
 
+        <!-- Feature 3: Mouse Sensitivity -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">Mouse Sensitivity</span>
+            <span class="setting-sub">Trackpad & scroll wheel speed multiplier</span>
+          </div>
+          <div class="sensitivity-control">
+            <input type="range" id="cfg-sensitivity" min="5" max="30" value="15" step="1" oninput="onSensitivityChange(this.value)" />
+            <span id="sensitivity-val" class="slider-val" style="min-width:40px;">1.0×</span>
+          </div>
+        </div>
+
         <div class="setting-item">
           <div class="setting-info">
             <span class="setting-title">Dark / Light Mode</span>
@@ -324,7 +400,7 @@
           <div class="hw-title">Hardware Information</div>
           <div class="hw-line"><span>USB Gadget:</span> <strong id="hw-udc">Checking...</strong></div>
           <div class="hw-line"><span>Link Speed:</span> <strong id="hw-speed">Checking...</strong></div>
-          <div class="hw-line"><span>Keyboard Node:</span> <strong id="hw-node">/dev/hidg0</strong></div>
+          <div class="hw-line"><span>HID Node:</span> <strong id="hw-node">/dev/hidg0</strong></div>
         </div>
 
       </div>

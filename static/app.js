@@ -1,23 +1,24 @@
-/* ── USB Typer Client-side Application Logic  v1.1.0 ──────────────────────── */
+/* ── Emittr  ·  Client-side Application Logic  ·  v1.2.0 ─────────────────── */
 
 'use strict';
 
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 
 const State = {
   connected: false,
-  isTyping: false,
-  delayMs: 15,
-  ws: null,
-  // FIX Bug 5: use a single reconnect timer (setTimeout, not setInterval)
-  // to avoid leaking multiple concurrent intervals on repeated disconnects.
+  isTyping:  false,
+  delayMs:   15,
+  ws:        null,
   reconnectTimer: null,
+  // Feature 3: sensitivity (1.0 = default, range 0.5–2.0)
+  sensitivity: 1.0,
   config: {
-    autoclear: true,
-    haptic: true,
-    countdown: 0,
-    autoenter: false,
-    theme: 'dark'
+    autoclear:   true,
+    haptic:      true,
+    countdown:   0,
+    autoenter:   false,
+    theme:       'dark',
+    sensitivity: 15    // raw slider value (5–30), maps to 0.5×–2.0×
   }
 };
 
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initWebSocket();
   initTextareaCounter();
   initLiveKeyboard();
+  initScrollWheels();
   initTrackpad();
   fetchInitialStatus();
 });
@@ -35,11 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── Config Management ─────────────────────────────────────────────────────────
 
 function loadConfig() {
-  const saved = localStorage.getItem('usb_typer_cfg');
+  const saved = localStorage.getItem('emittr_cfg');
   if (saved) {
-    try {
-      State.config = Object.assign(State.config, JSON.parse(saved));
-    } catch (e) {}
+    try { State.config = Object.assign(State.config, JSON.parse(saved)); } catch (e) {}
   }
   document.getElementById('cfg-autoclear').checked = State.config.autoclear;
   document.getElementById('cfg-haptic').checked    = State.config.haptic;
@@ -48,7 +48,14 @@ function loadConfig() {
   document.getElementById('cfg-theme').checked     = State.config.theme !== 'light';
   applyTheme(State.config.theme);
 
-  const savedDelay = localStorage.getItem('usb_typer_delay');
+  // Sensitivity
+  const rawSens = State.config.sensitivity ?? 15;
+  document.getElementById('cfg-sensitivity').value = rawSens;
+  State.sensitivity = rawSens / 15.0;
+  document.getElementById('sensitivity-val').innerText = `${State.sensitivity.toFixed(1)}×`;
+
+  // Delay
+  const savedDelay = localStorage.getItem('emittr_delay');
   if (savedDelay) {
     const d = parseInt(savedDelay, 10);
     if (!isNaN(d)) {
@@ -61,11 +68,19 @@ function loadConfig() {
 }
 
 function saveConfig() {
-  State.config.autoclear = document.getElementById('cfg-autoclear').checked;
-  State.config.haptic    = document.getElementById('cfg-haptic').checked;
-  State.config.countdown = parseInt(document.getElementById('cfg-countdown').value, 10) || 0;
-  State.config.autoenter = document.getElementById('cfg-autoenter').checked;
-  localStorage.setItem('usb_typer_cfg', JSON.stringify(State.config));
+  State.config.autoclear   = document.getElementById('cfg-autoclear').checked;
+  State.config.haptic      = document.getElementById('cfg-haptic').checked;
+  State.config.countdown   = parseInt(document.getElementById('cfg-countdown').value, 10) || 0;
+  State.config.autoenter   = document.getElementById('cfg-autoenter').checked;
+  State.config.sensitivity = parseInt(document.getElementById('cfg-sensitivity').value, 10);
+  localStorage.setItem('emittr_cfg', JSON.stringify(State.config));
+}
+
+function onSensitivityChange(val) {
+  const raw = parseInt(val, 10);
+  State.sensitivity = raw / 15.0;
+  document.getElementById('sensitivity-val').innerText = `${State.sensitivity.toFixed(1)}×`;
+  saveConfig();
 }
 
 function toggleTheme() {
@@ -76,11 +91,7 @@ function toggleTheme() {
 }
 
 function applyTheme(theme) {
-  if (theme === 'light') {
-    document.body.classList.add('light-theme');
-  } else {
-    document.body.classList.remove('light-theme');
-  }
+  document.body.classList.toggle('light-theme', theme === 'light');
 }
 
 function triggerHaptic(duration = 10) {
@@ -89,55 +100,31 @@ function triggerHaptic(duration = 10) {
   }
 }
 
-// ── WebSocket & Status Connection ─────────────────────────────────────────────
+// ── WebSocket & Status ────────────────────────────────────────────────────────
 
 function initWebSocket() {
-  // FIX Bug 5: cancel any pending reconnect timer before opening a new socket
-  if (State.reconnectTimer) {
-    clearTimeout(State.reconnectTimer);
-    State.reconnectTimer = null;
-  }
-
-  // Don't open a second socket if one is already connecting/open
+  if (State.reconnectTimer) { clearTimeout(State.reconnectTimer); State.reconnectTimer = null; }
   if (State.ws && (State.ws.readyState === WebSocket.CONNECTING ||
-                   State.ws.readyState === WebSocket.OPEN)) {
-    return;
-  }
+                   State.ws.readyState === WebSocket.OPEN)) return;
 
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const url      = `${protocol}//${location.host}/ws`;
-  State.ws       = new WebSocket(url);
+  State.ws = new WebSocket(`${protocol}//${location.host}/ws`);
 
   State.ws.onopen = () => {
-    // Socket is up — no pending reconnect needed
-    if (State.reconnectTimer) {
-      clearTimeout(State.reconnectTimer);
-      State.reconnectTimer = null;
-    }
+    if (State.reconnectTimer) { clearTimeout(State.reconnectTimer); State.reconnectTimer = null; }
   };
 
   State.ws.onmessage = (event) => {
-    try {
-      const msg = JSON.parse(event.data);
-      handleWsMessage(msg);
-    } catch (e) {}
+    try { handleWsMessage(JSON.parse(event.data)); } catch (e) {}
   };
 
   State.ws.onclose = () => {
-    // FIX Bug 5: use setTimeout (one-shot) instead of setInterval to prevent
-    // multiple concurrent reconnect calls from stacking up.
     if (!State.reconnectTimer) {
-      State.reconnectTimer = setTimeout(() => {
-        State.reconnectTimer = null;
-        initWebSocket();
-      }, 2000);
+      State.reconnectTimer = setTimeout(() => { State.reconnectTimer = null; initWebSocket(); }, 2000);
     }
   };
 
-  State.ws.onerror = () => {
-    try { State.ws.close(); } catch (e) {}
-    // onclose will schedule the reconnect
-  };
+  State.ws.onerror = () => { try { State.ws.close(); } catch (e) {} };
 }
 
 function handleWsMessage(msg) {
@@ -161,8 +148,7 @@ function handleWsMessage(msg) {
 
 async function fetchInitialStatus() {
   try {
-    const res  = await fetch('/api/status');
-    const data = await res.json();
+    const data = await (await fetch('/api/status')).json();
     updateConnectionUI(data);
   } catch (e) {}
 }
@@ -171,7 +157,6 @@ function updateConnectionUI(data) {
   if (!data) return;
   const badge = document.getElementById('usb-badge');
   const text  = document.getElementById('usb-status-text');
-
   State.connected = data.connected;
 
   if (data.connected) {
@@ -182,9 +167,6 @@ function updateConnectionUI(data) {
     text.innerText  = 'PC Not Connected';
   }
 
-  // FIX Bug 6: use data.udc (gadget name) with a sensible fallback.
-  // Previously fell back to data.udc_state which would show "configured"
-  // as the gadget name instead of the actual UDC device name.
   const udc   = document.getElementById('hw-udc');
   const speed = document.getElementById('hw-speed');
   const node  = document.getElementById('hw-node');
@@ -198,28 +180,22 @@ function updateConnectionUI(data) {
 function switchView(viewName, clickedBtn) {
   document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b  => b.classList.remove('active'));
-
   const targetPanel = document.getElementById(`view-${viewName}`);
   if (targetPanel) targetPanel.classList.add('active');
   if (clickedBtn)  clickedBtn.classList.add('active');
-
   triggerHaptic(12);
-
-  if (viewName === 'live') {
-    setTimeout(focusLiveInput, 150);
-  }
+  if (viewName === 'live') setTimeout(focusLiveInput, 150);
 }
 
-// ── View 1: Typer (Send text with customized delay) ───────────────────────────
+// ── View 1: Typer ─────────────────────────────────────────────────────────────
 
 function initTextareaCounter() {
-  const ta = document.getElementById('text-input');
-  ta.addEventListener('input', updateCharCount);
+  document.getElementById('text-input').addEventListener('input', updateCharCount);
 }
 
 function updateCharCount() {
-  const ta = document.getElementById('text-input');
-  document.getElementById('char-count').innerText = `${ta.value.length} chars`;
+  document.getElementById('char-count').innerText =
+    `${document.getElementById('text-input').value.length} chars`;
 }
 
 function selectPreset(btn, delay) {
@@ -228,14 +204,14 @@ function selectPreset(btn, delay) {
   State.delayMs = delay;
   document.getElementById('delay-slider').value  = delay;
   document.getElementById('delay-val').innerText = `${delay} ms / char`;
-  localStorage.setItem('usb_typer_delay', delay);
+  localStorage.setItem('emittr_delay', delay);
   triggerHaptic(8);
 }
 
 function onSliderChange(val) {
   State.delayMs = parseInt(val, 10);
   document.getElementById('delay-val').innerText = `${val} ms / char`;
-  localStorage.setItem('usb_typer_delay', val);
+  localStorage.setItem('emittr_delay', val);
   updatePresetPills(State.delayMs);
 }
 
@@ -247,71 +223,41 @@ function updatePresetPills(val) {
 
 function clearText() {
   const ta = document.getElementById('text-input');
-  ta.value = '';
-  updateCharCount();
-  ta.focus();
-  triggerHaptic(8);
+  ta.value = ''; updateCharCount(); ta.focus(); triggerHaptic(8);
 }
 
 async function sendText() {
   let text = document.getElementById('text-input').value;
-  if (!text) {
-    showToast('Please enter some text');
-    return;
-  }
-
-  if (State.config.autoenter) {
-    text += '\n';
-  }
-
+  if (!text) { showToast('Please enter some text'); return; }
+  if (State.config.autoenter) text += '\n';
   triggerHaptic(15);
   setTypingUI(true, text.length);
-
   try {
-    const res = await fetch('/api/type', {
-      method:  'POST',
+    const res    = await fetch('/api/type', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        text:             text,
-        delay_ms:         State.delayMs,
-        initial_delay_s:  State.config.countdown
-      })
+      body:    JSON.stringify({ text, delay_ms: State.delayMs, initial_delay_s: State.config.countdown })
     });
     const result = await res.json();
-    if (!result.ok) {
-      setTypingUI(false);
-      showToast(result.msg || 'Typing failed');
-    }
-  } catch (e) {
-    setTypingUI(false);
-    showToast('Failed to connect to server');
-  }
+    if (!result.ok) { setTypingUI(false); showToast(result.msg || 'Typing failed'); }
+  } catch (e) { setTypingUI(false); showToast('Failed to connect to server'); }
 }
 
 async function stopTyping() {
   triggerHaptic(20);
-  try {
-    await fetch('/api/stop', { method: 'POST' });
-  } catch (e) {}
+  try { await fetch('/api/stop', { method: 'POST' }); } catch (e) {}
 }
 
 function setTypingUI(isTyping, totalChars = 0) {
   State.isTyping = isTyping;
-  const sendBtn  = document.getElementById('btn-send');
-  const stopBtn  = document.getElementById('btn-stop');
-  const pWrapper = document.getElementById('progress-wrapper');
-  const pText    = document.getElementById('progress-text');
-
+  document.getElementById('btn-send').style.display    = isTyping ? 'none' : 'flex';
+  document.getElementById('btn-stop').style.display    = isTyping ? 'flex' : 'none';
+  document.getElementById('progress-wrapper').style.display = isTyping ? 'block' : 'none';
   if (isTyping) {
-    sendBtn.style.display   = 'none';
-    stopBtn.style.display   = 'flex';
-    pWrapper.style.display  = 'block';
-    pText.innerText = `Typing ${totalChars} characters (${State.delayMs}ms/char)...`;
+    document.getElementById('progress-text').innerText =
+      `Typing ${totalChars} characters (${State.delayMs}ms/char)...`;
     animateProgressBar(totalChars * State.delayMs);
   } else {
-    sendBtn.style.display   = 'flex';
-    stopBtn.style.display   = 'none';
-    pWrapper.style.display  = 'none';
     document.getElementById('progress-fill').style.width = '0%';
   }
 }
@@ -319,149 +265,104 @@ function setTypingUI(isTyping, totalChars = 0) {
 function animateProgressBar(totalTimeMs) {
   const fill = document.getElementById('progress-fill');
   fill.style.transition = `width ${totalTimeMs / 1000.0}s linear`;
-  setTimeout(() => {
-    if (State.isTyping) fill.style.width = '100%';
-  }, 20);
+  setTimeout(() => { if (State.isTyping) fill.style.width = '100%'; }, 20);
 }
 
-// ── View 2: Live Keyboard (SwiftKey / Gboard Mirror) ─────────────────────────
+// ── View 2: Live Keyboard ─────────────────────────────────────────────────────
+
+// Feature 4: collapsible key-feed
+function toggleKeyFeed() {
+  const btn      = document.getElementById('feed-toggle-btn');
+  const collapse = document.getElementById('feed-collapse');
+  const expanded = btn.getAttribute('aria-expanded') === 'true';
+  btn.setAttribute('aria-expanded', String(!expanded));
+  collapse.classList.toggle('collapsed', expanded);
+  triggerHaptic(8);
+}
 
 function initLiveKeyboard() {
   const input = document.getElementById('live-hidden-input');
   const zone  = document.getElementById('live-target-zone');
   const hint  = document.getElementById('live-hint-text');
-
-  let lastValue      = '';
-  let lastActionTime = 0;
-  let lastActionChar = null;
-  let resetTimer     = null;
+  let lastValue = '', resetTimer = null;
 
   function emitChar(ch) {
     if (!ch) return;
-    const now = Date.now();
     if (ch === '\n' || ch === '\r') ch = 'Enter';
-    lastActionChar = ch;
-    lastActionTime = now;
     sendLiveChar(ch);
   }
 
   input.addEventListener('focus', () => {
     zone.classList.add('focused');
-    hint.innerText  = '🟢 Keyboard active — type now';
-    input.value     = '';
-    lastValue       = '';
+    hint.innerText = '🟢 Keyboard active — type now';
+    input.value = ''; lastValue = '';
   });
 
   input.addEventListener('blur', () => {
     zone.classList.remove('focused');
     hint.innerText = '⌨️ Tap to open device keyboard';
-    input.value    = '';
-    lastValue      = '';
+    input.value = ''; lastValue = '';
   });
 
-  // 1. Keydown: physical keys + virtual Backspace/Enter/Tab/Esc
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Backspace' || e.keyCode === 8) {
-      emitChar('Backspace');
-      if (!input.value) e.preventDefault();
-    } else if (e.key === 'Enter' || e.keyCode === 13) {
-      emitChar('Enter');
-      e.preventDefault();
-    } else if (e.key === 'Tab' || e.keyCode === 9) {
-      emitChar('Tab');
-      e.preventDefault();
-    } else if (e.key === 'Escape' || e.keyCode === 27) {
-      emitChar('Esc');
-      e.preventDefault();
+    const specialMap = {
+      'Backspace': 'Backspace', 'Enter': 'Enter', 'Tab': 'Tab',
+      'Escape': 'Esc', 'ArrowUp': 'up', 'ArrowDown': 'down',
+      'ArrowLeft': 'left', 'ArrowRight': 'right',
+    };
+    if (specialMap[e.key]) {
+      emitChar(specialMap[e.key]);
+      if (e.key !== 'Backspace' || !input.value) e.preventDefault();
     } else if (e.key && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey && e.key !== 'Unidentified') {
-      emitChar(e.key);
-      e.preventDefault();
+      emitChar(e.key); e.preventDefault();
     }
   });
 
-  // 2. Beforeinput: line breaks and backwards deletion
   input.addEventListener('beforeinput', (e) => {
-    if (e.inputType === 'insertLineBreak') {
-      emitChar('Enter');
-      e.preventDefault();
-    } else if (e.inputType === 'deleteContentBackward') {
-      emitChar('Backspace');
-    }
+    if (e.inputType === 'insertLineBreak') { emitChar('Enter'); e.preventDefault(); }
+    else if (e.inputType === 'deleteContentBackward') { emitChar('Backspace'); }
   });
 
-  // 3. Input event: Universal diffing engine for virtual keyboards (SwiftKey, Gboard, IME)
   input.addEventListener('input', () => {
-    const curValue = input.value;
-
-    if (curValue.length > lastValue.length) {
-      // Find common prefix to detect exactly what was added (handles autocorrect replacements)
-      let prefixLen = 0;
-      while (prefixLen < lastValue.length && prefixLen < curValue.length &&
-             lastValue[prefixLen] === curValue[prefixLen]) {
-        prefixLen++;
-      }
-      // Emit backspaces for any characters that were replaced
-      const removedCount = lastValue.length - prefixLen;
-      for (let i = 0; i < removedCount; i++) {
-        emitChar('Backspace');
-      }
-      // Emit newly added characters
-      const addedText = curValue.slice(prefixLen);
-      for (const ch of addedText) {
-        emitChar(ch);
-      }
-    } else if (curValue.length < lastValue.length) {
-      const diff = lastValue.length - curValue.length;
-      for (let i = 0; i < diff; i++) {
-        emitChar('Backspace');
-      }
+    const cur = input.value;
+    if (cur.length > lastValue.length) {
+      let pfx = 0;
+      while (pfx < lastValue.length && pfx < cur.length && lastValue[pfx] === cur[pfx]) pfx++;
+      const removed = lastValue.length - pfx;
+      for (let i = 0; i < removed; i++) emitChar('Backspace');
+      for (const ch of cur.slice(pfx)) emitChar(ch);
+    } else if (cur.length < lastValue.length) {
+      const diff = lastValue.length - cur.length;
+      for (let i = 0; i < diff; i++) emitChar('Backspace');
     }
-
-    lastValue = curValue;
-
-    // Reset buffer to keep diffing fast; prevents overflow on long IME sessions
+    lastValue = cur;
     clearTimeout(resetTimer);
-    if (curValue.length > 25) {
-      input.value = '';
-      lastValue   = '';
-    } else {
-      resetTimer = setTimeout(() => {
-        input.value = '';
-        lastValue   = '';
-      }, 1500);
-    }
+    if (cur.length > 25) { input.value = ''; lastValue = ''; }
+    else { resetTimer = setTimeout(() => { input.value = ''; lastValue = ''; }, 1500); }
   });
 
-  // 4. Compositionend: commits any buffered IME text
   input.addEventListener('compositionend', () => {
-    const curValue = input.value;
-    if (curValue.length > lastValue.length) {
-      const addedText = curValue.slice(lastValue.length);
-      for (const ch of addedText) {
-        emitChar(ch);
-      }
+    const cur = input.value;
+    if (cur.length > lastValue.length) {
+      for (const ch of cur.slice(lastValue.length)) emitChar(ch);
     }
-    input.value = '';
-    lastValue   = '';
+    input.value = ''; lastValue = '';
   });
 }
 
 function focusLiveInput() {
-  const input = document.getElementById('live-hidden-input');
-  input.focus();
+  document.getElementById('live-hidden-input').focus();
   triggerHaptic(10);
 }
 
 function sendLiveChar(ch) {
   triggerHaptic(8);
   appendKeyChip(ch);
-
   if (State.ws && State.ws.readyState === WebSocket.OPEN) {
     State.ws.send(JSON.stringify({ action: 'live_char', char: ch }));
   } else {
-    // Fallback REST for when WebSocket is reconnecting
     fetch('/api/key', {
-      method:  'POST',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ key: ch })
     });
@@ -472,148 +373,210 @@ function appendKeyChip(label) {
   const feed      = document.getElementById('key-feed');
   const emptyHint = feed.querySelector('.empty-feed-hint');
   if (emptyHint) emptyHint.remove();
-
-  const chip      = document.createElement('span');
-  chip.className  = 'key-chip';
-  chip.innerText  = label === ' ' ? '␣' : label;
+  const chip     = document.createElement('span');
+  chip.className = 'key-chip';
+  chip.innerText = label === ' ' ? '␣' : label;
   feed.appendChild(chip);
-
-  while (feed.children.length > 15) {
-    feed.removeChild(feed.firstChild);
-  }
+  while (feed.children.length > 15) feed.removeChild(feed.firstChild);
   feed.scrollLeft = feed.scrollWidth;
 }
 
 function clearKeyFeed() {
-  const feed = document.getElementById('key-feed');
-  feed.innerHTML = '<span class="empty-feed-hint">Waiting for input...</span>';
+  document.getElementById('key-feed').innerHTML =
+    '<span class="empty-feed-hint">Waiting for input...</span>';
 }
 
-function sendSingleKey(keyName) {
-  triggerHaptic(12);
-  sendLiveChar(keyName);
-}
+function sendSingleKey(keyName) { triggerHaptic(12); sendLiveChar(keyName); }
 
-// ── View 3: Shortcuts & Combos ─────────────────────────────────────────────────
+// ── View 3: Shortcuts ─────────────────────────────────────────────────────────
 
 async function sendCombo(combo) {
   triggerHaptic(15);
   showToast(`Injected ${combo.toUpperCase()}`);
   try {
     await fetch('/api/key', {
-      method:  'POST',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ combo: combo })
+      body:    JSON.stringify({ combo })
     });
   } catch (e) {}
+}
+
+// ── View 4: Scroll Wheels (Feature 1) ────────────────────────────────────────
+
+function initScrollWheels() {
+  initOneWheel('vwheel', 'v');
+  initOneWheel('hwheel', 'h');
+}
+
+function initOneWheel(wheelId, axis) {
+  const wheel = document.getElementById(wheelId);
+  if (!wheel) return;
+  const drum = wheel.querySelector('.wheel-drum');
+  let lastPos = 0;
+  let isDown  = false;
+  let accum   = 0;          // accumulated fractional ticks
+  const TICK_PX = 18;       // pixels per one scroll notch
+
+  function getPos(e) {
+    const t = e.touches ? e.touches[0] : e;
+    return axis === 'v' ? t.clientY : t.clientX;
+  }
+
+  function onStart(e) {
+    e.preventDefault();
+    lastPos = getPos(e);
+    isDown  = true;
+    accum   = 0;
+    wheel.classList.add('clicking');
+    setTimeout(() => wheel.classList.remove('clicking'), 120);
+  }
+
+  function onMove(e) {
+    if (!isDown) return;
+    e.preventDefault();
+    const pos   = getPos(e);
+    const delta = pos - lastPos;
+    lastPos     = pos;
+    accum      += delta;
+
+    // Emit a scroll tick for each TICK_PX travelled
+    while (Math.abs(accum) >= TICK_PX) {
+      const dir = accum > 0 ? 1 : -1;
+      accum    -= dir * TICK_PX;
+      // Wheel scrolls: vertical = up/down, horizontal = left/right
+      // wheel > 0 = scroll down, wheel < 0 = scroll up (standard HID)
+      const scrollVal = Math.round(dir * 2 * State.sensitivity);
+      emitScroll(axis, scrollVal);
+      animateWheelNotch(drum, axis, dir);
+      triggerHaptic(4);
+    }
+  }
+
+  function onEnd(e) {
+    isDown = false;
+    accum  = 0;
+  }
+
+  // Touch events
+  wheel.addEventListener('touchstart', onStart, { passive: false });
+  wheel.addEventListener('touchmove',  onMove,  { passive: false });
+  wheel.addEventListener('touchend',   onEnd,   { passive: false });
+
+  // Mouse events (desktop fallback)
+  wheel.addEventListener('mousedown', onStart);
+  window.addEventListener('mousemove', (e) => { if (isDown) onMove(e); });
+  window.addEventListener('mouseup',   (e) => { if (isDown) onEnd(e); });
+}
+
+function emitScroll(axis, val) {
+  // axis 'v' -> vertical wheel, 'h' -> horizontal (map to wheel field)
+  // Server supports "wheel" in mouse_move for vertical scroll.
+  // For horizontal, we send dx instead (mouse horizontal scroll via dx trick).
+  if (!State.ws || State.ws.readyState !== WebSocket.OPEN) return;
+  if (axis === 'v') {
+    State.ws.send(JSON.stringify({ action: 'mouse_move', dx: 0, dy: 0, wheel: val }));
+  } else {
+    // Horizontal scroll: send as small horizontal mouse delta so the OS interprets it
+    State.ws.send(JSON.stringify({ action: 'mouse_move', dx: val * 6, dy: 0, wheel: 0 }));
+  }
+}
+
+function animateWheelNotch(drum, axis, dir) {
+  // Remove existing animation class, force reflow, then re-add
+  drum.classList.remove('wheel-notch-v', 'wheel-notch-h');
+  void drum.offsetWidth;  // reflow
+  if (axis === 'v') {
+    drum.style.setProperty('--notch-dy', `${-dir * 7}px`);
+    drum.classList.add('wheel-notch-v');
+  } else {
+    drum.style.setProperty('--notch-dx', `${-dir * 7}px`);
+    drum.classList.add('wheel-notch-h');
+  }
 }
 
 // ── View 4: Trackpad ──────────────────────────────────────────────────────────
 
 function initTrackpad() {
   const surface = document.getElementById('touchpad-surface');
-  let lastX        = 0;
-  let lastY        = 0;
-  let isMoving     = false;
-  let tapStartTime = 0;
-  let startX       = 0;
-  let startY       = 0;
+  if (!surface) return;
 
-  // ── Single-finger: cursor movement + tap-to-click ──
+  let lastX = 0, lastY = 0, startX = 0, startY = 0;
+  let isMoving = false, tapStartTime = 0;
+
+  // ── Touch (single-finger move, two-finger scroll) ──
   surface.addEventListener('touchstart', (e) => {
     e.preventDefault();
     if (e.touches.length === 1) {
-      lastX        = e.touches[0].clientX;
-      lastY        = e.touches[0].clientY;
-      startX       = lastX;
-      startY       = lastY;
+      lastX = startX = e.touches[0].clientX;
+      lastY = startY = e.touches[0].clientY;
       isMoving     = true;
       tapStartTime = Date.now();
+    } else if (e.touches.length === 2) {
+      lastY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      lastX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
     }
   }, { passive: false });
 
   surface.addEventListener('touchmove', (e) => {
     e.preventDefault();
-
-    // FIX Bug 7: two-finger vertical swipe -> scroll wheel
     if (e.touches.length === 2) {
-      const midY    = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-      const dy      = Math.round((midY - lastY) * 0.3);
-      lastY         = midY;
-      lastX         = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      const dy   = Math.round((midY - lastY) * 0.3 * State.sensitivity);
+      lastY = midY;
+      lastX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
       if (dy !== 0 && State.ws && State.ws.readyState === WebSocket.OPEN) {
-        // wheel: negative = scroll down (mirror natural scroll direction)
         State.ws.send(JSON.stringify({ action: 'mouse_move', dx: 0, dy: 0, wheel: -dy }));
       }
       return;
     }
-
-    // Single-finger cursor movement
     if (!isMoving || e.touches.length !== 1) return;
-    const curX = e.touches[0].clientX;
-    const curY = e.touches[0].clientY;
-    const dx   = Math.round((curX - lastX) * 1.5);
-    const dy   = Math.round((curY - lastY) * 1.5);
-    lastX      = curX;
-    lastY      = curY;
-
-    if (dx !== 0 || dy !== 0) {
-      if (State.ws && State.ws.readyState === WebSocket.OPEN) {
-        State.ws.send(JSON.stringify({ action: 'mouse_move', dx: dx, dy: dy, wheel: 0 }));
-      }
+    const curX = e.touches[0].clientX, curY = e.touches[0].clientY;
+    const dx   = Math.round((curX - lastX) * 1.5 * State.sensitivity);
+    const dy   = Math.round((curY - lastY) * 1.5 * State.sensitivity);
+    lastX = curX; lastY = curY;
+    if ((dx || dy) && State.ws && State.ws.readyState === WebSocket.OPEN) {
+      State.ws.send(JSON.stringify({ action: 'mouse_move', dx, dy, wheel: 0 }));
     }
   }, { passive: false });
 
   surface.addEventListener('touchend', (e) => {
     e.preventDefault();
     isMoving = false;
-    const duration  = Date.now() - tapStartTime;
-    const totalDist = Math.hypot(lastX - startX, lastY - startY);
-    if (duration < 220 && totalDist < 8) {
+    if (Date.now() - tapStartTime < 220 && Math.hypot(lastX - startX, lastY - startY) < 8) {
       onMouseClick(1);
     }
   }, { passive: false });
 
-  // ── Pointer / Mouse fallback (desktop or stylus) ──
+  // ── Mouse fallback ──
   let isMouseDown = false;
   surface.addEventListener('mousedown', (e) => {
-    lastX        = e.clientX;
-    lastY        = e.clientY;
-    isMouseDown  = true;
-    tapStartTime = Date.now();
-    startX       = lastX;
-    startY       = lastY;
+    lastX = startX = e.clientX; lastY = startY = e.clientY;
+    isMouseDown = true; tapStartTime = Date.now();
   });
   window.addEventListener('mousemove', (e) => {
     if (!isMouseDown) return;
-    const curX = e.clientX;
-    const curY = e.clientY;
-    const dx   = Math.round((curX - lastX) * 1.5);
-    const dy   = Math.round((curY - lastY) * 1.5);
-    lastX      = curX;
-    lastY      = curY;
-    if (dx !== 0 || dy !== 0) {
-      if (State.ws && State.ws.readyState === WebSocket.OPEN) {
-        State.ws.send(JSON.stringify({ action: 'mouse_move', dx: dx, dy: dy, wheel: 0 }));
-      }
+    const dx = Math.round((e.clientX - lastX) * 1.5 * State.sensitivity);
+    const dy = Math.round((e.clientY - lastY) * 1.5 * State.sensitivity);
+    lastX = e.clientX; lastY = e.clientY;
+    if ((dx || dy) && State.ws && State.ws.readyState === WebSocket.OPEN) {
+      State.ws.send(JSON.stringify({ action: 'mouse_move', dx, dy, wheel: 0 }));
     }
   });
   window.addEventListener('mouseup', () => {
     if (!isMouseDown) return;
     isMouseDown = false;
-    const duration  = Date.now() - tapStartTime;
-    const totalDist = Math.hypot(lastX - startX, lastY - startY);
-    if (duration < 220 && totalDist < 8) {
+    if (Date.now() - tapStartTime < 220 && Math.hypot(lastX - startX, lastY - startY) < 8) {
       onMouseClick(1);
     }
   });
 
-  // Desktop scroll wheel -> mouse scroll
+  // Desktop scroll wheel on touchpad surface
   surface.addEventListener('wheel', (e) => {
     e.preventDefault();
-    const wheel = Math.sign(e.deltaY) * Math.min(Math.abs(Math.round(e.deltaY / 10)), 5);
-    if (wheel !== 0 && State.ws && State.ws.readyState === WebSocket.OPEN) {
-      State.ws.send(JSON.stringify({ action: 'mouse_move', dx: 0, dy: 0, wheel: wheel }));
+    const w = Math.sign(e.deltaY) * Math.min(Math.abs(Math.round(e.deltaY * State.sensitivity / 10)), 5);
+    if (w && State.ws && State.ws.readyState === WebSocket.OPEN) {
+      State.ws.send(JSON.stringify({ action: 'mouse_move', dx: 0, dy: 0, wheel: w }));
     }
   }, { passive: false });
 }
@@ -624,7 +587,7 @@ function onMouseClick(buttonNum) {
     State.ws.send(JSON.stringify({ action: 'mouse_click', button: buttonNum }));
   } else {
     fetch('/api/mouse', {
-      method:  'POST',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ buttons: buttonNum })
     });
@@ -633,26 +596,24 @@ function onMouseClick(buttonNum) {
 
 // ── Settings Modal ────────────────────────────────────────────────────────────
 
-function openSettings() {
+function openSettings()  {
   document.getElementById('settings-modal').classList.add('open');
-  triggerHaptic(8);
-  fetchInitialStatus();
+  triggerHaptic(8); fetchInitialStatus();
 }
 
-function closeSettings() {
+function closeSettings(e) {
+  if (e && e.target !== document.getElementById('settings-modal')) return;
   document.getElementById('settings-modal').classList.remove('open');
   triggerHaptic(8);
 }
 
 // ── Toast Utility ─────────────────────────────────────────────────────────────
 
-let toastTimer = null;
+let _toastTimer = null;
 function showToast(msg) {
   const toast = document.getElementById('toast');
   toast.innerText = msg;
   toast.classList.add('show');
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    toast.classList.remove('show');
-  }, 2200);
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
 }

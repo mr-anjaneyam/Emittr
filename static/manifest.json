@@ -1,21 +1,21 @@
-{
-  "name": "USB Keyboard Deck",
-  "short_name": "USB Typer",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#121316",
-  "theme_color": "#1a1b1f",
-  "orientation": "portrait-primary",
-  "icons": [
-    {
-      "src": "/static/icon.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/static/icon.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
+﻿{
+    "display":  "standalone",
+    "orientation":  "portrait-primary",
+    "icons":  [
+                  {
+                      "type":  "image/png",
+                      "sizes":  "192x192",
+                      "src":  "/static/icon.png"
+                  },
+                  {
+                      "type":  "image/png",
+                      "sizes":  "512x512",
+                      "src":  "/static/icon.png"
+                  }
+              ],
+    "background_color":  "#121316",
+    "theme_color":  "#1a1b1f",
+    "name":  "Emittr",
+    "start_url":  "/",
+    "short_name":  "Emittr"
 }

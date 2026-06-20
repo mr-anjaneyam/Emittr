@@ -1,4 +1,4 @@
-/* ── Material You / Material Design 3 Styles ────────────────────────── */
+/* ── Emittr  ·  Material You / Material Design 3  ·  v1.2.0 ─────────────── */
 
 :root {
   --md-sys-color-background: #121316;
@@ -66,7 +66,7 @@ body {
   user-select: none;
 }
 
-/* ── App Header ──────────────────────────────────────────────────────── */
+/* ── App Header ──────────────────────────────────────────────────────────── */
 
 .app-header {
   height: 64px;
@@ -80,21 +80,32 @@ body {
   z-index: 10;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-}
+.header-left { display: flex; align-items: center; }
 
-.app-title-group {
+.app-title-group { display: flex; flex-direction: column; }
+
+/* Feature 2: App name + version badge row */
+.app-name-row {
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .app-title {
-  font-size: 20px;
-  font-weight: 500;
-  letter-spacing: -0.2px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
   color: var(--md-sys-color-on-surface);
+}
+
+.version-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--md-sys-color-primary);
+  background-color: var(--md-sys-color-primary-container);
+  padding: 2px 7px;
+  border-radius: var(--md-shape-corner-full);
+  opacity: 0.85;
 }
 
 .connection-badge {
@@ -105,7 +116,7 @@ body {
   border-radius: var(--md-shape-corner-full);
   font-size: 11px;
   font-weight: 500;
-  margin-top: 2px;
+  margin-top: 3px;
   width: fit-content;
   transition: all 0.3s ease;
 }
@@ -149,11 +160,9 @@ body {
   transition: background 0.2s;
 }
 
-.icon-btn:active {
-  background-color: var(--md-sys-color-surface-container-high);
-}
+.icon-btn:active { background-color: var(--md-sys-color-surface-container-high); }
 
-/* ── Main Layout ─────────────────────────────────────────────────────── */
+/* ── Main Layout ─────────────────────────────────────────────────────────── */
 
 .main-content {
   flex: 1;
@@ -163,21 +172,15 @@ body {
   margin: 0 auto;
 }
 
-.view-panel {
-  display: none;
-  animation: fadeIn 0.2s ease-out;
-}
-
-.view-panel.active {
-  display: block;
-}
+.view-panel { display: none; animation: fadeIn 0.2s ease-out; }
+.view-panel.active { display: block; }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Material Cards ──────────────────────────────────────────────────── */
+/* ── Material Cards ──────────────────────────────────────────────────────── */
 
 .card {
   background-color: var(--md-sys-color-surface-container);
@@ -200,13 +203,6 @@ body {
   color: var(--md-sys-color-on-surface);
 }
 
-.card-desc {
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--md-sys-color-on-surface-variant);
-  margin-bottom: 16px;
-}
-
 .char-count {
   font-size: 12px;
   color: var(--md-sys-color-outline);
@@ -220,7 +216,7 @@ body {
   border-radius: var(--md-shape-corner-full);
 }
 
-/* ── Text Editor ─────────────────────────────────────────────────────── */
+/* ── Text Editor ─────────────────────────────────────────────────────────── */
 
 .material-textarea {
   width: 100%;
@@ -242,11 +238,9 @@ body {
   box-shadow: 0 0 0 1px var(--md-sys-color-primary);
 }
 
-/* ── Speed / Delay Section ───────────────────────────────────────────── */
+/* ── Speed / Delay Section ───────────────────────────────────────────────── */
 
-.delay-section {
-  margin-top: 18px;
-}
+.delay-section { margin-top: 18px; }
 
 .section-label {
   font-size: 13px;
@@ -255,11 +249,7 @@ body {
   margin-bottom: 8px;
 }
 
-.speed-presets {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
+.speed-presets { display: flex; gap: 8px; margin-bottom: 12px; }
 
 .preset-pill {
   flex: 1;
@@ -280,11 +270,7 @@ body {
   border-color: var(--md-sys-color-primary);
 }
 
-.slider-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+.slider-row { display: flex; align-items: center; gap: 12px; }
 
 input[type=range] {
   flex: 1;
@@ -303,13 +289,9 @@ input[type=range] {
   text-align: right;
 }
 
-/* ── Action Buttons ──────────────────────────────────────────────────── */
+/* ── Action Buttons ──────────────────────────────────────────────────────── */
 
-.action-row {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-}
+.action-row { display: flex; gap: 10px; margin-top: 20px; }
 
 .btn-primary {
   flex: 1;
@@ -326,12 +308,10 @@ input[type=range] {
   gap: 8px;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  transition: transform 0.1s, background-color 0.2s, box-shadow 0.2s;
+  transition: transform 0.1s, box-shadow 0.2s;
 }
 
-.btn-primary:active {
-  transform: scale(0.98);
-}
+.btn-primary:active { transform: scale(0.98); }
 
 .btn-secondary {
   flex: 1;
@@ -361,11 +341,9 @@ input[type=range] {
   cursor: pointer;
 }
 
-/* ── Progress ────────────────────────────────────────────────────────── */
+/* ── Progress ────────────────────────────────────────────────────────────── */
 
-.progress-wrapper {
-  margin-top: 16px;
-}
+.progress-wrapper { margin-top: 16px; }
 
 .progress-bar {
   height: 6px;
@@ -388,10 +366,10 @@ input[type=range] {
   text-align: center;
 }
 
-/* ── Live Keyboard Mirror View ───────────────────────────────────────── */
+/* ── Live Keyboard Mirror View ───────────────────────────────────────────── */
 
 .live-target-zone {
-  min-height: 130px;
+  min-height: 120px;
   background-color: var(--md-sys-color-surface-container-high);
   border: 2px dashed var(--md-sys-color-outline-variant);
   border-radius: var(--md-shape-corner-large);
@@ -420,20 +398,63 @@ input[type=range] {
 
 .hidden-live-input {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   opacity: 0;
   cursor: pointer;
-  font-size: 16px; /* Prevents iOS/Android auto-zoom */
+  font-size: 16px; /* Prevents auto-zoom on iOS/Android */
+}
+
+/* Feature 4: Collapsible key-feed ──────────────────────────────────────── */
+
+.feed-section { margin-top: 14px; }
+
+.feed-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  border-radius: var(--md-shape-corner-medium);
+  padding: 8px 10px;
+  cursor: pointer;
+  color: var(--md-sys-color-outline);
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.feed-toggle:active { background: var(--md-sys-color-surface-container-high); }
+
+.feed-toggle-label { color: var(--md-sys-color-on-surface-variant); }
+
+.feed-toggle-arrow {
+  transition: transform 0.2s ease;
+  color: var(--md-sys-color-outline);
+}
+
+.feed-toggle[aria-expanded="true"] .feed-toggle-arrow {
+  transform: rotate(180deg);
+}
+
+.feed-collapse {
+  overflow: hidden;
+  max-height: 200px;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+  opacity: 1;
+}
+
+.feed-collapse.collapsed {
+  max-height: 0;
+  opacity: 0;
 }
 
 .feed-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 16px 0 8px 0;
+  margin: 4px 0 6px 0;
   font-size: 12px;
   color: var(--md-sys-color-outline);
 }
@@ -450,8 +471,8 @@ input[type=range] {
   display: flex;
   gap: 6px;
   overflow-x: auto;
-  padding: 8px 0;
-  min-height: 48px;
+  padding: 6px 0 8px 0;
+  min-height: 44px;
   align-items: center;
 }
 
@@ -459,16 +480,16 @@ input[type=range] {
   background-color: var(--md-sys-color-surface-container-highest);
   color: var(--md-sys-color-on-surface);
   font-family: monospace;
-  font-size: 14px;
-  padding: 6px 12px;
+  font-size: 13px;
+  padding: 5px 10px;
   border-radius: var(--md-shape-corner-small);
   white-space: nowrap;
-  animation: popIn 0.15s ease-out;
+  animation: popIn 0.12s ease-out;
 }
 
 @keyframes popIn {
   from { transform: scale(0.7); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  to   { transform: scale(1);   opacity: 1; }
 }
 
 .empty-feed-hint {
@@ -503,7 +524,7 @@ input[type=range] {
   color: var(--md-sys-color-on-primary);
 }
 
-/* ── Shortcuts Grid ──────────────────────────────────────────────────── */
+/* ── Shortcuts Grid ──────────────────────────────────────────────────────── */
 
 .shortcuts-grid {
   display: grid;
@@ -537,36 +558,20 @@ input[type=range] {
   color: var(--md-sys-color-on-surface);
 }
 
-.tile-sub {
-  font-size: 10px;
-  color: var(--md-sys-color-outline);
-}
+.tile-sub { font-size: 10px; color: var(--md-sys-color-outline); }
 
 /* Directional Cluster */
-.nav-cluster {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 0;
-}
-
-.nav-cluster-row {
-  display: flex;
-  gap: 8px;
-}
+.nav-cluster { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 0; }
+.nav-cluster-row { display: flex; gap: 8px; }
 
 .nav-key {
-  width: 58px;
-  height: 50px;
+  width: 58px; height: 50px;
   background-color: var(--md-sys-color-surface-container-high);
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-shape-corner-medium);
   color: var(--md-sys-color-on-surface);
   font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   cursor: pointer;
 }
 
@@ -575,10 +580,17 @@ input[type=range] {
   color: var(--md-sys-color-on-primary);
 }
 
-/* ── Trackpad View ───────────────────────────────────────────────────── */
+/* ── Trackpad View ───────────────────────────────────────────────────────── */
+
+.trackpad-layout {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
 
 .touchpad-surface {
-  height: 280px;
+  flex: 1;
+  height: 240px;
   background-color: var(--md-sys-color-surface-container-high);
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-shape-corner-large);
@@ -591,18 +603,166 @@ input[type=range] {
 }
 
 .touchpad-hint {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--md-sys-color-outline);
   text-align: center;
-  line-height: 1.5;
+  line-height: 1.6;
   pointer-events: none;
 }
 
-.mouse-buttons-row {
+/* ── Scroll Wheels ───────────────────────────────────────────────────────── */
+
+/* Feature 1: Physical-looking scroll wheels */
+
+.scroll-wheel-wrap {
   display: flex;
-  gap: 10px;
-  margin-top: 14px;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
+
+.scroll-wheel-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--md-sys-color-outline);
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
+.scroll-wheel {
+  position: relative;
+  width: 42px;
+  height: 200px;
+  background: linear-gradient(180deg,
+    var(--md-sys-color-surface-container-highest) 0%,
+    var(--md-sys-color-surface-container-high) 20%,
+    var(--md-sys-color-surface-container-high) 80%,
+    var(--md-sys-color-surface-container-highest) 100%
+  );
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: ns-resize;
+  touch-action: none;
+  /* Inset bevel like a physical wheel barrel */
+  box-shadow:
+    inset 2px 0 6px rgba(0,0,0,0.25),
+    inset -2px 0 6px rgba(0,0,0,0.25),
+    0 2px 8px rgba(0,0,0,0.3);
+}
+
+.wheel-drum {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  will-change: transform;
+  transition: transform 0.08s ease-out;
+}
+
+.wheel-ridge {
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.06) 0%,
+    rgba(255,255,255,0.14) 40%,
+    rgba(0,0,0,0.18) 60%,
+    rgba(0,0,0,0.06) 100%
+  );
+  border-radius: 1px;
+}
+
+/* Center reticle line — the "current notch" indicator */
+.wheel-center-line {
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 2px;
+  background: var(--md-sys-color-primary);
+  opacity: 0.6;
+  border-radius: 1px;
+  pointer-events: none;
+  box-shadow: 0 0 6px var(--md-sys-color-primary);
+}
+
+/* Click ripple flash on the wheel */
+.scroll-wheel.clicking {
+  background: linear-gradient(180deg,
+    var(--md-sys-color-surface-container-highest) 0%,
+    rgba(168,199,250,0.12) 50%,
+    var(--md-sys-color-surface-container-highest) 100%
+  );
+}
+
+/* Horizontal wheel */
+.horizontal-wheel-row {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.horiz-label { white-space: nowrap; }
+
+.horizontal-wheel {
+  width: 100% !important;
+  height: 42px !important;
+  cursor: ew-resize !important;
+  border-radius: 12px !important;
+  box-shadow:
+    inset 0 2px 6px rgba(0,0,0,0.25),
+    inset 0 -2px 6px rgba(0,0,0,0.25),
+    0 2px 8px rgba(0,0,0,0.3) !important;
+}
+
+.horizontal-drum {
+  flex-direction: row !important;
+  justify-content: space-around !important;
+  align-items: center !important;
+}
+
+.h-ridge {
+  width: 3px !important;
+  height: 100% !important;
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.06) 0%,
+    rgba(255,255,255,0.14) 40%,
+    rgba(0,0,0,0.18) 60%,
+    rgba(0,0,0,0.06) 100%
+  ) !important;
+}
+
+.horiz-center-line {
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 2px !important;
+  height: 60% !important;
+}
+
+/* Wheel "notch" animation: brief shift when scrolled */
+@keyframes wheelNotch {
+  0%   { transform: translateY(0); }
+  30%  { transform: translateY(var(--notch-dy, -6px)); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes wheelNotchH {
+  0%   { transform: translateX(0); }
+  30%  { transform: translateX(var(--notch-dx, -6px)); }
+  100% { transform: translateX(0); }
+}
+
+.wheel-notch-v { animation: wheelNotch 0.12s ease-out forwards; }
+.wheel-notch-h { animation: wheelNotchH 0.12s ease-out forwards; }
+
+/* Mouse buttons */
+.mouse-buttons-row { display: flex; gap: 10px; margin-top: 14px; }
 
 .btn-mouse {
   flex: 1;
@@ -614,19 +774,21 @@ input[type=range] {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.12s;
 }
 
 .btn-mouse:active {
   background-color: var(--md-sys-color-primary);
   color: var(--md-sys-color-on-primary);
+  transform: scale(0.98);
 }
 
-/* ── Bottom Navigation Bar (Material 3 Style) ────────────────────────── */
+/* ── Bottom Navigation Bar ───────────────────────────────────────────────── */
+/* Feature 5: nav icons fixed by using nav-icon-wrap + explicit fill="currentColor" */
 
 .bottom-nav {
   position: fixed;
-  bottom: 0;
-  left: 0;
+  bottom: 0; left: 0;
   width: 100%;
   height: 70px;
   background-color: var(--md-sys-color-surface);
@@ -635,7 +797,7 @@ input[type=range] {
   align-items: center;
   justify-content: space-around;
   z-index: 10;
-  padding: 0 10px;
+  padding: 0 4px;
 }
 
 .nav-item {
@@ -646,17 +808,29 @@ input[type=range] {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   cursor: pointer;
   color: var(--md-sys-color-on-surface-variant);
   height: 100%;
-  transition: all 0.2s;
+  padding: 6px 0;
+  transition: color 0.2s;
+}
+
+.nav-icon-wrap {
+  width: 56px;
+  height: 32px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
 }
 
 .nav-icon {
-  padding: 3px 18px;
-  border-radius: var(--md-shape-corner-full);
-  transition: background-color 0.2s, color 0.2s;
+  width: 24px;
+  height: 24px;
+  display: block;
+  flex-shrink: 0;
 }
 
 .nav-label {
@@ -664,34 +838,33 @@ input[type=range] {
   font-weight: 500;
 }
 
-.nav-item.active .nav-icon {
+/* Active state */
+.nav-item.active .nav-icon-wrap {
   background-color: var(--md-sys-color-secondary-container);
+}
+
+.nav-item.active {
   color: var(--md-sys-color-primary);
 }
 
 .nav-item.active .nav-label {
-  color: var(--md-sys-color-on-surface);
-  font-weight: 600;
+  font-weight: 700;
 }
 
-/* ── Settings Bottom Sheet Modal ─────────────────────────────────────── */
+/* ── Settings Modal ──────────────────────────────────────────────────────── */
 
 .modal-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.6);
   z-index: 100;
   display: none;
   align-items: flex-end;
   justify-content: center;
 }
 
-.modal-backdrop.open {
-  display: flex;
-}
+.modal-backdrop.open { display: flex; }
 
 .modal-sheet {
   background-color: var(--md-sys-color-surface-container);
@@ -706,7 +879,7 @@ input[type=range] {
 
 @keyframes slideUp {
   from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  to   { transform: translateY(0); }
 }
 
 .modal-header {
@@ -716,10 +889,7 @@ input[type=range] {
   margin-bottom: 20px;
 }
 
-.modal-title {
-  font-size: 18px;
-  font-weight: 500;
-}
+.modal-title { font-size: 18px; font-weight: 500; }
 
 .setting-item {
   display: flex;
@@ -734,33 +904,33 @@ input[type=range] {
   flex-direction: column;
   gap: 2px;
   padding-right: 16px;
+  flex: 1;
 }
 
-.setting-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--md-sys-color-on-surface);
+.setting-title { font-size: 14px; font-weight: 500; color: var(--md-sys-color-on-surface); }
+.setting-sub   { font-size: 12px; color: var(--md-sys-color-outline); }
+
+/* Feature 3: Sensitivity slider in settings */
+.sensitivity-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
-.setting-sub {
-  font-size: 12px;
-  color: var(--md-sys-color-outline);
+.sensitivity-control input[type=range] {
+  width: 100px;
 }
 
 /* Material Switch */
 .switch {
   position: relative;
   display: inline-block;
-  width: 48px;
-  height: 28px;
+  width: 48px; height: 28px;
   flex-shrink: 0;
 }
 
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
+.switch input { opacity: 0; width: 0; height: 0; }
 
 .slider {
   position: absolute;
@@ -775,10 +945,8 @@ input[type=range] {
 .slider:before {
   position: absolute;
   content: "";
-  height: 16px;
-  width: 16px;
-  left: 4px;
-  bottom: 4px;
+  height: 16px; width: 16px;
+  left: 4px; bottom: 4px;
   background-color: var(--md-sys-color-outline);
   border-radius: 50%;
   transition: 0.2s;
@@ -826,7 +994,7 @@ input:checked + .slider:before {
   color: var(--md-sys-color-on-surface-variant);
 }
 
-/* ── Toast Alert ─────────────────────────────────────────────────────── */
+/* ── Toast Alert ─────────────────────────────────────────────────────────── */
 
 .toast {
   position: fixed;
@@ -844,6 +1012,7 @@ input:checked + .slider:before {
   transition: all 0.25s ease;
   pointer-events: none;
   z-index: 200;
+  white-space: nowrap;
 }
 
 .toast.show {
