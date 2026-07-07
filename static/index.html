@@ -7,7 +7,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Emittr</title>
+  <title>Emittr — Tactical USB HID Controller</title>
   <link rel="manifest" href="/static/manifest.json" />
   <link rel="icon" type="image/png" href="/static/icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -23,7 +23,7 @@
       <div class="app-title-group">
         <div class="app-name-row">
           <h1 class="app-title">Emittr</h1>
-          <span class="version-badge">v1.1.0</span>
+          <span class="version-badge">v1.2.1</span>
         </div>
         <div id="usb-badge" class="connection-badge disconnected">
           <span class="status-indicator"></span>
@@ -31,7 +31,28 @@
         </div>
       </div>
     </div>
+
+    <!-- Desktop Navigation Pills (Visible on large screens) -->
+    <nav class="desktop-nav">
+      <button class="desktop-nav-btn active" data-view="typer" onclick="switchView('typer', this)">Typer</button>
+      <button class="desktop-nav-btn" data-view="live" onclick="switchView('live', this)">Live Keys</button>
+      <button class="desktop-nav-btn" data-view="shortcuts" onclick="switchView('shortcuts', this)">Shortcuts</button>
+      <button class="desktop-nav-btn" data-view="trackpad" onclick="switchView('trackpad', this)">Touchpad</button>
+      <button class="desktop-nav-btn dashboard-toggle-btn" id="btn-dashboard-mode" onclick="toggleDashboardMode()">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        <span>Dashboard Mode</span>
+      </button>
+    </nav>
+
     <div class="header-right">
+      <!-- Emergency Unstick Keys Button -->
+      <button id="btn-unstick" class="unstick-btn" onclick="emergencyRelease()" title="Release stuck keys, Ctrl, or mouse buttons" aria-label="Release stuck keys">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+        </svg>
+        <span class="unstick-text">Unstick Keys</span>
+      </button>
+
       <button id="btn-settings" class="icon-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
           <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
@@ -41,9 +62,9 @@
   </header>
 
   <!-- Main Views Container -->
-  <main class="main-content">
+  <main class="main-content" id="main-content">
 
-    <!-- ── View 1: Typer ────────────────────────────────────────── -->
+    <!-- ── View 1: Typer ─────────────────────────────────────────── -->
     <section id="view-typer" class="view-panel active">
       <div class="card editor-card">
         <div class="card-header">
@@ -94,7 +115,7 @@
       </div>
     </section>
 
-    <!-- ── View 2: Live Keyboard ───────────────────────────────── -->
+    <!-- ── View 2: Live Keyboard ─────────────────────────────────── -->
     <section id="view-live" class="view-panel">
       <div class="card live-card">
         <div class="card-header">
@@ -117,7 +138,7 @@
           />
         </div>
 
-        <!-- Key stroke feed — collapsible (Feature 4) -->
+        <!-- Key stroke feed — collapsible -->
         <div class="feed-section">
           <button class="feed-toggle" id="feed-toggle-btn" onclick="toggleKeyFeed()" aria-expanded="false">
             <span class="feed-toggle-label">Recent Strokes</span>
@@ -150,7 +171,7 @@
       </div>
     </section>
 
-    <!-- ── View 3: Shortcuts ───────────────────────────────────── -->
+    <!-- ── View 3: Shortcuts ─────────────────────────────────────── -->
     <section id="view-shortcuts" class="view-panel">
       <div class="card">
         <div class="card-header">
@@ -217,71 +238,86 @@
       </div>
     </section>
 
-    <!-- ── View 4: Trackpad ───────────────────────────────────── -->
+    <!-- ── View 4: Trackpad ─────────────────────────────────────── -->
     <section id="view-trackpad" class="view-panel">
       <div class="card trackpad-card">
         <div class="card-header">
-          <span class="card-title">Touchpad</span>
-          <span class="badge-hint">USB Mouse</span>
+          <div>
+            <span class="card-title">Touchpad</span>
+            <span class="badge-hint" style="margin-left:6px;">USB Mouse</span>
+          </div>
+          <span class="trackpad-sub-hint">2-finger scroll • Tap click</span>
         </div>
 
-        <!-- Trackpad layout: scroll wheels + touch surface -->
-        <div class="trackpad-layout">
-
-          <!-- Vertical Scroll Wheel (right side) -->
-          <div class="scroll-wheel-wrap vertical-wheel-wrap">
-            <div class="scroll-wheel-label">↕ Scroll</div>
-            <div id="vwheel" class="scroll-wheel vertical-wheel" data-axis="v">
-              <div class="wheel-drum" id="vwheel-drum">
-                <div class="wheel-ridge"></div>
-                <div class="wheel-ridge"></div>
-                <div class="wheel-ridge"></div>
-                <div class="wheel-ridge"></div>
-                <div class="wheel-ridge"></div>
-                <div class="wheel-ridge"></div>
-                <div class="wheel-ridge"></div>
-                <div class="wheel-ridge"></div>
-              </div>
-              <div class="wheel-center-line"></div>
-            </div>
-          </div>
-
-          <!-- Main touch surface -->
-          <div id="touchpad-surface" class="touchpad-surface">
-            <span class="touchpad-hint">Glide to move<br/>Tap to click</span>
-          </div>
-        </div>
-
-        <!-- Horizontal Scroll Wheel (below surface) -->
-        <div class="horizontal-wheel-row">
-          <div class="scroll-wheel-label horiz-label">↔ H-Scroll</div>
-          <div id="hwheel" class="scroll-wheel horizontal-wheel" data-axis="h">
-            <div class="wheel-drum horizontal-drum" id="hwheel-drum">
-              <div class="wheel-ridge h-ridge"></div>
-              <div class="wheel-ridge h-ridge"></div>
-              <div class="wheel-ridge h-ridge"></div>
-              <div class="wheel-ridge h-ridge"></div>
-              <div class="wheel-ridge h-ridge"></div>
-              <div class="wheel-ridge h-ridge"></div>
-              <div class="wheel-ridge h-ridge"></div>
-              <div class="wheel-ridge h-ridge"></div>
-            </div>
-            <div class="wheel-center-line horiz-center-line"></div>
+        <!-- Full width main touch surface -->
+        <div id="touchpad-surface" class="touchpad-surface">
+          <div class="touchpad-hint">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor" style="opacity:0.35;margin-bottom:8px;">
+              <path d="M9 11.24V7.5a2.5 2.5 0 0 1 5 0v3.74c1.21-.81 2-2.18 2-3.74a4.5 4.5 0 0 0-9 0c0 1.56.79 2.93 2 3.74zm9.84 4.63l-4.54-2.26c-.17-.07-.35-.11-.54-.11H13v-6c0-.83-.67-1.5-1.5-1.5S10 6.67 10 7.5v10.74l-3.43-.72c-.08-.01-.15-.02-.24-.02-.31 0-.59.13-.79.33l-.79.8 4.94 4.94c.27.27.65.43 1.06.43h6.79c.75 0 1.33-.55 1.44-1.28l.75-5.27c.01-.06.01-.13.01-.2 0-.49-.24-.92-.64-1.16z"/>
+            </svg>
+            <div><strong>Glide</strong> to move cursor</div>
+            <div style="font-size:11px;opacity:0.8;margin-top:2px;">Two fingers to scroll (↕ vertical &amp; ↔ horizontal)</div>
           </div>
         </div>
 
         <!-- Mouse buttons -->
         <div class="mouse-buttons-row">
-          <button class="btn-mouse left" onclick="onMouseClick(1)">Left Click</button>
-          <button class="btn-mouse right" onclick="onMouseClick(2)">Right Click</button>
+          <button class="btn-mouse left" id="btn-left-click" onclick="onMouseClick(1)">Left Click</button>
+          <button class="btn-mouse middle" id="btn-mid-click" onclick="onMouseClick(4)">Mid</button>
+          <button class="btn-mouse right" id="btn-right-click" onclick="onMouseClick(2)">Right Click</button>
         </div>
+
+        <!-- Side-by-Side Dual Scroll Wheels Dock (Bottom Space) -->
+        <div class="scroll-wheels-dock">
+          <!-- Left: Vertical Scroll Wheel -->
+          <div class="wheel-box vertical-box">
+            <div class="wheel-box-label">
+              <span class="wheel-icon">↕</span>
+              <span>Vertical Scroll</span>
+            </div>
+            <div id="vwheel" class="scroll-wheel vertical-wheel" data-axis="v">
+              <div class="wheel-drum vertical-drum" id="vwheel-drum">
+                <div class="wheel-ridge v-ridge"></div>
+                <div class="wheel-ridge v-ridge"></div>
+                <div class="wheel-ridge v-ridge"></div>
+                <div class="wheel-ridge v-ridge"></div>
+                <div class="wheel-ridge v-ridge"></div>
+                <div class="wheel-ridge v-ridge"></div>
+                <div class="wheel-ridge v-ridge"></div>
+                <div class="wheel-ridge v-ridge"></div>
+              </div>
+              <div class="wheel-center-line v-center-line"></div>
+            </div>
+          </div>
+
+          <!-- Right: Horizontal Scroll Wheel -->
+          <div class="wheel-box horizontal-box">
+            <div class="wheel-box-label">
+              <span class="wheel-icon">↔</span>
+              <span>Horizontal Scroll</span>
+            </div>
+            <div id="hwheel" class="scroll-wheel horizontal-wheel" data-axis="h">
+              <div class="wheel-drum horizontal-drum" id="hwheel-drum">
+                <div class="wheel-ridge h-ridge"></div>
+                <div class="wheel-ridge h-ridge"></div>
+                <div class="wheel-ridge h-ridge"></div>
+                <div class="wheel-ridge h-ridge"></div>
+                <div class="wheel-ridge h-ridge"></div>
+                <div class="wheel-ridge h-ridge"></div>
+                <div class="wheel-ridge h-ridge"></div>
+                <div class="wheel-ridge h-ridge"></div>
+              </div>
+              <div class="wheel-center-line h-center-line"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
 
   </main>
 
-  <!-- Material Navigation Bar (Bottom Tabs) -->
-  <!-- Feature 5: icons use inline SVG with explicit fill so they render on all Android WebViews -->
+  <!-- Material Navigation Bar (Bottom Tabs for Mobile) -->
   <nav class="bottom-nav">
     <button class="nav-item active" id="nav-typer" onclick="switchView('typer', this)">
       <span class="nav-icon-wrap">
@@ -313,7 +349,7 @@
           <path d="M20 9V7c0-1.1-.9-2-2-2H6C4.9 5 4 5.9 4 7v2H2v8c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9h-2zm-6 7h-4v-2h4v2zm0-4h-4v-2h4v2zm4 4h-2v-2h2v2zm0-4h-2v-2h2v2zm-8 4H8v-2h2v2zm0-4H8v-2h2v2zm-4 4H4v-2h2v2zm0-4H4v-2h2v2zm14 4h-2v-2h2v2zm0-4h-2v-2h2v2z" fill="currentColor"/>
         </svg>
       </span>
-      <span class="nav-label">Trackpad</span>
+      <span class="nav-label">Touchpad</span>
     </button>
   </nav>
 
@@ -340,7 +376,7 @@
         <div class="setting-item">
           <div class="setting-info">
             <span class="setting-title">Haptic Feedback</span>
-            <span class="setting-sub">Vibrate phone on keystroke transmission</span>
+            <span class="setting-sub">Vibrate phone on keystrokes and scroll notches</span>
           </div>
           <label class="switch">
             <input type="checkbox" id="cfg-haptic" checked onchange="saveConfig()" />
@@ -373,11 +409,11 @@
           </label>
         </div>
 
-        <!-- Feature 3: Mouse Sensitivity -->
+        <!-- Mouse Sensitivity -->
         <div class="setting-item">
           <div class="setting-info">
-            <span class="setting-title">Mouse Sensitivity</span>
-            <span class="setting-sub">Trackpad & scroll wheel speed multiplier</span>
+            <span class="setting-title">Mouse &amp; Scroll Sensitivity</span>
+            <span class="setting-sub">Trackpad speed and two-finger scroll multiplier</span>
           </div>
           <div class="sensitivity-control">
             <input type="range" id="cfg-sensitivity" min="5" max="30" value="15" step="1" oninput="onSensitivityChange(this.value)" />
@@ -398,6 +434,7 @@
 
         <div class="hw-info-card">
           <div class="hw-title">Hardware Information</div>
+          <div class="hw-line"><span>App Version:</span> <strong id="hw-ver">v1.2.1</strong></div>
           <div class="hw-line"><span>USB Gadget:</span> <strong id="hw-udc">Checking...</strong></div>
           <div class="hw-line"><span>Link Speed:</span> <strong id="hw-speed">Checking...</strong></div>
           <div class="hw-line"><span>HID Node:</span> <strong id="hw-node">/dev/hidg0</strong></div>

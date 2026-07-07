@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-USB Typer & HID Deck Server  v1.1.0
-====================================
+Emittr — USB HID Deck & Tactical Input Controller Server  v1.2.1
+==================================================================
 Standalone daemon for rooted Android NetHunter devices.
 Exposes REST + WebSocket endpoints to inject keystrokes and mouse events
 directly into /dev/hidg0 using a unified composite HID Report Descriptor:
@@ -18,18 +18,21 @@ import json
 import asyncio
 import subprocess
 import logging
+import select
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Dict, Any, List
 
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-log = logging.getLogger("usb_typer")
+log = logging.getLogger("emittr")
 
-VERSION = "1.1.0"
+VERSION = "1.2.1"
 
-# ── HID Scancode Tables (Standard USB HID Boot Protocol) ────────────────────────
-# Report format: [modifiers, reserved, key1, key2, key3, key4, key5, key6]
-
+# ── HID Scancode Tables (Standard USB HID Boot Protocol) ─────────────────────
 MOD_NONE   = 0x00
 MOD_LCTRL  = 0x01
 MOD_LSHIFT = 0x02
@@ -40,7 +43,6 @@ MOD_RSHIFT = 0x20
 MOD_RALT   = 0x40
 MOD_RGUI   = 0x80
 
-# Mapping: char -> (modifier_byte, keycode_byte)
 ASCII_MAP: Dict[str, tuple] = {
     # Lowercase a-z
     'a': (0, 0x04), 'b': (0, 0x05), 'c': (0, 0x06), 'd': (0, 0x07),
@@ -60,73 +62,62 @@ ASCII_MAP: Dict[str, tuple] = {
     'S': (MOD_LSHIFT, 0x16), 'T': (MOD_LSHIFT, 0x17), 'U': (MOD_LSHIFT, 0x18),
     'V': (MOD_LSHIFT, 0x19), 'W': (MOD_LSHIFT, 0x1A), 'X': (MOD_LSHIFT, 0x1B),
     'Y': (MOD_LSHIFT, 0x1C), 'Z': (MOD_LSHIFT, 0x1D),
-    # Digits 1-9, 0
+    # Numbers
     '1': (0, 0x1E), '2': (0, 0x1F), '3': (0, 0x20), '4': (0, 0x21),
     '5': (0, 0x22), '6': (0, 0x23), '7': (0, 0x24), '8': (0, 0x25),
     '9': (0, 0x26), '0': (0, 0x27),
-    # Shifted symbols
+    # Symbols (top row with Shift)
     '!': (MOD_LSHIFT, 0x1E), '@': (MOD_LSHIFT, 0x1F), '#': (MOD_LSHIFT, 0x20),
     '$': (MOD_LSHIFT, 0x21), '%': (MOD_LSHIFT, 0x22), '^': (MOD_LSHIFT, 0x23),
     '&': (MOD_LSHIFT, 0x24), '*': (MOD_LSHIFT, 0x25), '(': (MOD_LSHIFT, 0x26),
     ')': (MOD_LSHIFT, 0x27),
     # Whitespace & Control
-    '\n': (0, 0x28),  # Enter
-    '\r': (0, 0x28),  # Return
-    '\t': (0, 0x2B),  # Tab
-    ' ':  (0, 0x2C),  # Space
-    '\b': (0, 0x2A),  # Backspace
-    # Punctuation
-    '-': (0, 0x2D), '_': (MOD_LSHIFT, 0x2D),
-    '=': (0, 0x2E), '+': (MOD_LSHIFT, 0x2E),
-    '[': (0, 0x2F), '{': (MOD_LSHIFT, 0x2F),
-    ']': (0, 0x30), '}': (MOD_LSHIFT, 0x30),
-    '\\': (0, 0x31), '|': (MOD_LSHIFT, 0x31),
-    ';': (0, 0x33), ':': (MOD_LSHIFT, 0x33),
-    "'": (0, 0x34), '"': (MOD_LSHIFT, 0x34),
-    '`': (0, 0x35), '~': (MOD_LSHIFT, 0x35),
-    ',': (0, 0x36), '<': (MOD_LSHIFT, 0x36),
-    '.': (0, 0x37), '>': (MOD_LSHIFT, 0x37),
-    '/': (0, 0x38), '?': (MOD_LSHIFT, 0x38),
+    '\n': (0, 0x28), '\r': (0, 0x28), '\t': (0, 0x2B), ' ':  (0, 0x2C),
+    # Punctuation & symbols (unshifted)
+    '-': (0, 0x2D), '=': (0, 0x2E), '[': (0, 0x2F), ']': (0, 0x30),
+    '\\': (0, 0x31), ';': (0, 0x33), "'": (0, 0x34), '': (0, 0x35),
+    ',': (0, 0x36), '.': (0, 0x37), '/': (0, 0x38),
+    # Punctuation & symbols (shifted)
+    '_': (MOD_LSHIFT, 0x2D), '+': (MOD_LSHIFT, 0x2E), '{': (MOD_LSHIFT, 0x2F),
+    '}': (MOD_LSHIFT, 0x30), '|': (MOD_LSHIFT, 0x31), ':': (MOD_LSHIFT, 0x33),
+    '"': (MOD_LSHIFT, 0x34), '~': (MOD_LSHIFT, 0x35), '<': (MOD_LSHIFT, 0x36),
+    '>': (MOD_LSHIFT, 0x37), '?': (MOD_LSHIFT, 0x38),
 }
 
 SPECIAL_KEYS: Dict[str, tuple] = {
-    'enter':      (0, 0x28),
-    'escape':     (0, 0x29),
-    'esc':        (0, 0x29),
-    'backspace':  (0, 0x2A),
-    'tab':        (0, 0x2B),
-    'space':      (0, 0x2C),
-    'caps_lock':  (0, 0x39),
-    'f1':         (0, 0x3A),
-    'f2':         (0, 0x3B),
-    'f3':         (0, 0x3C),
-    'f4':         (0, 0x3D),
-    'f5':         (0, 0x3E),
-    'f6':         (0, 0x3F),
-    'f7':         (0, 0x40),
-    'f8':         (0, 0x41),
-    'f9':         (0, 0x42),
-    'f10':        (0, 0x43),
-    'f11':        (0, 0x44),
-    'f12':        (0, 0x45),
-    'prtsc':      (0, 0x46),
-    'scroll_lock':(0, 0x47),
-    'pause':      (0, 0x48),
-    'insert':     (0, 0x49),
-    'home':       (0, 0x4A),
-    'page_up':    (0, 0x4B),
-    'pgup':       (0, 0x4B),
-    'delete':     (0, 0x4C),
-    'del':        (0, 0x4C),
-    'end':        (0, 0x4D),
-    'page_down':  (0, 0x4E),
-    'pgdn':       (0, 0x4E),
-    'right':      (0, 0x4F),
-    'left':       (0, 0x50),
-    'down':       (0, 0x51),
-    'up':         (0, 0x52),
-    'win':        (MOD_LGUI, 0),
-    'super':      (MOD_LGUI, 0),
+    'enter':     (0, 0x28),
+    'esc':       (0, 0x29),
+    'escape':    (0, 0x29),
+    'backspace': (0, 0x2A),
+    'tab':       (0, 0x2B),
+    'space':     (0, 0x2C),
+    'capslock':  (0, 0x39),
+    'f1':        (0, 0x3A),
+    'f2':        (0, 0x3B),
+    'f3':        (0, 0x3C),
+    'f4':        (0, 0x3D),
+    'f5':        (0, 0x3E),
+    'f6':        (0, 0x3F),
+    'f7':        (0, 0x40),
+    'f8':        (0, 0x41),
+    'f9':        (0, 0x42),
+    'f10':       (0, 0x43),
+    'f11':       (0, 0x44),
+    'f12':       (0, 0x45),
+    'printscreen': (0, 0x46),
+    'scrolllock':  (0, 0x47),
+    'pause':       (0, 0x48),
+    'insert':      (0, 0x49),
+    'home':        (0, 0x4A),
+    'pageup':      (0, 0x4B),
+    'delete':      (0, 0x4C),
+    'end':         (0, 0x4D),
+    'pagedown':    (0, 0x4E),
+    'right':       (0, 0x4F),
+    'left':        (0, 0x50),
+    'down':        (0, 0x51),
+    'up':          (0, 0x52),
+    'numlock':     (0, 0x53),
 }
 
 COMBOS: Dict[str, tuple] = {
@@ -135,6 +126,9 @@ COMBOS: Dict[str, tuple] = {
     'win+d':         (MOD_LGUI, 0x07),
     'win+e':         (MOD_LGUI, 0x08),
     'win+x':         (MOD_LGUI, 0x1B),
+    'win+s':         (MOD_LGUI, 0x16),
+    'alt+tab':       (MOD_LALT, 0x2B),
+    'alt+f4':        (MOD_LALT, 0x3D),
     'ctrl+c':        (MOD_LCTRL, 0x06),
     'ctrl+v':        (MOD_LCTRL, 0x19),
     'ctrl+x':        (MOD_LCTRL, 0x1B),
@@ -145,28 +139,20 @@ COMBOS: Dict[str, tuple] = {
     'ctrl+w':        (MOD_LCTRL, 0x1A),
     'ctrl+t':        (MOD_LCTRL, 0x17),
     'ctrl+shift+esc':(MOD_LCTRL | MOD_LSHIFT, 0x29),
-    'alt+tab':       (MOD_LALT, 0x2B),
-    'alt+f4':        (MOD_LALT, 0x3D),
     'ctrl+alt+del':  (MOD_LCTRL | MOD_LALT, 0x4C),
 }
 
-# ── Hardware Device Controller ────────────────────────────────────────────────
-
-import select
-
-# Unified composite HID gadget: keyboard (Report ID 1) + mouse (Report ID 2)
 HID_DEVICE_PATH = "/dev/hidg0"
 
 
 class HIDDevice:
     def __init__(self, hid_path: str = HID_DEVICE_PATH):
-        # FIX Bug 1: single hid_path replaces dead kbd_path + mouse_path pair
         self.hid_path = hid_path
         self.is_typing = False
         self.abort_requested = False
 
     def is_host_connected(self) -> bool:
-        """Return True if the USB UDC is in 'configured' state (PC is polling)."""
+        """Return True if USB UDC is in 'configured' state."""
         for p in Path("/sys/class/udc").glob("*"):
             st = p / "state"
             if st.exists():
@@ -174,7 +160,6 @@ class HIDDevice:
                     return st.read_text().strip().lower() == "configured"
                 except Exception:
                     pass
-        # Fallback: HiSilicon-specific sysfs path (Honor/Huawei devices)
         udc_hisi = Path("/sys/devices/hisi-usb-otg/udc/hisi-usb-otg/state")
         if udc_hisi.exists():
             try:
@@ -193,8 +178,6 @@ class HIDDevice:
 
     def write_kbd_report(self, mod: int, key: int) -> bool:
         """Write 9-byte keyboard report: [Report_ID=1, mod, 0, key, 0, 0, 0, 0, 0]."""
-        if not self.is_host_connected():
-            return False
         fd = self._open_nonblock(self.hid_path)
         if fd is None:
             return False
@@ -213,9 +196,7 @@ class HIDDevice:
                 pass
 
     def release_keys(self):
-        """Send keyboard null report (all keys up) — Report ID 1."""
-        if not self.is_host_connected():
-            return
+        """Send keyboard null report (all keys released) — Report ID 1."""
         fd = self._open_nonblock(self.hid_path)
         if fd is None:
             return
@@ -231,17 +212,39 @@ class HIDDevice:
             except Exception:
                 pass
 
-    def press_and_release(self, mod: int, key: int, delay_s: float = 0.015):
-        """Key down, hold for delay_s, then release."""
-        self.write_kbd_report(mod, key)
-        time.sleep(delay_s)
+    def release_mouse(self):
+        """Send mouse null report (all buttons & delta zeroed) — Report ID 2."""
+        fd = self._open_nonblock(self.hid_path)
+        if fd is None:
+            return
+        try:
+            _, w, _ = select.select([], [fd], [], 0.05)
+            if w:
+                os.write(fd, bytes([2, 0, 0, 0, 0]))
+        except Exception:
+            pass
+        finally:
+            try:
+                os.close(fd)
+            except Exception:
+                pass
+
+    def release_all(self):
+        """Emergency unstick: clears all keyboard modifiers, keys, and mouse buttons."""
         self.release_keys()
-        time.sleep(delay_s)
+        self.release_mouse()
+
+    def press_and_release(self, mod: int, key: int, delay_s: float = 0.015):
+        """Key down, hold for delay_s, then release. Wrapped in try/finally to prevent stuck keys."""
+        try:
+            self.write_kbd_report(mod, key)
+        finally:
+            time.sleep(max(0.012, delay_s))
+            self.release_keys()
+            time.sleep(0.008)
 
     def write_mouse_report(self, buttons: int, dx: int, dy: int, wheel: int = 0) -> bool:
         """Write 5-byte mouse report: [Report_ID=2, buttons, dx, dy, wheel]."""
-        if not self.is_host_connected():
-            return False
         fd = self._open_nonblock(self.hid_path)
         if fd is None:
             return False
@@ -262,8 +265,41 @@ class HIDDevice:
             except Exception:
                 pass
 
+    def write_scroll(self, wheel_v: int = 0, wheel_h: int = 0) -> bool:
+        """
+        Handle vertical and horizontal scrolling.
+        wheel_v: vertical ticks (negative = down, positive = up)
+        wheel_h: horizontal ticks (positive = right, negative = left)
+        Horizontal scroll is executed via Left Shift + Wheel, universally supported
+        by Windows, Linux, and macOS without driver modifications.
+        """
+        success = True
+        if wheel_v != 0:
+            ok = self.write_mouse_report(0, 0, 0, wheel_v)
+            if not ok:
+                success = False
+            time.sleep(0.004)
+            self.release_mouse()
+
+        if wheel_h != 0:
+            # Shift + Mouse Wheel for horizontal scroll
+            # Left Shift down
+            self.write_kbd_report(MOD_LSHIFT, 0)
+            time.sleep(0.008)
+            # In Windows/Linux: negative wheel with Shift scrolls right, positive scrolls left
+            ok = self.write_mouse_report(0, 0, 0, -wheel_h)
+            if not ok:
+                success = False
+            time.sleep(0.004)
+            self.release_mouse()
+            time.sleep(0.004)
+            self.release_keys()
+            time.sleep(0.008)
+
+        return success
+
     def get_usb_status(self) -> Dict[str, Any]:
-        """Return USB connection state, UDC details, and HID node status."""
+        """Return USB connection state, UDC details, version, and HID node status."""
         state    = "not attached"
         speed    = "unknown"
         udc_name = "unknown"
@@ -284,108 +320,128 @@ class HIDDevice:
             udc_name = p.name
             break
 
-        is_connected = (state.lower() == "configured")
-        # FIX Bug 4: single hid_node, consistent availability flag
-        hid_ok = os.path.exists(self.hid_path) and os.access(self.hid_path, os.W_OK)
+        if state == "not attached":
+            hisi_st = Path("/sys/devices/hisi-usb-otg/udc/hisi-usb-otg/state")
+            if hisi_st.exists():
+                try:
+                    state = hisi_st.read_text().strip()
+                    udc_name = "hisi-usb-otg"
+                except Exception:
+                    pass
+
+        hid_exists = os.path.exists(self.hid_path)
 
         return {
-            "connected":       is_connected,
+            "connected":       state.lower() == "configured",
             "udc_state":       state,
             "speed":           speed,
             "udc":             udc_name,
             "hid_node":        self.hid_path,
-            "hid_available":   hid_ok,
-            # Legacy aliases so v1.0.0 clients still work
+            "hid_available":   hid_exists,
             "kbd_node":        self.hid_path,
-            "kbd_available":   hid_ok,
+            "kbd_available":   hid_exists,
             "mouse_node":      self.hid_path,
-            "mouse_available": hid_ok,
+            "mouse_available": hid_exists,
             "is_typing":       self.is_typing,
             "version":         VERSION,
         }
 
 
+def ensure_hid_gadget():
+    """Verify composite HID gadget is active. If Android reverted to mass_storage, restore it."""
+    gadget_dir = "/config/usb_gadget/g1"
+    if not os.path.exists(f"{gadget_dir}/functions/hid.0"):
+        try:
+            import setup_gadget
+            setup_gadget.init_gadget()
+        except Exception as e:
+            log.warning(f"Gadget init error: {e}")
+        return
+
+    needs_restore = False
+    f1_path = f"{gadget_dir}/configs/b.1/f1"
+    if not os.path.exists(f1_path):
+        needs_restore = True
+    elif os.path.islink(f1_path):
+        try:
+            if "hid.0" not in os.readlink(f1_path):
+                needs_restore = True
+        except Exception:
+            needs_restore = True
+
+    udc_file = f"{gadget_dir}/UDC"
+    if os.path.exists(udc_file):
+        try:
+            cur_udc = Path(udc_file).read_text().strip()
+            if not cur_udc or cur_udc == "none":
+                needs_restore = True
+        except Exception:
+            pass
+
+    if needs_restore:
+        log.info("Detected USB configuration reversion. Restoring composite HID gadget...")
+        try:
+            import setup_gadget
+            setup_gadget.init_gadget()
+        except Exception as e:
+            log.warning(f"Gadget restore error: {e}")
+
+
+# ── Global State & Application Setup ─────────────────────────────────────────
 hid = HIDDevice()
+connected_websockets: List[WebSocket] = []
+current_typing_task: asyncio.Task = None
+stop_event = asyncio.Event()
 
-# ── Web Framework Setup ───────────────────────────────────────────────────────
-try:
-    from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body
-    from fastapi.staticfiles import StaticFiles
-    from fastapi.responses import FileResponse, JSONResponse
-    from fastapi.middleware.cors import CORSMiddleware
-    import uvicorn
-except ImportError:
-    log.error("FastAPI or Uvicorn not installed. Run: pip3 install fastapi uvicorn")
-    sys.exit(1)
+BASE_DIR   = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
 
 
-# FIX Bug 3: use lifespan context manager — @app.on_event("startup") is deprecated
 @asynccontextmanager
 async def lifespan(application: "FastAPI"):
-    # ── Startup ──────────────────────────────────────────────────────────────
-    try:
-        setup_script = Path(__file__).parent / "setup_gadget.py"
-        if setup_script.exists():
-            subprocess.run(
-                [sys.executable, str(setup_script)],
-                check=False,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-    except Exception as e:
-        log.warning(f"Could not run setup_gadget: {e}")
+    # Startup: ensure gadget is bound and flush releases
+    ensure_hid_gadget()
+    hid.release_all()
 
-    asyncio.create_task(connection_monitor_loop())
-    asyncio.create_task(start_http_port80_redirector())
-    log.info(f"USB Typer v{VERSION} started on port 8088.")
+    # Launch background tasks
+    monitor_task   = asyncio.create_task(connection_monitor_loop())
+    redirect_task  = asyncio.create_task(start_http_port80_redirector())
+    log.info(f"Emittr Server v{VERSION} initialized on port 8088.")
+
     yield
-    # ── Shutdown (nothing to clean up) ───────────────────────────────────────
+
+    # Shutdown
+    monitor_task.cancel()
+    redirect_task.cancel()
+    hid.release_all()
 
 
-app = FastAPI(
-    title="USB Typer Deck",
-    version=VERSION,
-    docs_url=None,
-    redoc_url=None,
-    lifespan=lifespan,
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-STATIC_DIR = Path(__file__).parent / "static"
-STATIC_DIR.mkdir(exist_ok=True)
-
-connected_websockets: List[WebSocket] = []
+app = FastAPI(title="Emittr", version=VERSION, lifespan=lifespan)
 
 
 async def broadcast_status(data: dict):
-    """Push status JSON to all connected WebSocket clients, pruning dead ones."""
+    if not connected_websockets:
+        return
+    msg = json.dumps(data)
     dead = []
-    msg  = json.dumps(data)
     for ws in connected_websockets:
         try:
             await ws.send_text(msg)
         except Exception:
             dead.append(ws)
-    for d in dead:
-        if d in connected_websockets:
-            connected_websockets.remove(d)
+    for ws in dead:
+        if ws in connected_websockets:
+            connected_websockets.remove(ws)
 
 
-# ── REST API Endpoints ────────────────────────────────────────────────────────
+# ── REST API Routes ──────────────────────────────────────────────────────────
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def get_index():
-    index_path = STATIC_DIR / "index.html"
-    if index_path.exists():
-        return FileResponse(str(index_path))
-    return JSONResponse({"status": "USB Typer Running", "version": VERSION})
+    index_file = STATIC_DIR / "index.html"
+    if index_file.exists():
+        return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
+    return HTMLResponse("<h1>Emittr static assets missing</h1>", status_code=404)
 
 
 @app.get("/api/status")
@@ -393,68 +449,74 @@ async def get_status():
     return hid.get_usb_status()
 
 
+@app.post("/api/release")
+async def emergency_release():
+    """Emergency unstick endpoint: release all modifier keys and mouse buttons."""
+    hid.release_all()
+    return {"ok": True, "msg": "All keys and mouse buttons released"}
+
+
 @app.post("/api/type")
 async def type_text(data: dict = Body(...)):
-    """Queue a text-typing job. Body: {text, delay_ms, initial_delay_s}"""
-    if hid.is_typing:
-        return JSONResponse({"ok": False, "msg": "Typing already in progress"}, status_code=409)
-    text = data.get("text", "")
+    global current_typing_task
+    text          = data.get("text", "")
+    delay_ms      = float(data.get("delay_ms", 15))
+    initial_delay = float(data.get("initial_delay_s", 0))
+
     if not text:
-        return JSONResponse({"ok": False, "msg": "Empty text"}, status_code=400)
-    delay_ms      = max(1, min(500, int(data.get("delay_ms", 15))))
-    initial_delay = max(0, min(10,  float(data.get("initial_delay_s", 0))))
-    asyncio.create_task(_type_worker(text, delay_ms / 1000.0, initial_delay))
-    return {"ok": True, "msg": f"Typing {len(text)} characters", "chars": len(text)}
+        return JSONResponse({"ok": False, "msg": "No text provided"}, status_code=400)
+
+    if hid.is_typing:
+        return JSONResponse({"ok": False, "msg": "Another typing job is in progress"}, status_code=409)
+
+    delay_s = max(0.001, delay_ms / 1000.0)
+    current_typing_task = asyncio.create_task(_type_worker(text, delay_s, initial_delay))
+    return {"ok": True, "length": len(text), "delay_ms": delay_ms}
 
 
 async def _type_worker(text: str, delay_s: float, initial_delay: float):
-    hid.is_typing      = True
-    hid.abort_requested = False
-    await broadcast_status({"type": "typing_start", "total": len(text)})
+    hid.is_typing = True
+    stop_event.clear()
+    total = len(text)
+    await broadcast_status({"type": "typing_start", "total": total})
 
     if initial_delay > 0:
-        await asyncio.sleep(initial_delay)
-
-    typed_count = 0
-    # FIX Bug 2: get_running_loop() instead of deprecated get_event_loop()
-    loop = asyncio.get_running_loop()
+        for remaining in range(int(initial_delay), 0, -1):
+            if stop_event.is_set():
+                break
+            await broadcast_status({"type": "countdown", "remaining": remaining})
+            await asyncio.sleep(1.0)
 
     def _sync_type():
-        nonlocal typed_count
         for ch in text:
-            if hid.abort_requested:
+            if stop_event.is_set():
                 break
             if ch in ASCII_MAP:
-                mod, key = ASCII_MAP[ch]
-                hid.press_and_release(mod, key, delay_s / 2.0)
-            elif ch == '\n':
-                hid.press_and_release(0, 0x28, delay_s / 2.0)
-            elif ch == '\t':
-                hid.press_and_release(0, 0x2B, delay_s / 2.0)
-            typed_count += 1
-            time.sleep(delay_s / 2.0)
+                mod, code = ASCII_MAP[ch]
+                hid.press_and_release(mod, code, delay_s)
+            else:
+                log.warning(f"Unmapped character in text: {ch!r} (ASCII {ord(ch)})")
 
-    await loop.run_in_executor(None, _sync_type)
-    hid.release_keys()
-    aborted            = hid.abort_requested
-    hid.is_typing      = False
-    hid.abort_requested = False
-    await broadcast_status({"type": "typing_end", "typed": typed_count,
-                            "total": len(text), "aborted": aborted})
+    try:
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, _sync_type)
+    finally:
+        hid.release_keys()
+        hid.is_typing = False
+        await broadcast_status({"type": "typing_end", "aborted": stop_event.is_set()})
 
 
 @app.post("/api/stop")
 async def stop_typing():
-    if hid.is_typing:
-        hid.abort_requested = True
-        hid.release_keys()
-        return {"ok": True, "msg": "Abort signaled"}
-    return {"ok": True, "msg": "No job active"}
+    if not hid.is_typing:
+        return {"ok": True, "msg": "Not typing"}
+    stop_event.set()
+    hid.release_all()
+    return {"ok": True, "msg": "Typing stopped"}
 
 
 @app.post("/api/key")
 async def press_key(data: dict = Body(...)):
-    """Inject a single key or shortcut. Body: {key} | {combo}"""
     combo = data.get("combo", "").lower().strip()
     key   = data.get("key",   "").lower().strip()
     if combo and combo in COMBOS:
@@ -474,11 +536,23 @@ async def press_key(data: dict = Body(...)):
 
 @app.post("/api/mouse")
 async def mouse_action(data: dict = Body(...)):
-    """Send mouse event. Body: {dx, dy, buttons, wheel}. buttons: 1=L 2=R 4=Mid"""
+    """Send mouse event. Body: {dx, dy, buttons, wheel, wheel_h, shift}"""
     dx      = int(data.get("dx",      0))
     dy      = int(data.get("dy",      0))
     buttons = int(data.get("buttons", 0))
     wheel   = int(data.get("wheel",   0))
+    wheel_h = int(data.get("wheel_h", 0))
+    shift   = bool(data.get("shift",   False))
+
+    if wheel_h != 0 or (wheel != 0 and shift):
+        wh = wheel_h if wheel_h != 0 else wheel
+        ok = hid.write_scroll(wheel_v=0, wheel_h=wh)
+        return {"ok": ok}
+
+    if wheel != 0 and dx == 0 and dy == 0 and buttons == 0:
+        ok = hid.write_scroll(wheel_v=wheel, wheel_h=0)
+        return {"ok": ok}
+
     if buttons > 0 and dx == 0 and dy == 0 and wheel == 0:
         hid.write_mouse_report(buttons, 0, 0, 0)
         await asyncio.sleep(0.02)
@@ -488,7 +562,7 @@ async def mouse_action(data: dict = Body(...)):
     return {"ok": ok}
 
 
-# ── Live Keystroke WebSocket ───────────────────────────────────────────────────
+# ── Live Keystroke WebSocket ─────────────────────────────────────────────────
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
@@ -501,7 +575,11 @@ async def websocket_endpoint(ws: WebSocket):
             data   = json.loads(raw)
             action = data.get("action")
 
-            if action == "live_char":
+            if action == "release_all":
+                hid.release_all()
+                await ws.send_text(json.dumps({"type": "released", "ok": True}))
+
+            elif action == "live_char":
                 ch      = data.get("char", "")
                 k_lower = ch.lower().strip()
                 if ch in ASCII_MAP:
@@ -516,14 +594,26 @@ async def websocket_endpoint(ws: WebSocket):
                 else:
                     log.warning(f"Unmapped live_char: {ch!r}")
 
+            elif action == "mouse_scroll":
+                wv = int(data.get("wheel_v", data.get("wheel", 0)))
+                wh = int(data.get("wheel_h", 0))
+                hid.write_scroll(wheel_v=wv, wheel_h=wh)
+
             elif action == "mouse_move":
-                # FIX Bug 7 (partial): wheel now forwarded from client
-                hid.write_mouse_report(
-                    int(data.get("buttons", 0)),
-                    int(data.get("dx", 0)),
-                    int(data.get("dy", 0)),
-                    int(data.get("wheel", 0)),
-                )
+                btn     = int(data.get("buttons", 0))
+                dx      = int(data.get("dx", 0))
+                dy      = int(data.get("dy", 0))
+                wheel   = int(data.get("wheel", 0))
+                wheel_h = int(data.get("wheel_h", 0))
+                shift   = bool(data.get("shift", False))
+
+                if wheel_h != 0 or (wheel != 0 and shift):
+                    wh = wheel_h if wheel_h != 0 else wheel
+                    hid.write_scroll(wheel_v=0, wheel_h=wh)
+                elif wheel != 0:
+                    hid.write_scroll(wheel_v=wheel, wheel_h=0)
+                else:
+                    hid.write_mouse_report(btn, dx, dy, 0)
 
             elif action == "mouse_click":
                 btn = int(data.get("button", 1))
@@ -547,24 +637,36 @@ async def websocket_endpoint(ws: WebSocket):
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
-# ── Background Tasks ──────────────────────────────────────────────────────────
+# ── Background Tasks ─────────────────────────────────────────────────────────
 
 async def connection_monitor_loop():
-    """Push UDC state changes to all connected clients every 2 s."""
+    """
+    Monitors USB state every 1.5 seconds:
+      1. Prevents Android NetHunter mass_storage hijacking by restoring HID gadget.
+      2. Automatically flushes zero reports when PC attaches to clear any stuck keys.
+      3. Broadcasts state changes to all connected clients.
+    """
     last_state = None
     while True:
-        await asyncio.sleep(2.0)
+        await asyncio.sleep(1.5)
+        # Ensure HID gadget persistence
+        ensure_hid_gadget()
+
         status  = hid.get_usb_status()
         current = (status["connected"], status["udc_state"])
+
         if current != last_state:
+            # If transitioned to configured (PC just attached), flush any stuck modifiers
+            if current[0] and (last_state is None or not last_state[0]):
+                log.info("USB host configured — flushing all modifier keys & mouse buttons")
+                hid.release_all()
+
             last_state = current
             await broadcast_status({"type": "connection_change", "data": status})
 
 
 async def start_http_port80_redirector():
-    """Userland HTTP 302 redirect on port 80 -> port 8088.
-    Avoids iptables NAT rules which deadlock Linux 4.4 when loopback traffic
-    re-enters the networking stack while a mutex is held."""
+    """Userland HTTP 302 redirect on port 80 -> port 8088."""
     async def handle_port80(reader, writer):
         try:
             req_data = await asyncio.wait_for(reader.read(1024), timeout=2.0)
@@ -595,12 +697,13 @@ async def start_http_port80_redirector():
 
     try:
         server = await asyncio.start_server(handle_port80, "0.0.0.0", 80)
-        log.info("Port 80 redirector active -> port 8088")
-        asyncio.create_task(server.serve_forever())
+        log.info("Port 80 redirector active -> redirecting to port 8088")
+        async with server:
+            await server.serve_forever()
     except Exception as e:
-        log.warning(f"Could not bind port 80 (non-fatal): {e}")
+        log.warning(f"Port 80 redirector could not bind: {e}")
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8088))
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="warning")
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8088, log_level="info")

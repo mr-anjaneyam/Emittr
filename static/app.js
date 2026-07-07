@@ -1,31 +1,33 @@
-/* ── Emittr  ·  Client-side Application Logic  ·  v1.2.0 ─────────────────── */
+/**
+ * Emittr · Web App Controller v1.2.1
+ * Provides touch gliding, two-finger gesture scrolling, physical drum scroll wheels,
+ * IME keyboard mirror, Windows shortcuts deck, and emergency key unstick.
+ */
 
 'use strict';
 
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.2.1';
 
 const State = {
-  connected: false,
-  isTyping:  false,
-  delayMs:   15,
-  ws:        null,
+  ws: null,
   reconnectTimer: null,
-  // Feature 3: sensitivity (1.0 = default, range 0.5–2.0)
+  connected: false,
+  isTyping: false,
+  delayMs: 15,
   sensitivity: 1.0,
   config: {
-    autoclear:   true,
-    haptic:      true,
-    countdown:   0,
-    autoenter:   false,
-    theme:       'dark',
-    sensitivity: 15    // raw slider value (5–30), maps to 0.5×–2.0×
+    autoclear: true,
+    haptic: true,
+    countdown: 0,
+    autoenter: false,
+    sensitivity: 15,
+    theme: 'dark'
   }
 };
 
-// ── Initialization ────────────────────────────────────────────────────────────
-
 document.addEventListener('DOMContentLoaded', () => {
   loadConfig();
+  initVersionBadge();
   initWebSocket();
   initTextareaCounter();
   initLiveKeyboard();
@@ -34,7 +36,18 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchInitialStatus();
 });
 
-// ── Config Management ─────────────────────────────────────────────────────────
+// ── Version Badge Initialization ───────────────────────────────────────────
+
+function initVersionBadge(ver) {
+  const v = ver || APP_VERSION;
+  document.querySelectorAll('.version-badge').forEach(el => {
+    el.textContent = v.startsWith('v') ? v : 'v' + v;
+  });
+  const hwVer = document.getElementById('hw-ver');
+  if (hwVer) hwVer.textContent = v.startsWith('v') ? v : 'v' + v;
+}
+
+// ── Config Management ───────────────────────────────────────────────────────
 
 function loadConfig() {
   const saved = localStorage.getItem('emittr_cfg');
@@ -52,7 +65,7 @@ function loadConfig() {
   const rawSens = State.config.sensitivity ?? 15;
   document.getElementById('cfg-sensitivity').value = rawSens;
   State.sensitivity = rawSens / 15.0;
-  document.getElementById('sensitivity-val').innerText = `${State.sensitivity.toFixed(1)}×`;
+  document.getElementById('sensitivity-val').innerText = ${State.sensitivity.toFixed(1)}×;
 
   // Delay
   const savedDelay = localStorage.getItem('emittr_delay');
@@ -61,9 +74,17 @@ function loadConfig() {
     if (!isNaN(d)) {
       State.delayMs = d;
       document.getElementById('delay-slider').value  = d;
-      document.getElementById('delay-val').innerText = `${d} ms / char`;
+      document.getElementById('delay-val').innerText = ${d} ms / char;
       updatePresetPills(d);
     }
+  }
+
+  // Dashboard mode preference on desktop
+  const isDash = localStorage.getItem('emittr_dashboard') === 'true';
+  if (isDash && window.innerWidth >= 900) {
+    document.body.classList.add('dashboard-mode');
+    const btn = document.getElementById('btn-dashboard-mode');
+    if (btn) btn.classList.add('active');
   }
 }
 
@@ -79,7 +100,7 @@ function saveConfig() {
 function onSensitivityChange(val) {
   const raw = parseInt(val, 10);
   State.sensitivity = raw / 15.0;
-  document.getElementById('sensitivity-val').innerText = `${State.sensitivity.toFixed(1)}×`;
+  document.getElementById('sensitivity-val').innerText = ${State.sensitivity.toFixed(1)}×;
   saveConfig();
 }
 
@@ -100,7 +121,36 @@ function triggerHaptic(duration = 10) {
   }
 }
 
-// ── WebSocket & Status ────────────────────────────────────────────────────────
+// ── Emergency Unstick Keys ──────────────────────────────────────────────────
+
+async function emergencyRelease() {
+  triggerHaptic(25);
+  showToast('🚨 Releasing all stuck keys & modifiers...');
+
+  if (State.ws && State.ws.readyState === WebSocket.OPEN) {
+    State.ws.send(JSON.stringify({ action: 'release_all' }));
+  }
+
+  try {
+    await fetch('/api/release', { method: 'POST' });
+    showToast('✓ All keys & modifiers released');
+  } catch (e) {
+    showToast('Sent release signal');
+  }
+}
+
+// ── Dashboard Mode (PC / Wide Screens) ───────────────────────────────────────
+
+function toggleDashboardMode() {
+  const active = document.body.classList.toggle('dashboard-mode');
+  const btn = document.getElementById('btn-dashboard-mode');
+  if (btn) btn.classList.toggle('active', active);
+  localStorage.setItem('emittr_dashboard', String(active));
+  triggerHaptic(12);
+  showToast(active ? 'Dashboard mode: multi-panel view active' : 'Standard tab view active');
+}
+
+// ── WebSocket & Status ──────────────────────────────────────────────────────
 
 function initWebSocket() {
   if (State.reconnectTimer) { clearTimeout(State.reconnectTimer); State.reconnectTimer = null; }
@@ -108,7 +158,7 @@ function initWebSocket() {
                    State.ws.readyState === WebSocket.OPEN)) return;
 
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  State.ws = new WebSocket(`${protocol}//${location.host}/ws`);
+  State.ws = new WebSocket(${protocol}///ws);
 
   State.ws.onopen = () => {
     if (State.reconnectTimer) { clearTimeout(State.reconnectTimer); State.reconnectTimer = null; }
@@ -137,12 +187,14 @@ function handleWsMessage(msg) {
     if (msg.aborted) {
       showToast('Typing aborted');
     } else {
-      showToast(`Typed ${msg.typed} characters`);
+      showToast(Finished typing text);
       if (State.config.autoclear) {
         document.getElementById('text-input').value = '';
         updateCharCount();
       }
     }
+  } else if (msg.type === 'countdown') {
+    showToast(Typing starts in s...);
   }
 }
 
@@ -161,7 +213,7 @@ function updateConnectionUI(data) {
 
   if (data.connected) {
     badge.className = 'connection-badge connected';
-    text.innerText  = `Connected (${data.speed || 'USB'})`;
+    text.innerText  = Connected ();
   } else {
     badge.className = 'connection-badge disconnected';
     text.innerText  = 'PC Not Connected';
@@ -172,22 +224,41 @@ function updateConnectionUI(data) {
   const node  = document.getElementById('hw-node');
   if (udc)   udc.innerText   = data.udc   || 'hisi-usb-otg';
   if (speed) speed.innerText = data.speed || 'N/A';
-  if (node)  node.innerText  = data.hid_node || data.kbd_node || '/dev/hidg0';
+  if (node)  node.innerText  = data.hid_node || '/dev/hidg0';
+
+  if (data.version) {
+    initVersionBadge(data.version);
+  }
 }
 
-// ── View Switching ────────────────────────────────────────────────────────────
+// ── View Switching ──────────────────────────────────────────────────────────
 
 function switchView(viewName, clickedBtn) {
+  if (document.body.classList.contains('dashboard-mode')) {
+    document.body.classList.remove('dashboard-mode');
+    const dBtn = document.getElementById('btn-dashboard-mode');
+    if (dBtn) dBtn.classList.remove('active');
+    localStorage.setItem('emittr_dashboard', 'false');
+  }
+
   document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(b  => b.classList.remove('active'));
-  const targetPanel = document.getElementById(`view-${viewName}`);
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.desktop-nav-btn').forEach(b => {
+    if (b.dataset.view) b.classList.toggle('active', b.dataset.view === viewName);
+  });
+
+  const targetPanel = document.getElementById(iew-);
   if (targetPanel) targetPanel.classList.add('active');
-  if (clickedBtn)  clickedBtn.classList.add('active');
+
+  const bottomNavBtn = document.getElementById(
+av-);
+  if (bottomNavBtn) bottomNavBtn.classList.add('active');
+
   triggerHaptic(12);
   if (viewName === 'live') setTimeout(focusLiveInput, 150);
 }
 
-// ── View 1: Typer ─────────────────────────────────────────────────────────────
+// ── View 1: Typer ───────────────────────────────────────────────────────────
 
 function initTextareaCounter() {
   document.getElementById('text-input').addEventListener('input', updateCharCount);
@@ -195,82 +266,109 @@ function initTextareaCounter() {
 
 function updateCharCount() {
   document.getElementById('char-count').innerText =
-    `${document.getElementById('text-input').value.length} chars`;
+    ${document.getElementById('text-input').value.length} chars;
 }
 
 function selectPreset(btn, delay) {
-  document.querySelectorAll('.speed-presets .preset-pill').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   State.delayMs = delay;
   document.getElementById('delay-slider').value  = delay;
-  document.getElementById('delay-val').innerText = `${delay} ms / char`;
+  document.getElementById('delay-val').innerText = ${delay} ms / char;
   localStorage.setItem('emittr_delay', delay);
   triggerHaptic(8);
 }
 
 function onSliderChange(val) {
-  State.delayMs = parseInt(val, 10);
-  document.getElementById('delay-val').innerText = `${val} ms / char`;
-  localStorage.setItem('emittr_delay', val);
-  updatePresetPills(State.delayMs);
+  const d = parseInt(val, 10);
+  State.delayMs = d;
+  document.getElementById('delay-val').innerText = ${d} ms / char;
+  updatePresetPills(d);
+  localStorage.setItem('emittr_delay', d);
 }
 
 function updatePresetPills(val) {
-  document.querySelectorAll('.speed-presets .preset-pill').forEach(pill => {
-    pill.classList.toggle('active', parseInt(pill.dataset.delay, 10) === val);
+  document.querySelectorAll('.preset-pill').forEach(p => {
+    p.classList.toggle('active', parseInt(p.dataset.delay, 10) === val);
   });
 }
 
 function clearText() {
-  const ta = document.getElementById('text-input');
-  ta.value = ''; updateCharCount(); ta.focus(); triggerHaptic(8);
+  document.getElementById('text-input').value = '';
+  updateCharCount();
+  triggerHaptic(8);
 }
 
 async function sendText() {
   let text = document.getElementById('text-input').value;
-  if (!text) { showToast('Please enter some text'); return; }
+  if (!text) { showToast('Please enter text to send'); return; }
   if (State.config.autoenter) text += '\n';
-  triggerHaptic(15);
+
   setTypingUI(true, text.length);
+  triggerHaptic(15);
+
   try {
-    const res    = await fetch('/api/type', {
+    const res = await fetch('/api/type', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ text, delay_ms: State.delayMs, initial_delay_s: State.config.countdown })
+      body: JSON.stringify({
+        text,
+        delay_ms: State.delayMs,
+        initial_delay_s: State.config.countdown
+      })
     });
     const result = await res.json();
-    if (!result.ok) { setTypingUI(false); showToast(result.msg || 'Typing failed'); }
-  } catch (e) { setTypingUI(false); showToast('Failed to connect to server'); }
+    if (!result.ok) {
+      setTypingUI(false);
+      showToast(result.msg || 'Typing failed');
+    }
+  } catch (e) {
+    setTypingUI(false);
+    showToast('Failed to reach server');
+  }
 }
 
 async function stopTyping() {
+  try {
+    await fetch('/api/stop', { method: 'POST' });
+  } catch (e) {}
+  setTypingUI(false);
   triggerHaptic(20);
-  try { await fetch('/api/stop', { method: 'POST' }); } catch (e) {}
 }
 
 function setTypingUI(isTyping, totalChars = 0) {
   State.isTyping = isTyping;
-  document.getElementById('btn-send').style.display    = isTyping ? 'none' : 'flex';
-  document.getElementById('btn-stop').style.display    = isTyping ? 'flex' : 'none';
-  document.getElementById('progress-wrapper').style.display = isTyping ? 'block' : 'none';
+  const btnSend  = document.getElementById('btn-send');
+  const btnStop  = document.getElementById('btn-stop');
+  const progWrap = document.getElementById('progress-wrapper');
+  const progFill = document.getElementById('progress-fill');
+
   if (isTyping) {
-    document.getElementById('progress-text').innerText =
-      `Typing ${totalChars} characters (${State.delayMs}ms/char)...`;
-    animateProgressBar(totalChars * State.delayMs);
+    btnSend.style.display  = 'none';
+    btnStop.style.display  = 'flex';
+    progWrap.style.display = 'block';
+    const totalTimeMs = totalChars * State.delayMs + State.config.countdown * 1000;
+    animateProgressBar(totalTimeMs);
   } else {
-    document.getElementById('progress-fill').style.width = '0%';
+    btnSend.style.display  = 'flex';
+    btnStop.style.display  = 'none';
+    progWrap.style.display = 'none';
+    progFill.style.width   = '0%';
   }
 }
 
 function animateProgressBar(totalTimeMs) {
   const fill = document.getElementById('progress-fill');
-  fill.style.transition = `width ${totalTimeMs / 1000.0}s linear`;
-  setTimeout(() => { if (State.isTyping) fill.style.width = '100%'; }, 20);
+  fill.style.transition = 'none';
+  fill.style.width      = '0%';
+  requestAnimationFrame(() => {
+    fill.style.transition = width ms linear;
+    fill.style.width      = '100%';
+  });
 }
 
-// ── View 2: Live Keyboard ─────────────────────────────────────────────────────
+// ── View 2: Live Keyboard ───────────────────────────────────────────────────
 
-// Feature 4: collapsible key-feed
 function toggleKeyFeed() {
   const btn      = document.getElementById('feed-toggle-btn');
   const collapse = document.getElementById('feed-collapse');
@@ -314,13 +412,17 @@ function initLiveKeyboard() {
       emitChar(specialMap[e.key]);
       if (e.key !== 'Backspace' || !input.value) e.preventDefault();
     } else if (e.key && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey && e.key !== 'Unidentified') {
-      emitChar(e.key); e.preventDefault();
+      emitChar(e.key);
+      e.preventDefault();
     }
   });
 
   input.addEventListener('beforeinput', (e) => {
-    if (e.inputType === 'insertLineBreak') { emitChar('Enter'); e.preventDefault(); }
-    else if (e.inputType === 'deleteContentBackward') { emitChar('Backspace'); }
+    if (e.inputType === 'insertLineBreak') {
+      emitChar('Enter'); e.preventDefault();
+    } else if (e.inputType === 'deleteContentBackward') {
+      emitChar('Backspace');
+    }
   });
 
   input.addEventListener('input', () => {
@@ -337,8 +439,11 @@ function initLiveKeyboard() {
     }
     lastValue = cur;
     clearTimeout(resetTimer);
-    if (cur.length > 25) { input.value = ''; lastValue = ''; }
-    else { resetTimer = setTimeout(() => { input.value = ''; lastValue = ''; }, 1500); }
+    if (cur.length > 25) {
+      input.value = ''; lastValue = '';
+    } else {
+      resetTimer = setTimeout(() => { input.value = ''; lastValue = ''; }, 1500);
+    }
   });
 
   input.addEventListener('compositionend', () => {
@@ -364,8 +469,8 @@ function sendLiveChar(ch) {
     fetch('/api/key', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ key: ch })
-    });
+      body: JSON.stringify({ key: ch })
+    }).catch(() => {});
   }
 }
 
@@ -388,21 +493,21 @@ function clearKeyFeed() {
 
 function sendSingleKey(keyName) { triggerHaptic(12); sendLiveChar(keyName); }
 
-// ── View 3: Shortcuts ─────────────────────────────────────────────────────────
+// ── View 3: Shortcuts ───────────────────────────────────────────────────────
 
 async function sendCombo(combo) {
   triggerHaptic(15);
-  showToast(`Injected ${combo.toUpperCase()}`);
+  showToast(Injected );
   try {
     await fetch('/api/key', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ combo })
+      body: JSON.stringify({ combo })
     });
   } catch (e) {}
 }
 
-// ── View 4: Scroll Wheels (Feature 1) ────────────────────────────────────────
+// ── View 4: Dual Bottom Scroll Wheels (Side-by-Side) ────────────────────────
 
 function initScrollWheels() {
   initOneWheel('vwheel', 'v');
@@ -415,8 +520,8 @@ function initOneWheel(wheelId, axis) {
   const drum = wheel.querySelector('.wheel-drum');
   let lastPos = 0;
   let isDown  = false;
-  let accum   = 0;          // accumulated fractional ticks
-  const TICK_PX = 18;       // pixels per one scroll notch
+  let accum   = 0;
+  const TICK_PX = 14; // pixels travelled per notch
 
   function getPos(e) {
     const t = e.touches ? e.touches[0] : e;
@@ -440,15 +545,24 @@ function initOneWheel(wheelId, axis) {
     lastPos     = pos;
     accum      += delta;
 
-    // Emit a scroll tick for each TICK_PX travelled
     while (Math.abs(accum) >= TICK_PX) {
       const dir = accum > 0 ? 1 : -1;
       accum    -= dir * TICK_PX;
-      // Wheel scrolls: vertical = up/down, horizontal = left/right
-      // wheel > 0 = scroll down, wheel < 0 = scroll up (standard HID)
-      const scrollVal = Math.round(dir * 2 * State.sensitivity);
-      emitScroll(axis, scrollVal);
-      animateWheelNotch(drum, axis, dir);
+
+      if (axis === 'v') {
+        // Vertical wheel: drag down (dir > 0) -> negative wheel delta (scroll down)
+        // Drag up (dir < 0) -> positive wheel delta (scroll up)
+        const scrollVal = -Math.round(dir * 2 * State.sensitivity);
+        emitScroll('v', scrollVal);
+        animateWheelNotch(drum, 'v', dir);
+      } else {
+        // Horizontal wheel: drag right (dir > 0) -> positive horizontal scroll (scroll right)
+        // Drag left (dir < 0) -> negative horizontal scroll (scroll left)
+        const scrollVal = Math.round(dir * 2 * State.sensitivity);
+        emitScroll('h', scrollVal);
+        animateWheelNotch(drum, 'h', dir);
+      }
+
       triggerHaptic(4);
     }
   }
@@ -458,97 +572,155 @@ function initOneWheel(wheelId, axis) {
     accum  = 0;
   }
 
-  // Touch events
+  // Touch
   wheel.addEventListener('touchstart', onStart, { passive: false });
   wheel.addEventListener('touchmove',  onMove,  { passive: false });
   wheel.addEventListener('touchend',   onEnd,   { passive: false });
 
-  // Mouse events (desktop fallback)
+  // Mouse fallback
   wheel.addEventListener('mousedown', onStart);
   window.addEventListener('mousemove', (e) => { if (isDown) onMove(e); });
   window.addEventListener('mouseup',   (e) => { if (isDown) onEnd(e); });
 }
 
 function emitScroll(axis, val) {
-  // axis 'v' -> vertical wheel, 'h' -> horizontal (map to wheel field)
-  // Server supports "wheel" in mouse_move for vertical scroll.
-  // For horizontal, we send dx instead (mouse horizontal scroll via dx trick).
-  if (!State.ws || State.ws.readyState !== WebSocket.OPEN) return;
+  if (val === 0) return;
+
   if (axis === 'v') {
-    State.ws.send(JSON.stringify({ action: 'mouse_move', dx: 0, dy: 0, wheel: val }));
+    // Vertical scroll (standard mouse wheel)
+    if (State.ws && State.ws.readyState === WebSocket.OPEN) {
+      State.ws.send(JSON.stringify({ action: 'mouse_scroll', wheel_v: val, wheel_h: 0 }));
+    } else {
+      fetch('/api/mouse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wheel: val })
+      }).catch(() => {});
+    }
   } else {
-    // Horizontal scroll: send as small horizontal mouse delta so the OS interprets it
-    State.ws.send(JSON.stringify({ action: 'mouse_move', dx: val * 6, dy: 0, wheel: 0 }));
+    // Horizontal scroll (Shift + Wheel)
+    if (State.ws && State.ws.readyState === WebSocket.OPEN) {
+      State.ws.send(JSON.stringify({ action: 'mouse_scroll', wheel_v: 0, wheel_h: val }));
+    } else {
+      fetch('/api/mouse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wheel_h: val })
+      }).catch(() => {});
+    }
   }
 }
 
 function animateWheelNotch(drum, axis, dir) {
-  // Remove existing animation class, force reflow, then re-add
   drum.classList.remove('wheel-notch-v', 'wheel-notch-h');
-  void drum.offsetWidth;  // reflow
+  void drum.offsetWidth; // Force reflow
   if (axis === 'v') {
-    drum.style.setProperty('--notch-dy', `${-dir * 7}px`);
+    drum.style.setProperty('--notch-dy', ${-dir * 6}px);
     drum.classList.add('wheel-notch-v');
   } else {
-    drum.style.setProperty('--notch-dx', `${-dir * 7}px`);
+    drum.style.setProperty('--notch-dx', ${-dir * 6}px);
     drum.classList.add('wheel-notch-h');
   }
 }
 
-// ── View 4: Trackpad ──────────────────────────────────────────────────────────
+// ── View 4: Touchpad & Two-Finger Gesture Engine ─────────────────────────────
 
 function initTrackpad() {
   const surface = document.getElementById('touchpad-surface');
   if (!surface) return;
 
   let lastX = 0, lastY = 0, startX = 0, startY = 0;
+  let lastMidX = 0, lastMidY = 0;
+  let accumScrollX = 0, accumScrollY = 0;
   let isMoving = false, tapStartTime = 0;
+  let isTwoFinger = false;
+  const SCROLL_THRESHOLD = 8; // Pixel distance per scroll tick
 
-  // ── Touch (single-finger move, two-finger scroll) ──
+  // Touchstart
   surface.addEventListener('touchstart', (e) => {
     e.preventDefault();
     if (e.touches.length === 1) {
       lastX = startX = e.touches[0].clientX;
       lastY = startY = e.touches[0].clientY;
       isMoving     = true;
+      isTwoFinger  = false;
       tapStartTime = Date.now();
     } else if (e.touches.length === 2) {
-      lastY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-      lastX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      isTwoFinger  = true;
+      isMoving     = false;
+      lastMidX     = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      lastMidY     = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      accumScrollX = 0;
+      accumScrollY = 0;
     }
   }, { passive: false });
 
+  // Touchmove
   surface.addEventListener('touchmove', (e) => {
     e.preventDefault();
+
+    // ── Two-Finger Touchpad Scrolling (Vertical + Horizontal) ──
     if (e.touches.length === 2) {
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
       const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-      const dy   = Math.round((midY - lastY) * 0.3 * State.sensitivity);
-      lastY = midY;
-      lastX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-      if (dy !== 0 && State.ws && State.ws.readyState === WebSocket.OPEN) {
-        State.ws.send(JSON.stringify({ action: 'mouse_move', dx: 0, dy: 0, wheel: -dy }));
+      const dX   = midX - lastMidX;
+      const dY   = midY - lastMidY;
+      lastMidX   = midX;
+      lastMidY   = midY;
+
+      accumScrollX += dX * State.sensitivity;
+      accumScrollY += dY * State.sensitivity;
+
+      // Vertical two-finger scroll
+      while (Math.abs(accumScrollY) >= SCROLL_THRESHOLD) {
+        const dirY = accumScrollY > 0 ? 1 : -1;
+        accumScrollY -= dirY * SCROLL_THRESHOLD;
+        // Dragging fingers down (dirY > 0) scrolls page down (negative HID wheel)
+        emitScroll('v', -dirY * 2);
+        triggerHaptic(3);
       }
+
+      // Horizontal two-finger scroll
+      while (Math.abs(accumScrollX) >= SCROLL_THRESHOLD) {
+        const dirX = accumScrollX > 0 ? 1 : -1;
+        accumScrollX -= dirX * SCROLL_THRESHOLD;
+        // Dragging fingers right (dirX > 0) scrolls page right (positive wheel_h)
+        emitScroll('h', dirX * 2);
+        triggerHaptic(3);
+      }
+
       return;
     }
-    if (!isMoving || e.touches.length !== 1) return;
+
+    // ── Single-Finger Cursor Movement ──
+    if (!isMoving || e.touches.length !== 1 || isTwoFinger) return;
     const curX = e.touches[0].clientX, curY = e.touches[0].clientY;
     const dx   = Math.round((curX - lastX) * 1.5 * State.sensitivity);
     const dy   = Math.round((curY - lastY) * 1.5 * State.sensitivity);
     lastX = curX; lastY = curY;
+
     if ((dx || dy) && State.ws && State.ws.readyState === WebSocket.OPEN) {
       State.ws.send(JSON.stringify({ action: 'mouse_move', dx, dy, wheel: 0 }));
     }
   }, { passive: false });
 
+  // Touchend
   surface.addEventListener('touchend', (e) => {
     e.preventDefault();
+    if (isTwoFinger) {
+      if (e.touches.length === 0) isTwoFinger = false;
+      return;
+    }
+
     isMoving = false;
-    if (Date.now() - tapStartTime < 220 && Math.hypot(lastX - startX, lastY - startY) < 8) {
+    const duration  = Date.now() - tapStartTime;
+    const totalDist = Math.hypot(lastX - startX, lastY - startY);
+    if (duration < 220 && totalDist < 8) {
       onMouseClick(1);
     }
   }, { passive: false });
 
-  // ── Mouse fallback ──
+  // ── Desktop Mouse Fallback ──
   let isMouseDown = false;
   surface.addEventListener('mousedown', (e) => {
     lastX = startX = e.clientX; lastY = startY = e.clientY;
@@ -571,12 +743,20 @@ function initTrackpad() {
     }
   });
 
-  // Desktop scroll wheel on touchpad surface
+  // ── Desktop Wheel on Touchpad Surface (handles with/without Shift key) ──
   surface.addEventListener('wheel', (e) => {
     e.preventDefault();
-    const w = Math.sign(e.deltaY) * Math.min(Math.abs(Math.round(e.deltaY * State.sensitivity / 10)), 5);
-    if (w && State.ws && State.ws.readyState === WebSocket.OPEN) {
-      State.ws.send(JSON.stringify({ action: 'mouse_move', dx: 0, dy: 0, wheel: w }));
+    const isShift = e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY);
+
+    if (isShift) {
+      // Horizontal scroll
+      const delta = e.deltaX || e.deltaY;
+      const w = Math.sign(delta) * Math.min(Math.abs(Math.round(delta * State.sensitivity / 12)), 6);
+      emitScroll('h', w);
+    } else {
+      // Vertical scroll: deltaY > 0 is scroll down (send negative wheel)
+      const w = -Math.sign(e.deltaY) * Math.min(Math.abs(Math.round(e.deltaY * State.sensitivity / 12)), 6);
+      emitScroll('v', w);
     }
   }, { passive: false });
 }
@@ -589,16 +769,17 @@ function onMouseClick(buttonNum) {
     fetch('/api/mouse', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ buttons: buttonNum })
-    });
+      body: JSON.stringify({ buttons: buttonNum })
+    }).catch(() => {});
   }
 }
 
-// ── Settings Modal ────────────────────────────────────────────────────────────
+// ── Preferences Modal ───────────────────────────────────────────────────────
 
-function openSettings()  {
+function openSettings() {
   document.getElementById('settings-modal').classList.add('open');
-  triggerHaptic(8); fetchInitialStatus();
+  triggerHaptic(8);
+  fetchInitialStatus();
 }
 
 function closeSettings(e) {
@@ -607,7 +788,7 @@ function closeSettings(e) {
   triggerHaptic(8);
 }
 
-// ── Toast Utility ─────────────────────────────────────────────────────────────
+// ── Toast Utility ───────────────────────────────────────────────────────────
 
 let _toastTimer = null;
 function showToast(msg) {
