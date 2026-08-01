@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Emittr — USB HID Deck & Tactical Input Controller Server  v1.2.1
+Emittr — USB HID Deck & Tactical Input Controller Server  v1.2.2
 ==================================================================
 Standalone daemon for rooted Android NetHunter devices.
 Exposes REST + WebSocket endpoints to inject keystrokes and mouse events
@@ -30,7 +30,7 @@ from fastapi.staticfiles import StaticFiles
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("emittr")
 
-VERSION = "1.2.1"
+VERSION = "1.2.2"
 
 # ── HID Scancode Tables (Standard USB HID Boot Protocol) ─────────────────────
 MOD_NONE   = 0x00

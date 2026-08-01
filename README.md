@@ -1,8 +1,8 @@
-﻿# Emittr — Tactical USB HID Controller ⌨️ 🖱️
+# Emittr — Tactical USB HID Controller ⌨️ 🖱️
 
 > **Transform rooted Android devices and NetHunter phones into a tactical, crash-resilient USB HID Keyboard, Precision Touchpad, and Dual Scroll Deck with a high-performance Material Design 3 Web App.**
 
-[![Release](https://img.shields.io/badge/release-v1.2.1-blue.svg)](https://github.com/)
+[![Release](https://img.shields.io/badge/release-v1.2.2-blue.svg)](https://github.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-teal.svg)](https://fastapi.tiangolo.com/)
@@ -278,15 +278,15 @@ usbtype --key ctrl+alt+del
 ## ❓ Troubleshooting & FAQ
 
 ### 1. Windows reports `Code 10: Device cannot start`
-- Ensure you are running Emittr v1.2.1. In earlier versions, having multiple separate `hid.0` and `hid.1` functions caused a descriptor length collision in the Linux 4.4 kernel. Emittr v1.2.1 uses a unified composite HID descriptor on a single node `/dev/hidg0`.
+- Ensure you are running Emittr v1.2.2. In earlier versions, having multiple separate `hid.0` and `hid.1` functions caused a descriptor length collision in the Linux 4.4 kernel. Emittr v1.2.2 uses a unified composite HID descriptor on a single node `/dev/hidg0`.
 
 ### 2. My PC's `Ctrl` key is stuck down after unplugging
 - Tap the red **"Unstick Keys"** button in the Emittr header.
 - Alternatively, press and release `Left Ctrl` and `Right Ctrl` once on any physical keyboard attached to the PC.
-- In Emittr v1.2.1, plug-in zero report flushes eliminate this issue automatically.
+- In Emittr v1.2.2, plug-in zero report flushes eliminate this issue automatically.
 
 ### 3. Trackpad moves but scroll does nothing
-- Verify that Emittr v1.2.1 is running by checking the header version badge.
+- Verify that Emittr v1.2.2 is running by checking the header version badge.
 - When using the two-finger gesture, ensure two fingers are placed simultaneously on the surface.
 - For horizontal scrolling, the target application must support horizontal scroll (e.g., Excel, wide code editor, or browser).
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-setup_gadget.py  —  Emittr Composite USB HID Gadget Initializer  v1.2.1
+setup_gadget.py  —  Emittr Composite USB HID Gadget Initializer  v1.2.2
 ========================================================================
 Configures a unified composite USB HID device via Linux configfs:
   - Report ID 1: Keyboard  (standard boot report + modifier keys)
@@ -111,7 +111,7 @@ def init_gadget(force: bool = False) -> bool:
     # Ensure device node permissions
     os.system("chmod 666 /dev/hidg* 2>/dev/null")
 
-    print("Emittr Composite HID Gadget v1.2.1 ready on /dev/hidg0")
+    print("Emittr Composite HID Gadget v1.2.2 ready on /dev/hidg0")
     return True
 
 

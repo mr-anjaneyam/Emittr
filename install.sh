@@ -1,12 +1,12 @@
 #!/bin/bash
 # ==============================================================================
-# Emittr — Tactical USB HID Controller Deployment Script  v1.2.1
+# Emittr — Tactical USB HID Controller Deployment Script  v1.2.2
 # ==============================================================================
 
 INSTALL_DIR="/opt/usb_hid_deck"
 PORT="8088"
 
-echo "[*] Installing Emittr v1.2.1 to ${INSTALL_DIR}..."
+echo "[*] Installing Emittr v1.2.2 to ${INSTALL_DIR}..."
 
 # Abort only on genuinely fatal errors
 mkdir -p "${INSTALL_DIR}" || { echo "[-] Cannot create ${INSTALL_DIR}. Run as root."; exit 1; }
@@ -64,7 +64,7 @@ sleep 2
 
 # Health check
 if curl -s "http://127.0.0.1:${PORT}/api/status" | grep -qE '"hid_node"|"version"'; then
-    echo "[+] Emittr v1.2.1 is ONLINE and HEALTHY!"
+    echo "[+] Emittr v1.2.2 is ONLINE and HEALTHY!"
     echo "    Local URL:   http://localhost:${PORT} or http://hid.keyboard"
     echo "    Network URL: http://$(hostname -I 2>/dev/null | awk '{print $1}'):${PORT}"
     echo "    CLI Tool:    usbtype --help"

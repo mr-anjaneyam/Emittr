@@ -1,12 +1,12 @@
 /**
- * Emittr · Web App Controller v1.2.1
+ * Emittr · Web App Controller v1.2.2
  * Provides touch gliding, two-finger gesture scrolling, physical drum scroll wheels,
  * IME keyboard mirror, Windows shortcuts deck, and emergency key unstick.
  */
 
 'use strict';
 
-const APP_VERSION = '1.2.1';
+const APP_VERSION = '1.2.2';
 
 const State = {
   ws: null,

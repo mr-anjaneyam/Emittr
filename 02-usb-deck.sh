@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# Autostart daemon for Emittr USB HID Deck (v1.2.1)
+# Autostart daemon for Emittr USB HID Deck (v1.2.2)
 until [ "$(getprop sys.boot_completed)" = "1" ]; do
     sleep 2
 done
