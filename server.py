@@ -1,43 +1,47 @@
 #!/usr/bin/env python3
 """
-Emittr — USB HID Deck & Tactical Input Controller Server  v1.2.2
-==================================================================
-Standalone daemon for rooted Android NetHunter devices.
-Exposes REST + WebSocket endpoints to inject keystrokes and mouse events
-directly into /dev/hidg0 using a unified composite HID Report Descriptor:
-  - Report ID 1: Keyboard  (9 bytes: [1, mod, 0, key, 0, 0, 0, 0, 0])
-  - Report ID 2: Mouse     (5 bytes: [2, buttons, dx, dy, wheel])
-
-Served on 0.0.0.0:8088  (accessible as http://hid.keyboard or http://localhost:8088)
+server.py  —  Emittr Backend & HID Controller  v1.3.0
+=====================================================
+FastAPI server running on Android NetHunter (port 8088).
+Provides:
+  - Web UI serving (PWA / Responsive)
+  - REST & WebSocket endpoints for USB keystrokes & mouse control
+  - Native dual-axis mouse scrolling (Vertical Wheel + AC Pan Horizontal Scroll)
+  - Keyboard mirror & typing queues
+  - Automatic USB watchdog (prevents mass_storage reversion)
+  - Emergency unstick release mechanism (flushes all keys & mouse buttons)
+  - Port 80 -> 8088 redirector
 """
 
+import asyncio
+import json
+import logging
 import os
+import select
 import sys
 import time
-import json
-import asyncio
-import subprocess
-import logging
-import select
-from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body, Request
+from fastapi import Body, FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
 log = logging.getLogger("emittr")
 
-VERSION = "1.2.2"
+VERSION = "1.3.0"
 
-# ── HID Scancode Tables (Standard USB HID Boot Protocol) ─────────────────────
+# ── HID Scancode Tables (Standard USB HID Boot Protocol) ───────────────────
 MOD_NONE   = 0x00
 MOD_LCTRL  = 0x01
 MOD_LSHIFT = 0x02
 MOD_LALT   = 0x04
-MOD_LGUI   = 0x08  # Windows / Super key
+MOD_LGUI   = 0x08
 MOD_RCTRL  = 0x10
 MOD_RSHIFT = 0x20
 MOD_RALT   = 0x40
@@ -75,7 +79,7 @@ ASCII_MAP: Dict[str, tuple] = {
     '\n': (0, 0x28), '\r': (0, 0x28), '\t': (0, 0x2B), ' ':  (0, 0x2C),
     # Punctuation & symbols (unshifted)
     '-': (0, 0x2D), '=': (0, 0x2E), '[': (0, 0x2F), ']': (0, 0x30),
-    '\\': (0, 0x31), ';': (0, 0x33), "'": (0, 0x34), '': (0, 0x35),
+    '\\': (0, 0x31), ';': (0, 0x33), "'": (0, 0x34), '`': (0, 0x35),
     ',': (0, 0x36), '.': (0, 0x37), '/': (0, 0x38),
     # Punctuation & symbols (shifted)
     '_': (MOD_LSHIFT, 0x2D), '+': (MOD_LSHIFT, 0x2E), '{': (MOD_LSHIFT, 0x2F),
@@ -85,25 +89,26 @@ ASCII_MAP: Dict[str, tuple] = {
 }
 
 SPECIAL_KEYS: Dict[str, tuple] = {
-    'enter':     (0, 0x28),
-    'esc':       (0, 0x29),
-    'escape':    (0, 0x29),
-    'backspace': (0, 0x2A),
-    'tab':       (0, 0x2B),
-    'space':     (0, 0x2C),
-    'capslock':  (0, 0x39),
-    'f1':        (0, 0x3A),
-    'f2':        (0, 0x3B),
-    'f3':        (0, 0x3C),
-    'f4':        (0, 0x3D),
-    'f5':        (0, 0x3E),
-    'f6':        (0, 0x3F),
-    'f7':        (0, 0x40),
-    'f8':        (0, 0x41),
-    'f9':        (0, 0x42),
-    'f10':       (0, 0x43),
-    'f11':       (0, 0x44),
-    'f12':       (0, 0x45),
+    'enter':       (0, 0x28),
+    'return':      (0, 0x28),
+    'esc':         (0, 0x29),
+    'escape':      (0, 0x29),
+    'backspace':   (0, 0x2A),
+    'tab':         (0, 0x2B),
+    'space':       (0, 0x2C),
+    'capslock':    (0, 0x39),
+    'f1':          (0, 0x3A),
+    'f2':          (0, 0x3B),
+    'f3':          (0, 0x3C),
+    'f4':          (0, 0x3D),
+    'f5':          (0, 0x3E),
+    'f6':          (0, 0x3F),
+    'f7':          (0, 0x40),
+    'f8':          (0, 0x41),
+    'f9':          (0, 0x42),
+    'f10':         (0, 0x43),
+    'f11':         (0, 0x44),
+    'f12':         (0, 0x45),
     'printscreen': (0, 0x46),
     'scrolllock':  (0, 0x47),
     'pause':       (0, 0x48),
@@ -117,6 +122,10 @@ SPECIAL_KEYS: Dict[str, tuple] = {
     'left':        (0, 0x50),
     'down':        (0, 0x51),
     'up':          (0, 0x52),
+    'arrowright':  (0, 0x4F),
+    'arrowleft':   (0, 0x50),
+    'arrowdown':   (0, 0x51),
+    'arrowup':     (0, 0x52),
     'numlock':     (0, 0x53),
 }
 
@@ -140,6 +149,16 @@ COMBOS: Dict[str, tuple] = {
     'ctrl+t':        (MOD_LCTRL, 0x17),
     'ctrl+shift+esc':(MOD_LCTRL | MOD_LSHIFT, 0x29),
     'ctrl+alt+del':  (MOD_LCTRL | MOD_LALT, 0x4C),
+    'ctrl+left':     (MOD_LCTRL, 0x50),
+    'ctrl+right':    (MOD_LCTRL, 0x4F),
+    'ctrl+up':       (MOD_LCTRL, 0x52),
+    'ctrl+down':     (MOD_LCTRL, 0x51),
+    'shift+left':    (MOD_LSHIFT, 0x50),
+    'shift+right':   (MOD_LSHIFT, 0x4F),
+    'shift+up':      (MOD_LSHIFT, 0x52),
+    'shift+down':    (MOD_LSHIFT, 0x51),
+    'alt+left':      (MOD_LALT, 0x50),
+    'alt+right':     (MOD_LALT, 0x4F),
 }
 
 HID_DEVICE_PATH = "/dev/hidg0"
@@ -213,14 +232,14 @@ class HIDDevice:
                 pass
 
     def release_mouse(self):
-        """Send mouse null report (all buttons & delta zeroed) — Report ID 2."""
+        """Send mouse null report (all buttons & deltas zeroed) — Report ID 2 (6 bytes)."""
         fd = self._open_nonblock(self.hid_path)
         if fd is None:
             return
         try:
             _, w, _ = select.select([], [fd], [], 0.05)
             if w:
-                os.write(fd, bytes([2, 0, 0, 0, 0]))
+                os.write(fd, bytes([2, 0, 0, 0, 0, 0]))
         except Exception:
             pass
         finally:
@@ -243,8 +262,11 @@ class HIDDevice:
             self.release_keys()
             time.sleep(0.008)
 
-    def write_mouse_report(self, buttons: int, dx: int, dy: int, wheel: int = 0) -> bool:
-        """Write 5-byte mouse report: [Report_ID=2, buttons, dx, dy, wheel]."""
+    def write_mouse_report(self, buttons: int, dx: int, dy: int, wheel: int = 0, pan: int = 0) -> bool:
+        """
+        Write 6-byte mouse report: [Report_ID=2, buttons, dx, dy, wheel, pan].
+        pan: AC Pan (Consumer Usage 0x0238) for native horizontal scrolling.
+        """
         fd = self._open_nonblock(self.hid_path)
         if fd is None:
             return False
@@ -252,9 +274,10 @@ class HIDDevice:
             dx_c  = max(-127, min(127, dx))    & 0xFF
             dy_c  = max(-127, min(127, dy))    & 0xFF
             wh_c  = max(-127, min(127, wheel)) & 0xFF
+            pan_c = max(-127, min(127, pan))   & 0xFF
             _, w, _ = select.select([], [fd], [], 0.05)
             if w:
-                os.write(fd, bytes([2, buttons & 0x1F, dx_c, dy_c, wh_c]))
+                os.write(fd, bytes([2, buttons & 0x1F, dx_c, dy_c, wh_c, pan_c]))
                 return True
             return False
         except (BlockingIOError, OSError):
@@ -267,36 +290,19 @@ class HIDDevice:
 
     def write_scroll(self, wheel_v: int = 0, wheel_h: int = 0) -> bool:
         """
-        Handle vertical and horizontal scrolling.
-        wheel_v: vertical ticks (negative = down, positive = up)
+        Handle vertical and horizontal scrolling natively.
+        wheel_v: vertical ticks (positive = up, negative = down)
         wheel_h: horizontal ticks (positive = right, negative = left)
-        Horizontal scroll is executed via Left Shift + Wheel, universally supported
-        by Windows, Linux, and macOS without driver modifications.
+        Uses native HID AC Pan (Usage 0x0238) for hardware horizontal scroll (WM_MOUSEHWHEEL).
         """
-        success = True
-        if wheel_v != 0:
-            ok = self.write_mouse_report(0, 0, 0, wheel_v)
-            if not ok:
-                success = False
-            time.sleep(0.004)
-            self.release_mouse()
-
-        if wheel_h != 0:
-            # Shift + Mouse Wheel for horizontal scroll
-            # Left Shift down
-            self.write_kbd_report(MOD_LSHIFT, 0)
-            time.sleep(0.008)
-            # In Windows/Linux: negative wheel with Shift scrolls right, positive scrolls left
-            ok = self.write_mouse_report(0, 0, 0, -wheel_h)
-            if not ok:
-                success = False
-            time.sleep(0.004)
-            self.release_mouse()
-            time.sleep(0.004)
-            self.release_keys()
-            time.sleep(0.008)
-
-        return success
+        ok = self.write_mouse_report(0, 0, 0, wheel=wheel_v, pan=wheel_h)
+        if ok and (wheel_v != 0 or wheel_h != 0):
+            try:
+                time.sleep(0.005)
+                self.release_mouse()
+            except Exception:
+                pass
+        return ok
 
     def get_usb_status(self) -> Dict[str, Any]:
         """Return USB connection state, UDC details, version, and HID node status."""
@@ -321,98 +327,60 @@ class HIDDevice:
             break
 
         if state == "not attached":
-            hisi_st = Path("/sys/devices/hisi-usb-otg/udc/hisi-usb-otg/state")
-            if hisi_st.exists():
+            udc_hisi = Path("/sys/devices/hisi-usb-otg/udc/hisi-usb-otg/state")
+            if udc_hisi.exists():
                 try:
-                    state = hisi_st.read_text().strip()
+                    state = udc_hisi.read_text().strip()
                     udc_name = "hisi-usb-otg"
                 except Exception:
                     pass
 
-        hid_exists = os.path.exists(self.hid_path)
-
         return {
-            "connected":       state.lower() == "configured",
-            "udc_state":       state,
+            "attached":        state.lower() in ("configured", "addressed"),
+            "state":           state,
             "speed":           speed,
             "udc":             udc_name,
-            "hid_node":        self.hid_path,
-            "hid_available":   hid_exists,
-            "kbd_node":        self.hid_path,
-            "kbd_available":   hid_exists,
-            "mouse_node":      self.hid_path,
-            "mouse_available": hid_exists,
+            "hid_node_exists": os.path.exists(self.hid_path),
             "is_typing":       self.is_typing,
             "version":         VERSION,
         }
 
 
+hid = HIDDevice()
+connected_websockets: List[WebSocket] = []
+current_typing_task: Optional[asyncio.Task] = None
+stop_event = asyncio.Event()
+
+STATIC_DIR = Path(__file__).parent / "static"
+
+
 def ensure_hid_gadget():
     """Verify composite HID gadget is active. If Android reverted to mass_storage, restore it."""
     gadget_dir = "/config/usb_gadget/g1"
-    if not os.path.exists(f"{gadget_dir}/functions/hid.0"):
-        try:
-            import setup_gadget
-            setup_gadget.init_gadget()
-        except Exception as e:
-            log.warning(f"Gadget init error: {e}")
+    if not os.path.exists(gadget_dir):
         return
-
-    needs_restore = False
-    f1_path = f"{gadget_dir}/configs/b.1/f1"
-    if not os.path.exists(f1_path):
-        needs_restore = True
-    elif os.path.islink(f1_path):
-        try:
-            if "hid.0" not in os.readlink(f1_path):
-                needs_restore = True
-        except Exception:
-            needs_restore = True
-
-    udc_file = f"{gadget_dir}/UDC"
-    if os.path.exists(udc_file):
-        try:
-            cur_udc = Path(udc_file).read_text().strip()
-            if not cur_udc or cur_udc == "none":
-                needs_restore = True
-        except Exception:
-            pass
-
-    if needs_restore:
+    cfg_f1 = f"{gadget_dir}/configs/b.1/f1"
+    if not os.path.exists(cfg_f1):
         log.info("Detected USB configuration reversion. Restoring composite HID gadget...")
         try:
             import setup_gadget
             setup_gadget.init_gadget()
         except Exception as e:
-            log.warning(f"Gadget restore error: {e}")
+            log.error(f"Failed to restore gadget: {e}")
 
 
-# ── Global State & Application Setup ─────────────────────────────────────────
-hid = HIDDevice()
-connected_websockets: List[WebSocket] = []
-current_typing_task: asyncio.Task = None
-stop_event = asyncio.Event()
-
-BASE_DIR   = Path(__file__).resolve().parent
-STATIC_DIR = BASE_DIR / "static"
-
-
-@asynccontextmanager
 async def lifespan(application: "FastAPI"):
     # Startup: ensure gadget is bound and flush releases
     ensure_hid_gadget()
     hid.release_all()
 
-    # Launch background tasks
-    monitor_task   = asyncio.create_task(connection_monitor_loop())
-    redirect_task  = asyncio.create_task(start_http_port80_redirector())
+    asyncio.create_task(connection_monitor_loop())
+    asyncio.create_task(start_http_port80_redirector())
     log.info(f"Emittr Server v{VERSION} initialized on port 8088.")
 
     yield
 
-    # Shutdown
-    monitor_task.cancel()
-    redirect_task.cancel()
+    # Shutdown: clean release
     hid.release_all()
 
 
@@ -434,7 +402,7 @@ async def broadcast_status(data: dict):
             connected_websockets.remove(ws)
 
 
-# ── REST API Routes ──────────────────────────────────────────────────────────
+# ── REST API Routes ────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
 async def get_index():
@@ -536,33 +504,29 @@ async def press_key(data: dict = Body(...)):
 
 @app.post("/api/mouse")
 async def mouse_action(data: dict = Body(...)):
-    """Send mouse event. Body: {dx, dy, buttons, wheel, wheel_h, shift}"""
+    """Send mouse event. Body: {dx, dy, buttons, wheel, wheel_h, pan, click}"""
     dx      = int(data.get("dx",      0))
     dy      = int(data.get("dy",      0))
     buttons = int(data.get("buttons", 0))
     wheel   = int(data.get("wheel",   0))
-    wheel_h = int(data.get("wheel_h", 0))
-    shift   = bool(data.get("shift",   False))
+    wheel_h = int(data.get("wheel_h", data.get("pan", 0)))
+    click   = bool(data.get("click",  False))
 
-    if wheel_h != 0 or (wheel != 0 and shift):
-        wh = wheel_h if wheel_h != 0 else wheel
-        ok = hid.write_scroll(wheel_v=0, wheel_h=wh)
+    if wheel != 0 or wheel_h != 0:
+        ok = hid.write_scroll(wheel_v=wheel, wheel_h=wheel_h)
         return {"ok": ok}
 
-    if wheel != 0 and dx == 0 and dy == 0 and buttons == 0:
-        ok = hid.write_scroll(wheel_v=wheel, wheel_h=0)
-        return {"ok": ok}
-
-    if buttons > 0 and dx == 0 and dy == 0 and wheel == 0:
-        hid.write_mouse_report(buttons, 0, 0, 0)
+    if click:
+        btn = buttons if buttons else 1
+        hid.write_mouse_report(btn, 0, 0, 0, 0)
         await asyncio.sleep(0.02)
-        ok = hid.write_mouse_report(0, 0, 0, 0)
+        ok = hid.write_mouse_report(0, 0, 0, 0, 0)
     else:
-        ok = hid.write_mouse_report(buttons, dx, dy, wheel)
+        ok = hid.write_mouse_report(buttons, dx, dy, wheel, wheel_h)
     return {"ok": ok}
 
 
-# ── Live Keystroke WebSocket ─────────────────────────────────────────────────
+# ── Live Keystroke & Mouse WebSocket ───────────────────────────────────────
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
@@ -596,7 +560,7 @@ async def websocket_endpoint(ws: WebSocket):
 
             elif action == "mouse_scroll":
                 wv = int(data.get("wheel_v", data.get("wheel", 0)))
-                wh = int(data.get("wheel_h", 0))
+                wh = int(data.get("wheel_h", data.get("pan", 0)))
                 hid.write_scroll(wheel_v=wv, wheel_h=wh)
 
             elif action == "mouse_move":
@@ -604,22 +568,18 @@ async def websocket_endpoint(ws: WebSocket):
                 dx      = int(data.get("dx", 0))
                 dy      = int(data.get("dy", 0))
                 wheel   = int(data.get("wheel", 0))
-                wheel_h = int(data.get("wheel_h", 0))
-                shift   = bool(data.get("shift", False))
+                wheel_h = int(data.get("wheel_h", data.get("pan", 0)))
 
-                if wheel_h != 0 or (wheel != 0 and shift):
-                    wh = wheel_h if wheel_h != 0 else wheel
-                    hid.write_scroll(wheel_v=0, wheel_h=wh)
-                elif wheel != 0:
-                    hid.write_scroll(wheel_v=wheel, wheel_h=0)
+                if wheel != 0 or wheel_h != 0:
+                    hid.write_scroll(wheel_v=wheel, wheel_h=wheel_h)
                 else:
-                    hid.write_mouse_report(btn, dx, dy, 0)
+                    hid.write_mouse_report(btn, dx, dy, 0, 0)
 
             elif action == "mouse_click":
                 btn = int(data.get("button", 1))
-                hid.write_mouse_report(btn, 0, 0, 0)
+                hid.write_mouse_report(btn, 0, 0, 0, 0)
                 await asyncio.sleep(0.02)
-                hid.write_mouse_report(0, 0, 0, 0)
+                hid.write_mouse_report(0, 0, 0, 0, 0)
 
             elif action == "get_status":
                 await ws.send_text(json.dumps({"type": "status", "data": hid.get_usb_status()}))
@@ -637,7 +597,7 @@ async def websocket_endpoint(ws: WebSocket):
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
-# ── Background Tasks ─────────────────────────────────────────────────────────
+# ── Background Tasks ───────────────────────────────────────────────────────
 
 async def connection_monitor_loop():
     """
@@ -649,20 +609,20 @@ async def connection_monitor_loop():
     last_state = None
     while True:
         await asyncio.sleep(1.5)
-        # Ensure HID gadget persistence
-        ensure_hid_gadget()
+        try:
+            ensure_hid_gadget()
+            st = hid.get_usb_status()
+            current_state = st.get("attached", False)
 
-        status  = hid.get_usb_status()
-        current = (status["connected"], status["udc_state"])
-
-        if current != last_state:
-            # If transitioned to configured (PC just attached), flush any stuck modifiers
-            if current[0] and (last_state is None or not last_state[0]):
-                log.info("USB host configured — flushing all modifier keys & mouse buttons")
+            # Detect transition from not-attached -> attached (PC plugged in or rebooted)
+            if last_state is not None and not last_state and current_state:
+                log.info("PC attached! Flushing zero report to unstick any rogue keys...")
                 hid.release_all()
 
-            last_state = current
-            await broadcast_status({"type": "connection_change", "data": status})
+            last_state = current_state
+            await broadcast_status({"type": "status", "data": st})
+        except Exception as e:
+            log.warning(f"Connection monitor exception: {e}")
 
 
 async def start_http_port80_redirector():
@@ -670,34 +630,31 @@ async def start_http_port80_redirector():
     async def handle_port80(reader, writer):
         try:
             req_data = await asyncio.wait_for(reader.read(1024), timeout=2.0)
-            lines = req_data.decode(errors="ignore").split("\r\n")
-            host  = "hid.keyboard"
-            for line in lines:
+            host_header = "192.168.1.10"
+            for line in req_data.decode("utf-8", errors="ignore").split("\r\n"):
                 if line.lower().startswith("host:"):
-                    parts = line.split(":", 2)
-                    if len(parts) >= 2:
-                        host = parts[1].strip()
+                    host_header = line.split(":", 1)[1].strip().split(":")[0]
                     break
-            resp = (
-                f"HTTP/1.1 302 Found\r\n"
-                f"Location: http://{host}:8088/\r\n"
-                f"Connection: close\r\n"
-                f"Content-Length: 0\r\n\r\n"
+            redirect_response = (
+                "HTTP/1.1 302 Found\r\n"
+                f"Location: http://{host_header}:8088/\r\n"
+                "Connection: close\r\n"
+                "Content-Length: 0\r\n\r\n"
             )
-            writer.write(resp.encode())
+            writer.write(redirect_response.encode())
             await writer.drain()
         except Exception:
             pass
         finally:
+            writer.close()
             try:
-                writer.close()
                 await writer.wait_closed()
             except Exception:
                 pass
 
     try:
         server = await asyncio.start_server(handle_port80, "0.0.0.0", 80)
-        log.info("Port 80 redirector active -> redirecting to port 8088")
+        log.info("Port 80 redirector listening (redirects to :8088)")
         async with server:
             await server.serve_forever()
     except Exception as e:
@@ -706,4 +663,4 @@ async def start_http_port80_redirector():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8088, log_level="info")
+    uvicorn.run("server:app", host="0.0.0.0", port=8088, reload=False, access_log=False)

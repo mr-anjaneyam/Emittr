@@ -1,4 +1,4 @@
-/* ── Emittr · Tactical Material Design 3 · v1.2.2 ─────────────────────── */
+/* ── Emittr · Modern Tactical Design System · v1.3.0 ──────────────────────── */
 
 :root {
   --md-sys-color-background: #121316;
@@ -66,19 +66,20 @@ body {
   user-select: none;
 }
 
-/* ── App Header ───────────────────────────────────────────────────────────── */
+/* ── App Header ──────────────────────────────────────────────────────────── */
 
 .app-header {
   height: 64px;
-  padding: 0 20px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   background-color: var(--md-sys-color-background);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   position: sticky;
   top: 0;
   z-index: 50;
+  backdrop-filter: blur(12px);
 }
 
 .header-left {
@@ -99,7 +100,7 @@ body {
 }
 
 .app-title {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.5px;
   color: var(--md-sys-color-on-surface);
@@ -120,7 +121,37 @@ body {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+
+/* Dashboard Mode Header Button */
+.dashboard-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 11px;
+  background-color: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface-variant);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-corner-full);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.dashboard-header-btn:hover {
+  background-color: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+}
+
+.dashboard-header-btn.active,
+body.dashboard-mode .dashboard-header-btn {
+  background: rgba(0, 229, 255, 0.14) !important;
+  border-color: #00E5FF !important;
+  color: #00E5FF !important;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25) !important;
 }
 
 /* Emergency Unstick Button */
@@ -129,7 +160,7 @@ body {
   align-items: center;
   gap: 6px;
   height: 34px;
-  padding: 0 12px;
+  padding: 0 10px;
   background-color: rgba(242, 184, 181, 0.12);
   color: var(--md-sys-color-error);
   border: 1px solid rgba(242, 184, 181, 0.3);
@@ -150,7 +181,7 @@ body {
   transform: scale(0.96);
 }
 
-/* Desktop Nav Pills (hidden on mobile) */
+/* Desktop Nav Pills (hidden on small screens) */
 .desktop-nav {
   display: none;
   align-items: center;
@@ -190,7 +221,8 @@ body {
   margin-left: 8px;
 }
 
-.dashboard-toggle-btn.active {
+.dashboard-toggle-btn.active,
+body.dashboard-mode .dashboard-toggle-btn {
   background-color: var(--md-sys-color-primary-container);
   color: var(--md-sys-color-on-primary-container);
   border: 1px solid var(--md-sys-color-primary);
@@ -225,8 +257,8 @@ body {
 }
 
 .icon-btn {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   border: none;
   background: transparent;
@@ -243,24 +275,52 @@ body {
   color: var(--md-sys-color-on-surface);
 }
 
-/* ── Main Content Container ────────────────────────────────────────────────── */
+/* ── Main Content Container ──────────────────────────────────────────────── */
 
 .main-content {
   flex: 1;
   padding: 16px;
   padding-bottom: 96px;
-  max-width: 560px;
   width: 100%;
+  max-width: 600px;
   margin: 0 auto;
+  transition: all 0.25s ease;
 }
+
+/* ── Universal Dashboard Mode ────────────────────────────────────────────── */
+
+body.dashboard-mode .view-panel {
+  display: flex !important;
+  flex-direction: column;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  width: 100%;
+}
+
+body.dashboard-mode .main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 680px;
+  padding-bottom: 110px;
+}
+
+body.dashboard-mode #view-typer     { order: 1; }
+body.dashboard-mode #view-trackpad  { order: 2; }
+body.dashboard-mode #view-shortcuts { order: 3; }
+body.dashboard-mode #view-live      { order: 4; }
+
+/* ── View Panels & Cards ─────────────────────────────────────────────────── */
 
 .view-panel {
   display: none;
-  animation: fadeIn 0.2s ease-out;
+  width: 100%;
+  animation: fadeIn 0.18s ease-out;
 }
 
 .view-panel.active {
-  display: block;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes fadeIn {
@@ -268,22 +328,20 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Surface Cards ─────────────────────────────────────────────────────────── */
-
 .card {
   background-color: var(--md-sys-color-surface);
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-shape-corner-large);
-  padding: 18px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  margin-bottom: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .card-title {
@@ -306,7 +364,7 @@ body {
   border-radius: var(--md-shape-corner-full);
 }
 
-/* ── View 1: Typer ─────────────────────────────────────────────────────────── */
+/* ── View 1: Typer ───────────────────────────────────────────────────────── */
 
 .material-textarea {
   width: 100%;
@@ -430,9 +488,9 @@ input[type=range] {
 .progress-wrapper { margin-top: 14px; }
 
 .progress-bar {
-  height: 4px;
+  height: 6px;
   background-color: var(--md-sys-color-surface-container-highest);
-  border-radius: 2px;
+  border-radius: var(--md-shape-corner-full);
   overflow: hidden;
 }
 
@@ -440,20 +498,20 @@ input[type=range] {
   height: 100%;
   width: 0%;
   background-color: var(--md-sys-color-primary);
-  transition: width 0.1s linear;
+  transition: width 0.15s ease-out;
 }
 
 .progress-text {
   font-size: 11px;
   color: var(--md-sys-color-outline);
+  text-align: right;
   margin-top: 4px;
-  text-align: center;
 }
 
-/* ── View 2: Live Keys ─────────────────────────────────────────────────────── */
+/* ── View 2: Live Keys ───────────────────────────────────────────────────── */
 
 .live-target-zone {
-  height: 120px;
+  height: 110px;
   border: 2px dashed var(--md-sys-color-outline-variant);
   border-radius: var(--md-shape-corner-medium);
   display: flex;
@@ -586,7 +644,7 @@ input[type=range] {
   color: var(--md-sys-color-on-primary);
 }
 
-/* ── View 3: Shortcuts ─────────────────────────────────────────────────────── */
+/* ── View 3: Shortcuts ───────────────────────────────────────────────────── */
 
 .shortcuts-grid {
   display: grid;
@@ -656,7 +714,7 @@ input[type=range] {
   transform: scale(0.95);
 }
 
-/* ── View 4: Touchpad & Dual Scroll Wheels ─────────────────────────────────── */
+/* ── View 4: Touchpad & Dual Xbox Joysticks ──────────────────────────────── */
 
 .trackpad-card {
   padding-bottom: 20px;
@@ -670,7 +728,7 @@ input[type=range] {
 /* Full Width Touch Surface */
 .touchpad-surface {
   width: 100%;
-  height: 250px;
+  height: 230px;
   background: radial-gradient(circle at center, var(--md-sys-color-surface-container-high) 0%, var(--md-sys-color-surface-container) 100%);
   border: 2px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-shape-corner-large);
@@ -704,7 +762,7 @@ input[type=range] {
 }
 
 .btn-mouse {
-  height: 52px;
+  height: 48px;
   background-color: var(--md-sys-color-surface-container-high);
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-shape-corner-medium);
@@ -725,140 +783,232 @@ input[type=range] {
   transform: scale(0.98);
 }
 
-/* ── Side-by-Side Dual Scroll Wheels Dock (Bottom Space) ──────────────────── */
+/* ── Dual Side-by-Side Xbox Joysticks Dock ───────────────────────────────── */
 
-.scroll-wheels-dock {
+.joysticks-dock {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-top: 14px;
 }
 
-.wheel-box {
+.joystick-card {
   background-color: var(--md-sys-color-surface-container);
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-shape-corner-medium);
-  padding: 10px;
+  padding: 10px 10px 12px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
-.wheel-box-label {
+.joystick-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+
+.joy-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.joy-badge.v-badge {
+  background: rgba(0, 229, 255, 0.12);
+  color: #00E5FF;
+  border: 1px solid rgba(0, 229, 255, 0.35);
+}
+
+.joy-badge.h-badge {
+  background: rgba(224, 64, 251, 0.12);
+  color: #E040FB;
+  border: 1px solid rgba(224, 64, 251, 0.35);
+}
+
+.joy-name {
   font-size: 11px;
   font-weight: 600;
   color: var(--md-sys-color-on-surface-variant);
-  display: flex;
-  align-items: center;
-  gap: 5px;
   letter-spacing: 0.2px;
 }
 
-.wheel-icon {
-  font-size: 13px;
-  color: var(--md-sys-color-primary);
+.joy-chevrons {
+  font-size: 10px;
+  color: var(--md-sys-color-outline);
+  letter-spacing: 1.5px;
 }
 
-.scroll-wheel {
-  position: relative;
+.joystick-stage {
   width: 100%;
-  height: 60px;
-  border-radius: 10px;
-  background-color: var(--md-sys-color-surface-container-highest);
-  border: 1px solid var(--md-sys-color-outline);
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.2);
-  touch-action: none;
-  overflow: hidden;
-  cursor: pointer;
-}
-
-.vertical-wheel   { cursor: ns-resize; }
-.horizontal-wheel { cursor: ew-resize; }
-
-.wheel-drum {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
   display: flex;
-  transition: transform 0.08s ease-out;
-}
-
-.vertical-drum {
-  flex-direction: column;
-  justify-content: space-around;
   align-items: center;
+  justify-content: center;
+  padding: 4px 0 6px 0;
 }
 
-.horizontal-drum {
-  flex-direction: row;
-  justify-content: space-around;
-  align-items: center;
+/* The circular well / pit */
+.joystick-well {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  position: relative;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  background: radial-gradient(circle at 50% 50%, #151a24 0%, #0c0f16 70%, #06070a 100%);
+  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
-.v-ridge {
-  width: 82%;
-  height: 3px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.35) 100%);
-  border-radius: 2px;
+.joystick-well.dragging {
+  cursor: grabbing;
 }
 
-.h-ridge {
-  height: 82%;
-  width: 3px;
-  background: linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.35) 100%);
-  border-radius: 2px;
-}
-
-.wheel-center-line {
+/* Axis guide markings */
+.joy-axis-guideline {
+  position: absolute;
   pointer-events: none;
+  opacity: 0.45;
 }
 
-.v-center-line {
-  position: absolute;
-  left: 10%; right: 10%; top: 50%;
-  height: 2px;
-  background-color: var(--md-sys-color-primary);
-  box-shadow: 0 0 8px var(--md-sys-color-primary);
-  transform: translateY(-50%);
-}
-
-.h-center-line {
-  position: absolute;
-  top: 10%; bottom: 10%; left: 50%;
+.joy-axis-guideline.v-guide {
   width: 2px;
-  background-color: var(--md-sys-color-primary);
-  box-shadow: 0 0 8px var(--md-sys-color-primary);
-  transform: translateX(-50%);
+  height: 72%;
+  left: calc(50% - 1px);
+  top: 14%;
+  background: linear-gradient(to bottom, #00E5FF, transparent 35%, transparent 65%, #00E5FF);
 }
 
-.scroll-wheel.clicking {
-  border-color: var(--md-sys-color-primary);
-  box-shadow: inset 0 0 12px rgba(168, 199, 250, 0.25);
+.joy-axis-guideline.h-guide {
+  height: 2px;
+  width: 72%;
+  top: calc(50% - 1px);
+  left: 14%;
+  background: linear-gradient(to right, #E040FB, transparent 35%, transparent 65%, #E040FB);
 }
 
-@keyframes wheelNotchV {
-  0%   { transform: translateY(0); }
-  35%  { transform: translateY(var(--notch-dy, -6px)); }
-  100% { transform: translateY(0); }
+.joy-arrow {
+  position: absolute;
+  font-size: 9px;
+  line-height: 1;
+  pointer-events: none;
+  opacity: 0.45;
+  transition: opacity 0.15s, transform 0.15s;
 }
 
-@keyframes wheelNotchH {
-  0%   { transform: translateX(0); }
-  35%  { transform: translateX(var(--notch-dx, -6px)); }
-  100% { transform: translateX(0); }
+.joy-arrow-top    { top: 5px; left: 50%; transform: translateX(-50%); color: #00E5FF; }
+.joy-arrow-bottom { bottom: 5px; left: 50%; transform: translateX(-50%); color: #00E5FF; }
+.joy-arrow-left   { left: 6px; top: 50%; transform: translateY(-50%); color: #E040FB; }
+.joy-arrow-right  { right: 6px; top: 50%; transform: translateY(-50%); color: #E040FB; }
+
+.joystick-well.deflected-top .joy-arrow-top,
+.joystick-well.deflected-bottom .joy-arrow-bottom,
+.joystick-well.deflected-left .joy-arrow-left,
+.joystick-well.deflected-right .joy-arrow-right {
+  opacity: 1;
+  filter: drop-shadow(0 0 5px currentColor);
 }
 
-.wheel-notch-v { animation: wheelNotchV 0.12s ease-out forwards; }
-.wheel-notch-h { animation: wheelNotchH 0.12s ease-out forwards; }
+/* Authentic Xbox Thumbstick Cap */
+.xbox-stick {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 48px;
+  height: 48px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+  transition: transform 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
 
-/* ── Bottom Navigation Bar (Mobile) ────────────────────────────────────────── */
+.joystick-well.dragging .xbox-stick {
+  transition: none;
+}
+
+.stick-outer-rim {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 35% 35%, #343c4c 0%, #1e232d 60%, #12151d 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.75), inset 0 1px 2px rgba(255, 255, 255, 0.35), inset 0 -2px 5px rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Concave Xbox dish */
+.stick-dish {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 50%, #0d1017 0%, #171c26 100%);
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* 4-quadrant tactile grip dots */
+.stick-grip-cross {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 2px, rgba(255,255,255,0.4) 1px, transparent 1.5px),
+    radial-gradient(circle at 50% calc(100% - 2px), rgba(255,255,255,0.4) 1px, transparent 1.5px),
+    radial-gradient(circle at 2px 50%, rgba(255,255,255,0.4) 1px, transparent 1.5px),
+    radial-gradient(circle at calc(100% - 2px) 50%, rgba(255,255,255,0.4) 1px, transparent 1.5px);
+}
+
+.stick-center-pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  transition: all 0.15s;
+}
+
+#joy-well-v.dragging .stick-center-pip {
+  background: #00E5FF;
+  box-shadow: 0 0 8px #00E5FF;
+}
+
+#joy-well-h.dragging .stick-center-pip {
+  background: #E040FB;
+  box-shadow: 0 0 8px #E040FB;
+}
+
+.joy-status-hint {
+  font-size: 10px;
+  color: var(--md-sys-color-on-surface-variant);
+  text-align: center;
+  font-family: inherit;
+  opacity: 0.8;
+  min-height: 14px;
+}
+
+/* ── Bottom Navigation Bar (Mobile) ──────────────────────────────────────── */
 
 .bottom-nav {
   position: fixed;
   bottom: 0; left: 0;
   width: 100%;
-  height: 70px;
+  height: 68px;
   background-color: var(--md-sys-color-surface);
   border-top: 1px solid var(--md-sys-color-outline-variant);
   display: flex;
@@ -866,6 +1016,7 @@ input[type=range] {
   justify-content: space-around;
   z-index: 40;
   padding: 0 4px;
+  backdrop-filter: blur(12px);
 }
 
 .nav-item {
@@ -885,8 +1036,8 @@ input[type=range] {
 }
 
 .nav-icon-wrap {
-  width: 56px;
-  height: 32px;
+  width: 52px;
+  height: 30px;
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -895,8 +1046,8 @@ input[type=range] {
 }
 
 .nav-icon {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   display: block;
   flex-shrink: 0;
 }
@@ -906,19 +1057,18 @@ input[type=range] {
   font-weight: 500;
 }
 
-.nav-item.active .nav-icon-wrap {
+.nav-item.active .nav-icon-wrap,
+body.dashboard-mode #nav-dashboard .nav-icon-wrap {
   background-color: var(--md-sys-color-secondary-container);
 }
 
-.nav-item.active {
+.nav-item.active,
+body.dashboard-mode #nav-dashboard {
   color: var(--md-sys-color-primary);
-}
-
-.nav-item.active .nav-label {
   font-weight: 700;
 }
 
-/* ── Modal Settings ───────────────────────────────────────────────────────── */
+/* ── Modal Settings ──────────────────────────────────────────────────────── */
 
 .modal-backdrop {
   position: fixed;
@@ -980,18 +1130,16 @@ input[type=range] {
 .sensitivity-control {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+  gap: 10px;
+  width: 140px;
 }
 
-.sensitivity-control input[type=range] {
-  width: 100px;
-}
-
+/* Material Toggle Switch */
 .switch {
   position: relative;
   display: inline-block;
-  width: 48px; height: 28px;
+  width: 48px;
+  height: 28px;
   flex-shrink: 0;
 }
 
@@ -1003,15 +1151,17 @@ input[type=range] {
   top: 0; left: 0; right: 0; bottom: 0;
   background-color: var(--md-sys-color-surface-container-highest);
   border: 2px solid var(--md-sys-color-outline);
-  border-radius: 28px;
+  border-radius: var(--md-shape-corner-full);
   transition: 0.2s;
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 16px; width: 16px;
-  left: 4px; bottom: 4px;
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
   background-color: var(--md-sys-color-outline);
   border-radius: 50%;
   transition: 0.2s;
@@ -1033,47 +1183,62 @@ input:checked + .slider:before {
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-shape-corner-medium);
   padding: 8px 12px;
+  font-family: inherit;
   font-size: 13px;
   outline: none;
+  cursor: pointer;
 }
 
 .hw-info-card {
   margin-top: 20px;
   background-color: var(--md-sys-color-surface-container-high);
+  border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-shape-corner-medium);
   padding: 14px;
-  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .hw-title {
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   color: var(--md-sys-color-primary);
-  margin-bottom: 8px;
-  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
 }
 
 .hw-line {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 4px;
+  font-size: 12px;
   color: var(--md-sys-color-on-surface-variant);
 }
 
+.hw-line strong {
+  color: var(--md-sys-color-on-surface);
+  font-family: monospace;
+}
+
+/* ── Toast Notifications ─────────────────────────────────────────────────── */
+
 .toast {
   position: fixed;
-  bottom: 80px;
+  bottom: 84px;
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   background-color: var(--md-sys-color-surface-container-highest);
   color: var(--md-sys-color-on-surface);
-  padding: 10px 20px;
+  border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-shape-corner-full);
+  padding: 10px 20px;
   font-size: 13px;
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   opacity: 0;
-  transition: all 0.25s ease;
   pointer-events: none;
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s;
   z-index: 200;
   white-space: nowrap;
 }
@@ -1083,7 +1248,7 @@ input:checked + .slider:before {
   opacity: 1;
 }
 
-/* ── Desktop & Large Screen Optimization (min-width: 900px) ───────────────── */
+/* ── Desktop & Large Screen Optimization (min-width: 900px) ──────────────── */
 
 @media (min-width: 900px) {
   .app-header {
@@ -1104,7 +1269,7 @@ input:checked + .slider:before {
     padding: 24px 32px 40px 32px;
   }
 
-  /* Single-view mode on desktop: comfortable width */
+  /* Single-view mode on desktop */
   .view-panel {
     max-width: 680px;
     margin: 0 auto;
@@ -1116,19 +1281,18 @@ input:checked + .slider:before {
     grid-template-columns: 1fr 1fr;
     gap: 24px;
     align-items: start;
-    max-width: 1380px;
+    max-width: 1440px;
   }
 
   body.dashboard-mode .view-panel {
-    display: block !important;
     max-width: 100%;
     margin: 0;
   }
 
-  body.dashboard-mode #view-typer     { order: 1; }
-  body.dashboard-mode #view-live      { order: 3; }
-  body.dashboard-mode #view-trackpad  { order: 2; }
-  body.dashboard-mode #view-shortcuts { order: 4; }
+  body.dashboard-mode #view-typer     { order: 1; grid-column: 1; }
+  body.dashboard-mode #view-shortcuts { order: 2; grid-column: 1; }
+  body.dashboard-mode #view-trackpad  { order: 3; grid-column: 2; }
+  body.dashboard-mode #view-live      { order: 4; grid-column: 2; }
 
   .touchpad-surface {
     height: 280px;

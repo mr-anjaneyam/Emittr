@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# Autostart daemon for Emittr USB HID Deck (v1.2.2)
+# Autostart daemon for Emittr USB HID Deck (v1.3.0)
 until [ "$(getprop sys.boot_completed)" = "1" ]; do
     sleep 2
 done
@@ -20,5 +20,5 @@ fi
 
 # Launch Emittr server in Kali NetHunter chroot
 if [ -f /data/local/nhsystem/bin/bootkali ]; then
-    /data/local/nhsystem/bin/bootkali bash -c "mkdir -p /config && mount -t configfs none /config 2>/dev/null; if [ -x /opt/tactical_venv/bin/python3 ]; then PY=/opt/tactical_venv/bin/python3; else PY=python3; fi; \ /opt/usb_hid_deck/setup_gadget.py 2>/dev/null; nohup \ /opt/usb_hid_deck/server.py > /var/log/usb_deck.log 2>&1 &" 2>/dev/null || true
+    /data/local/nhsystem/bin/bootkali bash -c "mkdir -p /config && mount -t configfs none /config 2>/dev/null; if [ -x /opt/tactical_venv/bin/python3 ]; then PY=/opt/tactical_venv/bin/python3; else PY=python3; fi; \"${PY}\" /opt/usb_hid_deck/setup_gadget.py 2>/dev/null; nohup \"${PY}\" /opt/usb_hid_deck/server.py > /var/log/usb_deck.log 2>&1 &" 2>/dev/null || true
 fi

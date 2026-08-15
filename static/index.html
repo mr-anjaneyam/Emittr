@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#1a1b1f" />
-  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#131318" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Emittr: High-performance tactical USB HID controller with dual Xbox joysticks and universal multi-panel dashboard" />
   <title>Emittr — Tactical USB HID Controller</title>
   <link rel="manifest" href="/static/manifest.json" />
   <link rel="icon" type="image/png" href="/static/icon.png" />
@@ -23,7 +23,7 @@
       <div class="app-title-group">
         <div class="app-name-row">
           <h1 class="app-title">Emittr</h1>
-          <span class="version-badge">v1.2.2</span>
+          <span class="version-badge" id="app-version-badge">v1.3.0</span>
         </div>
         <div id="usb-badge" class="connection-badge disconnected">
           <span class="status-indicator"></span>
@@ -45,12 +45,20 @@
     </nav>
 
     <div class="header-right">
+      <!-- Universal Dashboard Mode Toggle (Accessible on all screens) -->
+      <button id="btn-header-dashboard" class="dashboard-header-btn" onclick="toggleDashboardMode()" title="Toggle Dashboard Mode (All-in-One Multi-Panel View)" aria-label="Dashboard Mode">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+        </svg>
+        <span>Dashboard</span>
+      </button>
+
       <!-- Emergency Unstick Keys Button -->
       <button id="btn-unstick" class="unstick-btn" onclick="emergencyRelease()" title="Release stuck keys, Ctrl, or mouse buttons" aria-label="Release stuck keys">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
         </svg>
-        <span class="unstick-text">Unstick Keys</span>
+        <span class="unstick-text">Unstick</span>
       </button>
 
       <button id="btn-settings" class="icon-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -64,7 +72,7 @@
   <!-- Main Views Container -->
   <main class="main-content" id="main-content">
 
-    <!-- ── View 1: Typer ─────────────────────────────────────────── -->
+    <!-- ── View 1: Typer ─────────────────────────────────────────────────────── -->
     <section id="view-typer" class="view-panel active">
       <div class="card editor-card">
         <div class="card-header">
@@ -115,7 +123,7 @@
       </div>
     </section>
 
-    <!-- ── View 2: Live Keyboard ─────────────────────────────────── -->
+    <!-- ── View 2: Live Keyboard ───────────────────────────────────────────── -->
     <section id="view-live" class="view-panel">
       <div class="card live-card">
         <div class="card-header">
@@ -157,11 +165,11 @@
           </div>
         </div>
 
-        <!-- Quick helpers -->
+        <!-- Helper quick keys -->
         <div class="live-helpers">
-          <button class="helper-pill" onclick="sendSingleKey('Backspace')">⌫ BS</button>
-          <button class="helper-pill" onclick="sendSingleKey('Tab')">⇥ Tab</button>
-          <button class="helper-pill" onclick="sendSingleKey('Enter')">↵ Enter</button>
+          <button class="helper-pill" onclick="sendSingleKey('Enter')">Enter ↵</button>
+          <button class="helper-pill" onclick="sendSingleKey('Tab')">Tab ⇥</button>
+          <button class="helper-pill" onclick="sendSingleKey('Backspace')">⌫ Del</button>
           <button class="helper-pill" onclick="sendSingleKey('Esc')">Esc</button>
           <button class="helper-pill" onclick="sendSingleKey('up')">▲</button>
           <button class="helper-pill" onclick="sendSingleKey('down')">▼</button>
@@ -171,7 +179,7 @@
       </div>
     </section>
 
-    <!-- ── View 3: Shortcuts ─────────────────────────────────────── -->
+    <!-- ── View 3: Shortcuts ───────────────────────────────────────────────── -->
     <section id="view-shortcuts" class="view-panel">
       <div class="card">
         <div class="card-header">
@@ -238,7 +246,7 @@
       </div>
     </section>
 
-    <!-- ── View 4: Trackpad ─────────────────────────────────────── -->
+    <!-- ── View 4: Trackpad & Xbox Joysticks ─────────────────────────────────── -->
     <section id="view-trackpad" class="view-panel">
       <div class="card trackpad-card">
         <div class="card-header">
@@ -267,48 +275,56 @@
           <button class="btn-mouse right" id="btn-right-click" onclick="onMouseClick(2)">Right Click</button>
         </div>
 
-        <!-- Side-by-Side Dual Scroll Wheels Dock (Bottom Space) -->
-        <div class="scroll-wheels-dock">
-          <!-- Left: Vertical Scroll Wheel -->
-          <div class="wheel-box vertical-box">
-            <div class="wheel-box-label">
-              <span class="wheel-icon">↕</span>
-              <span>Vertical Scroll</span>
+        <!-- Dual Side-by-Side Xbox Joysticks Dock -->
+        <div class="joysticks-dock" id="joysticks-dock">
+          <!-- Left: Vertical Scroll Joystick (Thumbstick) -->
+          <div class="joystick-card" id="joy-card-v">
+            <div class="joystick-meta">
+              <span class="joy-badge v-badge">V-AXIS</span>
+              <span class="joy-name">Vertical Scroll</span>
+              <span class="joy-chevrons">▲ ▼</span>
             </div>
-            <div id="vwheel" class="scroll-wheel vertical-wheel" data-axis="v">
-              <div class="wheel-drum vertical-drum" id="vwheel-drum">
-                <div class="wheel-ridge v-ridge"></div>
-                <div class="wheel-ridge v-ridge"></div>
-                <div class="wheel-ridge v-ridge"></div>
-                <div class="wheel-ridge v-ridge"></div>
-                <div class="wheel-ridge v-ridge"></div>
-                <div class="wheel-ridge v-ridge"></div>
-                <div class="wheel-ridge v-ridge"></div>
-                <div class="wheel-ridge v-ridge"></div>
+            <div class="joystick-stage">
+              <div class="joystick-well" id="joy-well-v" data-axis="v" title="Tilt Up / Down to scroll vertically">
+                <div class="joy-axis-guideline v-guide"></div>
+                <div class="joy-arrow joy-arrow-top">▲</div>
+                <div class="joy-arrow joy-arrow-bottom">▼</div>
+                <div class="xbox-stick" id="joy-stick-v">
+                  <div class="stick-outer-rim">
+                    <div class="stick-dish">
+                      <div class="stick-grip-cross"></div>
+                      <div class="stick-center-pip"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="wheel-center-line v-center-line"></div>
             </div>
+            <div class="joy-status-hint" id="joy-hint-v">Push up / down to scroll</div>
           </div>
 
-          <!-- Right: Horizontal Scroll Wheel -->
-          <div class="wheel-box horizontal-box">
-            <div class="wheel-box-label">
-              <span class="wheel-icon">↔</span>
-              <span>Horizontal Scroll</span>
+          <!-- Right: Horizontal Scroll Joystick (Thumbstick) -->
+          <div class="joystick-card" id="joy-card-h">
+            <div class="joystick-meta">
+              <span class="joy-badge h-badge">H-AXIS</span>
+              <span class="joy-name">Horizontal Scroll</span>
+              <span class="joy-chevrons">◀ ▶</span>
             </div>
-            <div id="hwheel" class="scroll-wheel horizontal-wheel" data-axis="h">
-              <div class="wheel-drum horizontal-drum" id="hwheel-drum">
-                <div class="wheel-ridge h-ridge"></div>
-                <div class="wheel-ridge h-ridge"></div>
-                <div class="wheel-ridge h-ridge"></div>
-                <div class="wheel-ridge h-ridge"></div>
-                <div class="wheel-ridge h-ridge"></div>
-                <div class="wheel-ridge h-ridge"></div>
-                <div class="wheel-ridge h-ridge"></div>
-                <div class="wheel-ridge h-ridge"></div>
+            <div class="joystick-stage">
+              <div class="joystick-well" id="joy-well-h" data-axis="h" title="Tilt Left / Right to scroll horizontally">
+                <div class="joy-axis-guideline h-guide"></div>
+                <div class="joy-arrow joy-arrow-left">◀</div>
+                <div class="joy-arrow joy-arrow-right">▶</div>
+                <div class="xbox-stick" id="joy-stick-h">
+                  <div class="stick-outer-rim">
+                    <div class="stick-dish">
+                      <div class="stick-grip-cross"></div>
+                      <div class="stick-center-pip"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="wheel-center-line h-center-line"></div>
             </div>
+            <div class="joy-status-hint" id="joy-hint-h">Push left / right to scroll</div>
           </div>
         </div>
 
@@ -350,6 +366,14 @@
         </svg>
       </span>
       <span class="nav-label">Touchpad</span>
+    </button>
+    <button class="nav-item" id="nav-dashboard" onclick="toggleDashboardMode()">
+      <span class="nav-icon-wrap">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+        </svg>
+      </span>
+      <span class="nav-label">Dashboard</span>
     </button>
   </nav>
 
@@ -412,8 +436,8 @@
         <!-- Mouse Sensitivity -->
         <div class="setting-item">
           <div class="setting-info">
-            <span class="setting-title">Mouse &amp; Scroll Sensitivity</span>
-            <span class="setting-sub">Trackpad speed and two-finger scroll multiplier</span>
+            <span class="setting-title">Mouse &amp; Joystick Sensitivity</span>
+            <span class="setting-sub">Trackpad cursor speed and joystick scroll multiplier</span>
           </div>
           <div class="sensitivity-control">
             <input type="range" id="cfg-sensitivity" min="5" max="30" value="15" step="1" oninput="onSensitivityChange(this.value)" />
@@ -434,7 +458,7 @@
 
         <div class="hw-info-card">
           <div class="hw-title">Hardware Information</div>
-          <div class="hw-line"><span>App Version:</span> <strong id="hw-ver">v1.2.2</strong></div>
+          <div class="hw-line"><span>App Version:</span> <strong id="hw-ver">v1.3.0</strong></div>
           <div class="hw-line"><span>USB Gadget:</span> <strong id="hw-udc">Checking...</strong></div>
           <div class="hw-line"><span>Link Speed:</span> <strong id="hw-speed">Checking...</strong></div>
           <div class="hw-line"><span>HID Node:</span> <strong id="hw-node">/dev/hidg0</strong></div>

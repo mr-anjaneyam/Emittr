@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """
-setup_gadget.py  —  Emittr Composite USB HID Gadget Initializer  v1.2.2
+setup_gadget.py  —  Emittr Composite USB HID Gadget Initializer  v1.3.0
 ========================================================================
 Configures a unified composite USB HID device via Linux configfs:
-  - Report ID 1: Keyboard  (standard boot report + modifier keys)
-  - Report ID 2: Mouse     (buttons, dx, dy, wheel)
+  - Report ID 1: Keyboard  (standard boot report + modifier keys, 9 bytes)
+  - Report ID 2: Mouse     (buttons, dx, dy, wheel, ac_pan, 6 bytes)
+
+Native AC Pan (Consumer Usage 0x0238) provides standard hardware horizontal
+scrolling (WM_MOUSEHWHEEL) across Windows, Linux, and macOS without key hacks.
 
 All I/O routes through /dev/hidg0.
 Prevents Android NetHunter from reverting USB config to mass_storage / mtp.
@@ -77,14 +80,14 @@ def init_gadget(force: bool = False) -> bool:
 
     # Composite HID Report Descriptor:
     # Report ID 1: Keyboard (9 bytes total with Report ID)
-    # Report ID 2: Mouse    (5 bytes total: buttons, dx, dy, wheel)
+    # Report ID 2: Mouse    (6 bytes total: buttons, dx, dy, wheel, ac_pan)
     composite_desc = bytes.fromhex(
         "05010906a1018501050719e029e71500250175019508"
         "81029501750881039505750105081901290591029501"
         "7503910395067508150025650507190029658100c0"
         "05010902a10185020901a10005091901290515002501"
         "95057501810295017503810305010930093109381581"
-        "257f750895038106c0c0"
+        "257f750895038106050c0a38021581257f750895018106c0c0"
     )
 
     with open(f"{kbd_dir}/report_desc", "wb") as f:
@@ -111,7 +114,7 @@ def init_gadget(force: bool = False) -> bool:
     # Ensure device node permissions
     os.system("chmod 666 /dev/hidg* 2>/dev/null")
 
-    print("Emittr Composite HID Gadget v1.2.2 ready on /dev/hidg0")
+    print("Emittr Composite HID Gadget v1.3.0 ready on /dev/hidg0")
     return True
 
 

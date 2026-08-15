@@ -1,14 +1,14 @@
 # Emittr — Tactical USB HID Controller ⌨️ 🖱️
 
-> **Transform rooted Android devices and NetHunter phones into a tactical, crash-resilient USB HID Keyboard, Precision Touchpad, and Dual Scroll Deck with a high-performance Material Design 3 Web App.**
+> **Transform rooted Android devices and NetHunter phones into a tactical, crash-resilient USB HID Keyboard, Precision Touchpad, and Dual Xbox Joystick Scroll Deck with a high-performance Material Design 3 Web App.**
 
-[![Release](https://img.shields.io/badge/release-v1.2.2-blue.svg)](https://github.com/)
+[![Release](https://img.shields.io/badge/release-v1.3.0-blue.svg)](https://github.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-teal.svg)](https://fastapi.tiangolo.com/)
 [![Platform](https://img.shields.io/badge/platform-Android%20%7C%20NetHunter%20%7C%20Linux-orange.svg)](#requirements)
 
-Emittr turns an Android device (running Kali NetHunter or any Linux chroot with kernel USB gadget configfs) into a hardware-emulated USB Human Interface Device (HID). It operates concurrently as a standard 104-key USB Keyboard and an ergonomic USB Mouse with multi-axis scrolling, plug-and-play compatible with Windows, macOS, Linux, and gaming consoles.
+Emittr turns an Android device (running Kali NetHunter or any Linux chroot with kernel USB gadget configfs) into a hardware-emulated USB Human Interface Device (HID). It operates concurrently as a standard 104-key USB Keyboard and an ergonomic USB Mouse with native multi-axis scrolling (Vertical Wheel + AC Pan Horizontal Scroll), plug-and-play compatible with Windows, macOS, Linux, and gaming consoles.
 
 ---
 
@@ -21,8 +21,8 @@ Emittr turns an Android device (running Kali NetHunter or any Linux chroot with 
 - [Installation & Quick Start](#-installation--quick-start)
 - [NetHunter Mass-Storage Prevention & USB Watchdog](#-nethunter-mass-storage-prevention--usb-watchdog)
 - [Modifier Key Safety & Emergency Unstick](#-modifier-key-safety--emergency-unstick)
-- [Touchpad & Scrolling Mechanics](#-touchpad--scrolling-mechanics)
-- [Desktop Dashboard Mode (PC / Large Screens)](#-desktop-dashboard-mode-pc--large-screens)
+- [Xbox Joysticks & Native Scrolling Mechanics](#-xbox-joysticks--native-scrolling-mechanics)
+- [Universal Dashboard Mode](#-universal-dashboard-mode)
 - [REST API & WebSocket Protocol](#-rest-api--websocket-protocol)
 - [CLI Tool (`usbtype`)](#-cli-tool-usbtype)
 - [Troubleshooting & FAQ](#-troubleshooting--faq)
@@ -58,11 +58,15 @@ Unlike Bluetooth or Wi-Fi remote-input apps, Emittr presents itself as a **genui
 - **Tap-to-Click**: Sub-220ms gesture recognition for instantaneous left click.
 - **Mouse Buttons**: Dedicated *Left*, *Middle*, and *Right* click buttons.
 
-### 4. 🎛️ Dual Physical Scroll Wheels (Side-by-Side Dock)
-- **Ergonomic Bottom Placement**: Positioned in the bottom space side by side for thumb access:
-  - **Left Wheel (↕ Vertical)**: Realistic knurled drum barrel for vertical page scrolling.
-  - **Right Wheel (↔ Horizontal)**: Knurled barrel executing universal horizontal scrolling (`Shift + Mouse Wheel`).
-- **Tactile Physics**: Inset drum ridges, center reticle alignment, notch snap animations, and micro-haptic vibration (4ms) per notch.
+### 4. 🎮 Dual Xbox Joysticks Dock (Side-by-Side)
+- **Ergonomic Footprint**: Replaces bulky long scroll bars with two compact, side-by-side **Xbox thumbsticks**:
+  - **Left Joystick (V-Axis)**: Push up / down for vertical scrolling.
+  - **Right Joystick (H-Axis)**: Push left / right for horizontal scrolling.
+- **Authentic Xbox Physics**:
+  - Concave thumbstick cap with textured grip rim, crosshair notches, and center illuminated pip.
+  - Rate-based continuous scrolling: tilting further increases scroll speed smoothly.
+  - Bouncy spring-back animation to center when released.
+  - Native USB HID **AC Pan** (Consumer Usage 0x0238) emitting true hardware `WM_MOUSEHWHEEL` events in Windows without key modifier hacks.
 
 ### 5. 🚀 Tactical Hotkeys Deck
 - **Windows hotkeys**: `Win+R` (Run), `Ctrl+Shift+Esc` (Task Manager), `Win+L` (Lock), `Win+D` (Desktop), `Win+E` (Explorer), `Alt+Tab`, `Alt+F4`, `Ctrl+C`, `Ctrl+V`, `Ctrl+A`, `Ctrl+Z`.
@@ -72,45 +76,49 @@ Unlike Bluetooth or Wi-Fi remote-input apps, Emittr presents itself as a **genui
 - In USB HID devices, if a device disconnects while a modifier (like `Ctrl` or `Shift`) is active, the host OS keeps the key depressed in driver memory.
 - Emittr features an instant **"Unstick Keys"** header button and automatic startup/reconnect flush that injects a clean null report to release all stuck keys immediately.
 
-### 7. 🖥️ Responsive Desktop Dashboard Mode
-- When accessed from a desktop or laptop browser (`min-width: 900px`), Emittr expands into a **multi-panel tactical grid**.
-- Displays the Typer, Live Keys, Shortcuts Deck, and Trackpad simultaneously side by side.
+### 7. 🖥️ Universal Dashboard Mode
+- Accessible via the top header button on **all devices** (mobile, tablet, desktop) and the bottom navigation bar.
+- **Mobile Phones (`< 900px`)**: Stacks all four panels (Typer, Touchpad, Shortcuts, Live Keys) into a single, scrollable deck so you never need to jump between tabs. Tapping any tab smoothly scrolls into view.
+- **Desktop Monitors (`≥ 900px`)**: Expands into a balanced dual-column command center:
+  - **Left Column**: Text Typer & Windows Shortcuts Deck.
+  - **Right Column**: Touchpad with Xbox Joysticks & Live Keys Mirror.
 
 ---
 
 ## 🏗️ How It Works & Architecture
 
 ```
-┌────────────────────────────────────────────────────────┐
-│             Mobile Web Browser / PWA Client            │
-│  (Typer Textarea | Live SwiftKey Mirror | Trackpad)    │
-└───────────────┬────────────────────────┬───────────────┘
+┌──────────────────────────────────────────────────────────┐
+│             Mobile Web Browser / PWA Client              │
+│  (Typer Textarea | Live SwiftKey Mirror | Trackpad Deck) │
+└──────────────────────────┬───────────────────┬───────────┘
                 │ REST API               │ WebSocket (/ws)
                 ▼                        ▼
-┌────────────────────────────────────────────────────────┐
-│               FastAPI & Uvicorn Daemon                 │
-│         (Active USB Watchdog & Gadget Persist)         │
-└───────────────┬────────────────────────┬───────────────┘
-                │ Report ID 1 (Kbd)      │ Report ID 2 (Mouse)
+┌──────────────────────────────────────────────────────────┐
+│               FastAPI & Uvicorn Daemon                   │
+│         (Active USB Watchdog & Gadget Persist)           │
+└──────────────────────────┬───────────────────┬───────────┘
+                │ Report ID 1 (Kbd, 9B)  │ Report ID 2 (Mouse, 6B)
                 ▼                        ▼
-┌────────────────────────────────────────────────────────┐
-│             /dev/hidg0 (Composite HID Gadget)          │
-│               Linux kernel USB ConfigFS                │
-└───────────────────────────────┬────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│             /dev/hidg0 (Composite HID Gadget)            │
+│  Report ID 1: Keyboard (Boot 104-key)                    │
+│  Report ID 2: Mouse (5 Buttons + X + Y + Wheel + AC Pan) │
+└──────────────────────────┬───────────────────────────────┘
                                 │ USB Cable (OTG / UDC)
                                 ▼
-┌────────────────────────────────────────────────────────┐
-│         Host Computer (Windows / macOS / Linux)        │
-│    Recognized natively as standard Keyboard & Mouse    │
-└────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│         Host Computer (Windows / macOS / Linux)          │
+│    Recognized natively as standard Keyboard & Mouse      │
+└──────────────────────────────────────────────────────────┘
 ```
 
 1. **Linux Configfs Composite Gadget**:
-   - Instead of unstable legacy Android gadgets, Emittr configures a single unified composite HID device on `functions/hid.0` mapping to `/dev/hidg0`.
-   - **Report ID 1**: 8-byte boot keyboard payload (modifiers byte + reserved + 6 keycodes).
-   - **Report ID 2**: 4-byte mouse payload (5 button bits + 3 pad bits, relative X, relative Y, relative Wheel).
+   - Emittr configures a single unified composite HID device on `functions/hid.0` mapping to `/dev/hidg0`.
+   - **Report ID 1**: 9-byte boot keyboard payload (Report ID + modifiers byte + reserved + 6 keycodes).
+   - **Report ID 2**: 6-byte mouse payload (Report ID + 5 button bits + 3 pad bits, relative X, relative Y, relative Wheel, relative AC Pan).
 2. **FastAPI Non-Blocking Controller**:
-   - Opens `/dev/hidg0` with `O_NONBLOCK` and `select.select(..., 0.05)` timeout protection to eliminate kernel deadlocks and `AP_S_PANIC` crashes.
+   - Opens `/dev/hidg0` with `O_NONBLOCK` and `select.select(..., 0.05)` timeout protection to eliminate kernel deadlocks.
 3. **Loopback Port 80 Redirector**:
    - An asynchronous userland TCP listener redirects incoming port 80 traffic to 8088 without using `iptables` NAT loopback rules.
 
@@ -184,35 +192,35 @@ When a USB keyboard is unplugged or disconnected from a PC while a modifier key 
 
 ### Emittr's Multi-Tier Protection:
 1. **`finally` Execution Guarantee**: Keystroke routines wrap the key-up report in Python `try ... finally` blocks to ensure releases are sent even if the host connection drops.
-2. **Plug-In Flush**: The moment the UDC detects a transition to `configured` (USB cable plugged into host), Emittr immediately flushes a 9-byte keyboard zero report and a 5-byte mouse zero report.
+2. **Plug-In Flush**: The moment the UDC detects a transition to `configured` (USB cable plugged into host), Emittr immediately flushes a 9-byte keyboard zero report and a 6-byte mouse zero report.
 3. **One-Tap Unstick Button**: The UI header features a dedicated **"Unstick Keys"** button that fires `/api/release`, releasing all modifiers and mouse buttons instantly.
 
 ---
 
-## 🖐️ Touchpad & Scrolling Mechanics
+## 🎮 Xbox Joysticks & Native Scrolling Mechanics
 
-### Two-Finger Touchpad Gestures
-Emittr includes a dual-axis sub-pixel touch accumulator (`accumScrollX`, `accumScrollY`).
-- Sliding two fingers vertically triggers vertical mouse wheel ticks (`wheel_v`).
-- Sliding two fingers horizontally triggers horizontal scroll ticks (`wheel_h`).
-- Micro-haptic vibration provides subtle physical feedback as each scroll notch fires.
+### Dual Xbox Thumbsticks
+Instead of long, cumbersome scroll barrels, Emittr features two compact, side-by-side **Xbox-style thumbsticks**:
+- **Left Stick (Vertical Scroll)**: Deflecting up scrolls up; deflecting down scrolls down.
+- **Right Stick (Horizontal Scroll)**: Deflecting left scrolls left; deflecting right scrolls right.
+- **Rate-Based Physics**: The further you push the thumbstick from center, the faster it continuously scrolls.
+- **Spring-Back Action**: Releasing your thumb snaps the stick back to center with smooth spring physics and halts scrolling immediately.
 
-### Horizontal Scroll Parity (`Shift + Wheel`)
-Across Windows, Linux, and macOS, horizontal wheel scrolling is natively executed by holding `Left Shift` while scrolling the mouse wheel.
-- **Vertical Wheel Drum**: Emits standard mouse wheel ticks (`wheel`).
-- **Horizontal Wheel Drum**: Emits `Shift + Mouse Wheel` (`wheel_h`), enabling smooth horizontal scrolling in Excel, VS Code, Chrome, File Explorer, and code editors.
-- **Desktop Parity**: When accessing Emittr from a desktop browser, holding the physical `Shift` key while using your mouse wheel on the trackpad surface triggers horizontal scrolling.
+### Native Hardware Horizontal Scrolling (AC Pan 0x0238)
+Unlike earlier hacks that attempted to simulate horizontal scrolling using `Shift + Wheel`, Emittr v1.3.0 implements the official USB HID **AC Pan (Application Control Pan, Usage 0x0238)** inside Report ID 2:
+- Windows natively receives `WM_MOUSEHWHEEL` events.
+- Works out of the box in Microsoft Excel, VS Code, Google Chrome, File Explorer, and code editors.
+- Zero desynchronization, no key races, and zero chance of stuck modifier keys.
 
 ---
 
-## 🖥️ Desktop Dashboard Mode (PC / Large Screens)
+## 🖥️ Universal Dashboard Mode
 
-Emittr features responsive design tailored for dual-use:
-- **Mobile Phones (`< 900px`)**: Single-column thumb-friendly view with a bottom navigation bar.
-- **Desktop Monitors (`≥ 900px`)**: Displays the top navigation bar and allows enabling **Dashboard Mode** via the header toggle.
-  - In Dashboard Mode, the layout transforms into a wide dual-column tactical command center:
-    - **Left Column**: Text Typer & Live Keys IME mirror with stroke history.
-    - **Right Column**: Touchpad & Dual Scroll Wheels with Shortcuts Deck.
+- **Mobile View (`< 900px`)**: In Dashboard Mode, all 4 sections (Typer, Touchpad, Shortcuts, Live Keys) are displayed in an all-in-one vertical deck. Clicking any tab in the bottom nav smoothly scrolls to that section without leaving Dashboard Mode.
+- **Desktop View (`≥ 900px`)**: Dashboard Mode displays an expansive two-column tactical command grid:
+  - **Left**: Typer + Windows Shortcuts Deck.
+  - **Right**: Touchpad & Xbox Joysticks + Live Keys Mirror.
+- **Persistent State**: Your Dashboard Mode preference is saved in `localStorage` and remembered on all screen sizes.
 
 ---
 
@@ -244,8 +252,8 @@ Clients can send JSON commands over `/ws` for sub-5ms low latency:
 // Mouse click (1=Left, 2=Right, 4=Middle)
 { "action": "mouse_click", "button": 1 }
 
-// Multi-axis scroll
-{ "action": "mouse_scroll", "wheel_v": -2, "wheel_h": 0 }
+// Multi-axis scroll (wheel_v = vertical, wheel_h = horizontal AC Pan)
+{ "action": "mouse_scroll", "wheel_v": -2, "wheel_h": 1 }
 
 // Emergency release
 { "action": "release_all" }
@@ -278,17 +286,15 @@ usbtype --key ctrl+alt+del
 ## ❓ Troubleshooting & FAQ
 
 ### 1. Windows reports `Code 10: Device cannot start`
-- Ensure you are running Emittr v1.2.2. In earlier versions, having multiple separate `hid.0` and `hid.1` functions caused a descriptor length collision in the Linux 4.4 kernel. Emittr v1.2.2 uses a unified composite HID descriptor on a single node `/dev/hidg0`.
+- Ensure you are running Emittr v1.3.0. Earlier versions with multiple separate `hid.0` and `hid.1` functions caused descriptor length collisions. Emittr v1.3.0 uses a single unified composite HID descriptor on `/dev/hidg0`.
 
 ### 2. My PC's `Ctrl` key is stuck down after unplugging
-- Tap the red **"Unstick Keys"** button in the Emittr header.
+- Tap the red **"Unstick"** button in the Emittr header.
 - Alternatively, press and release `Left Ctrl` and `Right Ctrl` once on any physical keyboard attached to the PC.
-- In Emittr v1.2.2, plug-in zero report flushes eliminate this issue automatically.
+- In Emittr v1.3.0, automatic plug-in zero report flushes eliminate this issue automatically.
 
-### 3. Trackpad moves but scroll does nothing
-- Verify that Emittr v1.2.2 is running by checking the header version badge.
-- When using the two-finger gesture, ensure two fingers are placed simultaneously on the surface.
-- For horizontal scrolling, the target application must support horizontal scroll (e.g., Excel, wide code editor, or browser).
+### 3. Does horizontal scroll work in Windows?
+- Yes! Emittr v1.3.0 uses native HID AC Pan (`Usage 0x0238`) in the mouse report descriptor. When you deflect the horizontal Xbox joystick or swipe horizontally with two fingers, Windows natively receives `WM_MOUSEHWHEEL`.
 
 ### 4. How do I access via `http://hid.keyboard` without specifying port 8088?
 - Emittr runs an asynchronous port 80 redirector in userland. As long as `hid.keyboard` resolves to `127.0.0.1` on the phone (automatically configured by `02-usb-deck.sh`), typing `http://hid.keyboard` will route directly to port 8088.

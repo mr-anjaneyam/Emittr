@@ -1,12 +1,12 @@
 /**
- * Emittr · Web App Controller v1.2.2
- * Provides touch gliding, two-finger gesture scrolling, physical drum scroll wheels,
- * IME keyboard mirror, Windows shortcuts deck, and emergency key unstick.
+ * Emittr · Web App Controller v1.3.0
+ * Tactical USB HID Controller: Dual Xbox Joysticks, Universal Dashboard Mode,
+ * Native AC Pan Horizontal Scroll, IME Keyboard Mirror, and Windows Shortcuts Deck.
  */
 
 'use strict';
 
-const APP_VERSION = '1.2.2';
+const APP_VERSION = '1.3.0';
 
 const State = {
   ws: null,
@@ -31,12 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
   initWebSocket();
   initTextareaCounter();
   initLiveKeyboard();
-  initScrollWheels();
+  initJoysticks();
   initTrackpad();
   fetchInitialStatus();
 });
 
-// ── Version Badge Initialization ───────────────────────────────────────────
+// ── Version Badge Initialization ──────────────────────────────────────────
 
 function initVersionBadge(ver) {
   const v = ver || APP_VERSION;
@@ -47,7 +47,7 @@ function initVersionBadge(ver) {
   if (hwVer) hwVer.textContent = v.startsWith('v') ? v : 'v' + v;
 }
 
-// ── Config Management ───────────────────────────────────────────────────────
+// ── Config Management & Dashboard Preference ──────────────────────────────
 
 function loadConfig() {
   const saved = localStorage.getItem('emittr_cfg');
@@ -65,26 +65,25 @@ function loadConfig() {
   const rawSens = State.config.sensitivity ?? 15;
   document.getElementById('cfg-sensitivity').value = rawSens;
   State.sensitivity = rawSens / 15.0;
-  document.getElementById('sensitivity-val').innerText = ${State.sensitivity.toFixed(1)}×;
+  document.getElementById('sensitivity-val').innerText = `${State.sensitivity.toFixed(1)}×`;
 
-  // Delay
+  // Typing Delay
   const savedDelay = localStorage.getItem('emittr_delay');
   if (savedDelay) {
     const d = parseInt(savedDelay, 10);
     if (!isNaN(d)) {
       State.delayMs = d;
       document.getElementById('delay-slider').value  = d;
-      document.getElementById('delay-val').innerText = ${d} ms / char;
+      document.getElementById('delay-val').innerText = `${d} ms / char`;
       updatePresetPills(d);
     }
   }
 
-  // Dashboard mode preference on desktop
+  // Restore Dashboard Mode preference across all screen sizes
   const isDash = localStorage.getItem('emittr_dashboard') === 'true';
-  if (isDash && window.innerWidth >= 900) {
+  if (isDash) {
     document.body.classList.add('dashboard-mode');
-    const btn = document.getElementById('btn-dashboard-mode');
-    if (btn) btn.classList.add('active');
+    updateDashboardUI(true);
   }
 }
 
@@ -100,7 +99,7 @@ function saveConfig() {
 function onSensitivityChange(val) {
   const raw = parseInt(val, 10);
   State.sensitivity = raw / 15.0;
-  document.getElementById('sensitivity-val').innerText = ${State.sensitivity.toFixed(1)}×;
+  document.getElementById('sensitivity-val').innerText = `${State.sensitivity.toFixed(1)}×`;
   saveConfig();
 }
 
@@ -121,7 +120,7 @@ function triggerHaptic(duration = 10) {
   }
 }
 
-// ── Emergency Unstick Keys ──────────────────────────────────────────────────
+// ── Emergency Unstick Keys ────────────────────────────────────────────────
 
 async function emergencyRelease() {
   triggerHaptic(25);
@@ -139,18 +138,26 @@ async function emergencyRelease() {
   }
 }
 
-// ── Dashboard Mode (PC / Wide Screens) ───────────────────────────────────────
+// ── Universal Dashboard Mode ──────────────────────────────────────────────
 
 function toggleDashboardMode() {
-  const active = document.body.classList.toggle('dashboard-mode');
-  const btn = document.getElementById('btn-dashboard-mode');
-  if (btn) btn.classList.toggle('active', active);
-  localStorage.setItem('emittr_dashboard', String(active));
-  triggerHaptic(12);
-  showToast(active ? 'Dashboard mode: multi-panel view active' : 'Standard tab view active');
+  const isDash = document.body.classList.toggle('dashboard-mode');
+  updateDashboardUI(isDash);
+  localStorage.setItem('emittr_dashboard', String(isDash));
+  triggerHaptic(14);
+  showToast(isDash ? 'Dashboard Mode: All panels active' : 'Tab View active');
 }
 
-// ── WebSocket & Status ──────────────────────────────────────────────────────
+function updateDashboardUI(active) {
+  const btnHeader = document.getElementById('btn-header-dashboard');
+  const btnDesk   = document.getElementById('btn-dashboard-mode');
+  const navDash   = document.getElementById('nav-dashboard');
+  if (btnHeader) btnHeader.classList.toggle('active', active);
+  if (btnDesk)   btnDesk.classList.toggle('active', active);
+  if (navDash)   navDash.classList.toggle('active', active);
+}
+
+// ── WebSocket & Status Monitor ────────────────────────────────────────────
 
 function initWebSocket() {
   if (State.reconnectTimer) { clearTimeout(State.reconnectTimer); State.reconnectTimer = null; }
@@ -158,7 +165,7 @@ function initWebSocket() {
                    State.ws.readyState === WebSocket.OPEN)) return;
 
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  State.ws = new WebSocket(${protocol}///ws);
+  State.ws = new WebSocket(`${protocol}//${location.host}/ws`);
 
   State.ws.onopen = () => {
     if (State.reconnectTimer) { clearTimeout(State.reconnectTimer); State.reconnectTimer = null; }
@@ -187,14 +194,14 @@ function handleWsMessage(msg) {
     if (msg.aborted) {
       showToast('Typing aborted');
     } else {
-      showToast(Finished typing text);
+      showToast('Finished typing text');
       if (State.config.autoclear) {
         document.getElementById('text-input').value = '';
         updateCharCount();
       }
     }
   } else if (msg.type === 'countdown') {
-    showToast(Typing starts in s...);
+    showToast(`Typing starts in ${msg.remaining}s...`);
   }
 }
 
@@ -209,14 +216,14 @@ function updateConnectionUI(data) {
   if (!data) return;
   const badge = document.getElementById('usb-badge');
   const text  = document.getElementById('usb-status-text');
-  State.connected = data.connected;
+  State.connected = data.attached;
 
-  if (data.connected) {
+  if (data.attached) {
     badge.className = 'connection-badge connected';
-    text.innerText  = Connected ();
+    text.innerText  = `Connected (${data.speed || 'FS'})`;
   } else {
     badge.className = 'connection-badge disconnected';
-    text.innerText  = 'PC Not Connected';
+    text.innerText  = 'Waiting USB...';
   }
 
   const udc   = document.getElementById('hw-udc');
@@ -231,34 +238,44 @@ function updateConnectionUI(data) {
   }
 }
 
-// ── View Switching ──────────────────────────────────────────────────────────
+// ── View Switching & Dashboard Smooth Navigation ──────────────────────────
 
 function switchView(viewName, clickedBtn) {
   if (document.body.classList.contains('dashboard-mode')) {
-    document.body.classList.remove('dashboard-mode');
-    const dBtn = document.getElementById('btn-dashboard-mode');
-    if (dBtn) dBtn.classList.remove('active');
-    localStorage.setItem('emittr_dashboard', 'false');
+    // In Dashboard Mode: smoothly scroll to that section without exiting dashboard mode
+    const target = document.getElementById('view-' + viewName);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    // Update bottom navigation & desktop navigation active indicator
+    document.querySelectorAll('.nav-item').forEach(b => {
+      if (b.id !== 'nav-dashboard') b.classList.toggle('active', b.id === 'nav-' + viewName);
+    });
+    document.querySelectorAll('.desktop-nav-btn').forEach(b => {
+      if (b.dataset.view) b.classList.toggle('active', b.dataset.view === viewName);
+    });
+    triggerHaptic(10);
+    return;
   }
 
+  // Standard single-tab switching
   document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.desktop-nav-btn').forEach(b => {
     if (b.dataset.view) b.classList.toggle('active', b.dataset.view === viewName);
   });
 
-  const targetPanel = document.getElementById(iew-);
+  const targetPanel = document.getElementById('view-' + viewName);
   if (targetPanel) targetPanel.classList.add('active');
 
-  const bottomNavBtn = document.getElementById(
-av-);
+  const bottomNavBtn = document.getElementById('nav-' + viewName);
   if (bottomNavBtn) bottomNavBtn.classList.add('active');
 
   triggerHaptic(12);
   if (viewName === 'live') setTimeout(focusLiveInput, 150);
 }
 
-// ── View 1: Typer ───────────────────────────────────────────────────────────
+// ── View 1: Typer ─────────────────────────────────────────────────────────
 
 function initTextareaCounter() {
   document.getElementById('text-input').addEventListener('input', updateCharCount);
@@ -266,7 +283,7 @@ function initTextareaCounter() {
 
 function updateCharCount() {
   document.getElementById('char-count').innerText =
-    ${document.getElementById('text-input').value.length} chars;
+    `${document.getElementById('text-input').value.length} chars`;
 }
 
 function selectPreset(btn, delay) {
@@ -274,7 +291,7 @@ function selectPreset(btn, delay) {
   btn.classList.add('active');
   State.delayMs = delay;
   document.getElementById('delay-slider').value  = delay;
-  document.getElementById('delay-val').innerText = ${delay} ms / char;
+  document.getElementById('delay-val').innerText = `${delay} ms / char`;
   localStorage.setItem('emittr_delay', delay);
   triggerHaptic(8);
 }
@@ -282,7 +299,7 @@ function selectPreset(btn, delay) {
 function onSliderChange(val) {
   const d = parseInt(val, 10);
   State.delayMs = d;
-  document.getElementById('delay-val').innerText = ${d} ms / char;
+  document.getElementById('delay-val').innerText = `${d} ms / char`;
   updatePresetPills(d);
   localStorage.setItem('emittr_delay', d);
 }
@@ -362,12 +379,12 @@ function animateProgressBar(totalTimeMs) {
   fill.style.transition = 'none';
   fill.style.width      = '0%';
   requestAnimationFrame(() => {
-    fill.style.transition = width ms linear;
+    fill.style.transition = `width ${totalTimeMs}ms linear`;
     fill.style.width      = '100%';
   });
 }
 
-// ── View 2: Live Keyboard ───────────────────────────────────────────────────
+// ── View 2: Live Keyboard ─────────────────────────────────────────────────
 
 function toggleKeyFeed() {
   const btn      = document.getElementById('feed-toggle-btn');
@@ -493,11 +510,11 @@ function clearKeyFeed() {
 
 function sendSingleKey(keyName) { triggerHaptic(12); sendLiveChar(keyName); }
 
-// ── View 3: Shortcuts ───────────────────────────────────────────────────────
+// ── View 3: Shortcuts ─────────────────────────────────────────────────────
 
 async function sendCombo(combo) {
   triggerHaptic(15);
-  showToast(Injected );
+  showToast(`Injected ${combo}`);
   try {
     await fetch('/api/key', {
       method: 'POST',
@@ -507,123 +524,183 @@ async function sendCombo(combo) {
   } catch (e) {}
 }
 
-// ── View 4: Dual Bottom Scroll Wheels (Side-by-Side) ────────────────────────
+// ── View 4: Dual Xbox Joystick Thumbsticks Engine ─────────────────────────
 
-function initScrollWheels() {
-  initOneWheel('vwheel', 'v');
-  initOneWheel('hwheel', 'h');
+function initJoysticks() {
+  initOneJoystick('joy-well-v', 'joy-stick-v', 'joy-hint-v', 'v');
+  initOneJoystick('joy-well-h', 'joy-stick-h', 'joy-hint-h', 'h');
 }
 
-function initOneWheel(wheelId, axis) {
-  const wheel = document.getElementById(wheelId);
-  if (!wheel) return;
-  const drum = wheel.querySelector('.wheel-drum');
-  let lastPos = 0;
-  let isDown  = false;
-  let accum   = 0;
-  const TICK_PX = 14; // pixels travelled per notch
+function initOneJoystick(wellId, stickId, hintId, axis) {
+  const well  = document.getElementById(wellId);
+  const stick = document.getElementById(stickId);
+  const hint  = document.getElementById(hintId);
+  if (!well || !stick) return;
 
-  function getPos(e) {
-    const t = e.touches ? e.touches[0] : e;
-    return axis === 'v' ? t.clientY : t.clientX;
+  const MAX_RADIUS = 26; // Maximum deflection radius in px
+  const DEADZONE   = 4;  // Deadzone in px to prevent drifting
+  const defaultHint = axis === 'v' ? 'Push up / down to scroll' : 'Push left / right to scroll';
+
+  let isDragging   = false;
+  let centerX      = 0;
+  let centerY      = 0;
+  let activeSpeed  = 0;
+  let tickerTimer  = null;
+
+  function updateDeflection(clientX, clientY) {
+    const rawDx = clientX - centerX;
+    const rawDy = clientY - centerY;
+
+    if (axis === 'v') {
+      // Constrain primarily to vertical motion with slight horizontal leeway
+      const clampedDy = Math.max(-MAX_RADIUS, Math.min(MAX_RADIUS, rawDy));
+      const clampedDx = Math.max(-7, Math.min(7, rawDx * 0.25));
+
+      stick.style.transform = `translate(calc(-50% + ${clampedDx}px), calc(-50% + ${clampedDy}px))`;
+
+      well.classList.toggle('deflected-top', clampedDy < -DEADZONE);
+      well.classList.toggle('deflected-bottom', clampedDy > DEADZONE);
+
+      if (Math.abs(clampedDy) > DEADZONE) {
+        const norm = (Math.abs(clampedDy) - DEADZONE) / (MAX_RADIUS - DEADZONE);
+        // Tilt UP (dy < 0) -> scroll UP (positive wheel)
+        // Tilt DOWN (dy > 0) -> scroll DOWN (negative wheel)
+        const dir = clampedDy < 0 ? 1 : -1;
+        const speed = dir * Math.max(1, Math.round(Math.pow(norm, 1.35) * 5 * State.sensitivity));
+        activeSpeed = speed;
+        if (hint) {
+          hint.innerText = (dir > 0 ? '▲ Scroll Up +' : '▼ Scroll Down ') + Math.abs(speed);
+        }
+      } else {
+        activeSpeed = 0;
+        if (hint) hint.innerText = defaultHint;
+      }
+    } else {
+      // Constrain primarily to horizontal motion with slight vertical leeway
+      const clampedDx = Math.max(-MAX_RADIUS, Math.min(MAX_RADIUS, rawDx));
+      const clampedDy = Math.max(-7, Math.min(7, rawDy * 0.25));
+
+      stick.style.transform = `translate(calc(-50% + ${clampedDx}px), calc(-50% + ${clampedDy}px))`;
+
+      well.classList.toggle('deflected-left', clampedDx < -DEADZONE);
+      well.classList.toggle('deflected-right', clampedDx > DEADZONE);
+
+      if (Math.abs(clampedDx) > DEADZONE) {
+        const norm = (Math.abs(clampedDx) - DEADZONE) / (MAX_RADIUS - DEADZONE);
+        // Tilt RIGHT (dx > 0) -> scroll RIGHT (positive AC Pan)
+        // Tilt LEFT (dx < 0) -> scroll LEFT (negative AC Pan)
+        const dir = clampedDx > 0 ? 1 : -1;
+        const speed = dir * Math.max(1, Math.round(Math.pow(norm, 1.35) * 5 * State.sensitivity));
+        activeSpeed = speed;
+        if (hint) {
+          hint.innerText = (dir > 0 ? '▶ Scroll Right +' : '◀ Scroll Left ') + Math.abs(speed);
+        }
+      } else {
+        activeSpeed = 0;
+        if (hint) hint.innerText = defaultHint;
+      }
+    }
+  }
+
+  function startScrollTicker() {
+    if (tickerTimer) clearInterval(tickerTimer);
+    // 70ms tick interval gives smooth, responsive rate-based scrolling
+    tickerTimer = setInterval(() => {
+      if (activeSpeed !== 0) {
+        emitScroll(axis, activeSpeed);
+        triggerHaptic(3);
+      }
+    }, 70);
+  }
+
+  function stopScrollTicker() {
+    if (tickerTimer) {
+      clearInterval(tickerTimer);
+      tickerTimer = null;
+    }
   }
 
   function onStart(e) {
     e.preventDefault();
-    lastPos = getPos(e);
-    isDown  = true;
-    accum   = 0;
-    wheel.classList.add('clicking');
-    setTimeout(() => wheel.classList.remove('clicking'), 120);
+    isDragging = true;
+    const rect = well.getBoundingClientRect();
+    centerX = rect.left + rect.width / 2;
+    centerY = rect.top + rect.height / 2;
+
+    well.classList.add('dragging');
+    triggerHaptic(10);
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    updateDeflection(clientX, clientY);
+    startScrollTicker();
   }
 
   function onMove(e) {
-    if (!isDown) return;
+    if (!isDragging) return;
     e.preventDefault();
-    const pos   = getPos(e);
-    const delta = pos - lastPos;
-    lastPos     = pos;
-    accum      += delta;
-
-    while (Math.abs(accum) >= TICK_PX) {
-      const dir = accum > 0 ? 1 : -1;
-      accum    -= dir * TICK_PX;
-
-      if (axis === 'v') {
-        // Vertical wheel: drag down (dir > 0) -> negative wheel delta (scroll down)
-        // Drag up (dir < 0) -> positive wheel delta (scroll up)
-        const scrollVal = -Math.round(dir * 2 * State.sensitivity);
-        emitScroll('v', scrollVal);
-        animateWheelNotch(drum, 'v', dir);
-      } else {
-        // Horizontal wheel: drag right (dir > 0) -> positive horizontal scroll (scroll right)
-        // Drag left (dir < 0) -> negative horizontal scroll (scroll left)
-        const scrollVal = Math.round(dir * 2 * State.sensitivity);
-        emitScroll('h', scrollVal);
-        animateWheelNotch(drum, 'h', dir);
-      }
-
-      triggerHaptic(4);
-    }
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    updateDeflection(clientX, clientY);
   }
 
-  function onEnd(e) {
-    isDown = false;
-    accum  = 0;
+  function onEnd() {
+    if (!isDragging) return;
+    isDragging  = false;
+    activeSpeed = 0;
+    stopScrollTicker();
+
+    well.classList.remove('dragging', 'deflected-top', 'deflected-bottom', 'deflected-left', 'deflected-right');
+    stick.style.transform = 'translate(-50%, -50%)';
+    if (hint) hint.innerText = defaultHint;
+
+    emitScroll(axis, 0);
+    triggerHaptic(5);
   }
 
-  // Touch
-  wheel.addEventListener('touchstart', onStart, { passive: false });
-  wheel.addEventListener('touchmove',  onMove,  { passive: false });
-  wheel.addEventListener('touchend',   onEnd,   { passive: false });
+  // Touch Events
+  well.addEventListener('touchstart', onStart, { passive: false });
+  window.addEventListener('touchmove', onMove,  { passive: false });
+  window.addEventListener('touchend',  onEnd,   { passive: false });
+  window.addEventListener('touchcancel', onEnd, { passive: false });
 
-  // Mouse fallback
-  wheel.addEventListener('mousedown', onStart);
-  window.addEventListener('mousemove', (e) => { if (isDown) onMove(e); });
-  window.addEventListener('mouseup',   (e) => { if (isDown) onEnd(e); });
+  // Mouse Fallback
+  well.addEventListener('mousedown', onStart);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onEnd);
 }
+
+// ── Native Hardware Scrolling Transmitter ─────────────────────────────────
 
 function emitScroll(axis, val) {
   if (val === 0) return;
 
   if (axis === 'v') {
-    // Vertical scroll (standard mouse wheel)
+    // Vertical scroll (Standard Mouse Wheel)
     if (State.ws && State.ws.readyState === WebSocket.OPEN) {
       State.ws.send(JSON.stringify({ action: 'mouse_scroll', wheel_v: val, wheel_h: 0 }));
     } else {
       fetch('/api/mouse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wheel: val })
+        body: JSON.stringify({ wheel: val, wheel_h: 0 })
       }).catch(() => {});
     }
   } else {
-    // Horizontal scroll (Shift + Wheel)
+    // Horizontal scroll (Native HID AC Pan Usage 0x0238)
     if (State.ws && State.ws.readyState === WebSocket.OPEN) {
       State.ws.send(JSON.stringify({ action: 'mouse_scroll', wheel_v: 0, wheel_h: val }));
     } else {
       fetch('/api/mouse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wheel_h: val })
+        body: JSON.stringify({ wheel: 0, wheel_h: val })
       }).catch(() => {});
     }
   }
 }
 
-function animateWheelNotch(drum, axis, dir) {
-  drum.classList.remove('wheel-notch-v', 'wheel-notch-h');
-  void drum.offsetWidth; // Force reflow
-  if (axis === 'v') {
-    drum.style.setProperty('--notch-dy', ${-dir * 6}px);
-    drum.classList.add('wheel-notch-v');
-  } else {
-    drum.style.setProperty('--notch-dx', ${-dir * 6}px);
-    drum.classList.add('wheel-notch-h');
-  }
-}
-
-// ── View 4: Touchpad & Two-Finger Gesture Engine ─────────────────────────────
+// ── View 4: Touchpad & Two-Finger Gesture Engine ───────────────────────────
 
 function initTrackpad() {
   const surface = document.getElementById('touchpad-surface');
@@ -659,7 +736,7 @@ function initTrackpad() {
   surface.addEventListener('touchmove', (e) => {
     e.preventDefault();
 
-    // ── Two-Finger Touchpad Scrolling (Vertical + Horizontal) ──
+    // Two-Finger Touchpad Scrolling (Vertical + Horizontal)
     if (e.touches.length === 2) {
       const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
       const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
@@ -688,13 +765,14 @@ function initTrackpad() {
         emitScroll('h', dirX * 2);
         triggerHaptic(3);
       }
-
       return;
     }
 
-    // ── Single-Finger Cursor Movement ──
-    if (!isMoving || e.touches.length !== 1 || isTwoFinger) return;
-    const curX = e.touches[0].clientX, curY = e.touches[0].clientY;
+    if (!isMoving || e.touches.length !== 1) return;
+
+    // Single finger cursor glide
+    const curX = e.touches[0].clientX;
+    const curY = e.touches[0].clientY;
     const dx   = Math.round((curX - lastX) * 1.5 * State.sensitivity);
     const dy   = Math.round((curY - lastY) * 1.5 * State.sensitivity);
     lastX = curX; lastY = curY;
@@ -704,27 +782,24 @@ function initTrackpad() {
     }
   }, { passive: false });
 
-  // Touchend
+  // Touchend (Tap to Left Click)
   surface.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    if (isTwoFinger) {
-      if (e.touches.length === 0) isTwoFinger = false;
-      return;
+    if (!isTwoFinger && isMoving) {
+      const elapsed  = Date.now() - tapStartTime;
+      const movedDist = Math.hypot(lastX - startX, lastY - startY);
+      if (elapsed < 250 && movedDist < 8) {
+        onMouseClick(1);
+      }
     }
-
-    isMoving = false;
-    const duration  = Date.now() - tapStartTime;
-    const totalDist = Math.hypot(lastX - startX, lastY - startY);
-    if (duration < 220 && totalDist < 8) {
-      onMouseClick(1);
-    }
+    isMoving    = false;
+    isTwoFinger = false;
   }, { passive: false });
 
-  // ── Desktop Mouse Fallback ──
+  // Desktop Mouse Glide fallback
   let isMouseDown = false;
   surface.addEventListener('mousedown', (e) => {
-    lastX = startX = e.clientX; lastY = startY = e.clientY;
-    isMouseDown = true; tapStartTime = Date.now();
+    isMouseDown = true;
+    lastX = e.clientX; lastY = e.clientY;
   });
   window.addEventListener('mousemove', (e) => {
     if (!isMouseDown) return;
@@ -735,26 +810,17 @@ function initTrackpad() {
       State.ws.send(JSON.stringify({ action: 'mouse_move', dx, dy, wheel: 0 }));
     }
   });
-  window.addEventListener('mouseup', () => {
-    if (!isMouseDown) return;
-    isMouseDown = false;
-    if (Date.now() - tapStartTime < 220 && Math.hypot(lastX - startX, lastY - startY) < 8) {
-      onMouseClick(1);
-    }
-  });
+  window.addEventListener('mouseup', () => { isMouseDown = false; });
 
-  // ── Desktop Wheel on Touchpad Surface (handles with/without Shift key) ──
+  // Desktop Mouse Wheel on Touchpad Surface
   surface.addEventListener('wheel', (e) => {
     e.preventDefault();
     const isShift = e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY);
-
     if (isShift) {
-      // Horizontal scroll
-      const delta = e.deltaX || e.deltaY;
+      const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
       const w = Math.sign(delta) * Math.min(Math.abs(Math.round(delta * State.sensitivity / 12)), 6);
       emitScroll('h', w);
     } else {
-      // Vertical scroll: deltaY > 0 is scroll down (send negative wheel)
       const w = -Math.sign(e.deltaY) * Math.min(Math.abs(Math.round(e.deltaY * State.sensitivity / 12)), 6);
       emitScroll('v', w);
     }
@@ -774,7 +840,7 @@ function onMouseClick(buttonNum) {
   }
 }
 
-// ── Preferences Modal ───────────────────────────────────────────────────────
+// ── Preferences Modal ─────────────────────────────────────────────────────
 
 function openSettings() {
   document.getElementById('settings-modal').classList.add('open');
@@ -788,7 +854,7 @@ function closeSettings(e) {
   triggerHaptic(8);
 }
 
-// ── Toast Utility ───────────────────────────────────────────────────────────
+// ── Toast Utility ─────────────────────────────────────────────────────────
 
 let _toastTimer = null;
 function showToast(msg) {
