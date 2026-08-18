@@ -13,7 +13,259 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/style.css" />
+  
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <style id="emittr-critical-styles">
+    /* ── Critical Header & Joysticks Fallback Styles (Zero-FOUC on Mobile) ── */
+    .app-header {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      height: 56px;
+      padding: 0 14px;
+      background-color: #1a1a24;
+      color: #e4e2e6;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      box-sizing: border-box;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .header-left, .header-right {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px;
+    }
+    .dashboard-header-btn, .unstick-btn {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 6px;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      box-sizing: border-box;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      white-space: nowrap;
+    }
+    .dashboard-header-btn {
+      background-color: #252836;
+      color: #c7c6ca;
+    }
+    .unstick-btn {
+      background-color: rgba(242, 184, 181, 0.12);
+      color: #ffb4ab;
+      border-color: rgba(242, 184, 181, 0.3);
+    }
+    @media (max-width: 520px) {
+      .app-header {
+        height: 52px;
+        padding: 0 10px;
+      }
+      .dashboard-header-btn .btn-text,
+      .unstick-btn .btn-text {
+        display: none !important;
+      }
+      .dashboard-header-btn,
+      .unstick-btn {
+        width: 34px;
+        height: 34px;
+        padding: 0 !important;
+        border-radius: 50% !important;
+      }
+      #usb-status-text {
+        max-width: 70px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+    .joysticks-dock {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 12px;
+      margin-top: 14px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .joystick-card {
+      background-color: #1e1e2d;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px 10px 12px 10px;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      box-sizing: border-box;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    .joystick-meta {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      width: 100%;
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+    .joy-badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .joy-badge.v-badge {
+      background: rgba(0, 229, 255, 0.12);
+      color: #00E5FF;
+      border: 1px solid rgba(0, 229, 255, 0.35);
+    }
+    .joy-badge.h-badge {
+      background: rgba(224, 64, 251, 0.12);
+      color: #E040FB;
+      border: 1px solid rgba(224, 64, 251, 0.35);
+    }
+    .joy-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: #c7c6ca;
+    }
+    .joy-chevrons {
+      font-size: 10px;
+      color: #79747e;
+      letter-spacing: 1.5px;
+    }
+    .joystick-stage {
+      width: 100%;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 4px 0 6px 0;
+    }
+    .joystick-well {
+      width: 82px;
+      height: 82px;
+      border-radius: 50%;
+      position: relative;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+      background: radial-gradient(circle at 50% 50%, #151a24 0%, #0c0f16 70%, #06070a 100%);
+      box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 2px 8px rgba(0, 0, 0, 0.5);
+      box-sizing: border-box;
+    }
+    .joy-axis-guideline {
+      position: absolute;
+      pointer-events: none;
+      opacity: 0.45;
+    }
+    .joy-axis-guideline.v-guide {
+      width: 2px;
+      height: 72%;
+      left: calc(50% - 1px);
+      top: 14%;
+      background: linear-gradient(to bottom, #00E5FF, transparent 35%, transparent 65%, #00E5FF);
+    }
+    .joy-axis-guideline.h-guide {
+      height: 2px;
+      width: 72%;
+      top: calc(50% - 1px);
+      left: 14%;
+      background: linear-gradient(to right, #E040FB, transparent 35%, transparent 65%, #E040FB);
+    }
+    .joy-arrow {
+      position: absolute;
+      font-size: 9px;
+      line-height: 1;
+      pointer-events: none;
+      opacity: 0.45;
+    }
+    .joy-arrow-top    { top: 5px; left: 50%; transform: translateX(-50%); color: #00E5FF; }
+    .joy-arrow-bottom { bottom: 5px; left: 50%; transform: translateX(-50%); color: #00E5FF; }
+    .joy-arrow-left   { left: 6px; top: 50%; transform: translateY(-50%); color: #E040FB; }
+    .joy-arrow-right  { right: 6px; top: 50%; transform: translateY(-50%); color: #E040FB; }
+    .xbox-stick {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 48px;
+      height: 48px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      pointer-events: none;
+      box-sizing: border-box;
+      will-change: transform;
+    }
+    .stick-outer-rim {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 35% 35%, #343c4c 0%, #1e232d 60%, #12151d 100%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.75), inset 0 1px 2px rgba(255, 255, 255, 0.35), inset 0 -2px 5px rgba(0, 0, 0, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .stick-dish {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 50%, #0d1017 0%, #171c26 100%);
+      box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+    .stick-grip-cross {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .stick-grip-cross::before {
+      content: "";
+      position: absolute;
+      top: 1px;
+      left: 9px;
+      width: 2px;
+      height: 2px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      box-shadow: 0 16px 0 rgba(255, 255, 255, 0.5);
+    }
+    .stick-grip-cross::after {
+      content: "";
+      position: absolute;
+      top: 9px;
+      left: 1px;
+      width: 2px;
+      height: 2px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      box-shadow: 16px 0 0 rgba(255, 255, 255, 0.5);
+    }
+    .stick-center-pip {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+    }
+    .joy-status-hint {
+      font-size: 10px;
+      color: #938f99;
+      text-align: center;
+      margin-top: 4px;
+    }
+  </style>
+  <link rel="stylesheet" href="/static/style.css?v=1.3.0" />
 </head>
 <body>
 
@@ -50,7 +302,7 @@
         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
           <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
         </svg>
-        <span>Dashboard</span>
+        <span class="btn-text">Dashboard</span>
       </button>
 
       <!-- Emergency Unstick Keys Button -->
@@ -58,7 +310,7 @@
         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
         </svg>
-        <span class="unstick-text">Unstick</span>
+        <span class="btn-text unstick-text">Unstick</span>
       </button>
 
       <button id="btn-settings" class="icon-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
@@ -287,8 +539,8 @@
             <div class="joystick-stage">
               <div class="joystick-well" id="joy-well-v" data-axis="v" title="Tilt Up / Down to scroll vertically">
                 <div class="joy-axis-guideline v-guide"></div>
-                <div class="joy-arrow joy-arrow-top">▲</div>
-                <div class="joy-arrow joy-arrow-bottom">▼</div>
+                <div class="joy-arrow joy-arrow-top">&#9650;</div>
+                <div class="joy-arrow joy-arrow-bottom">&#9660;</div>
                 <div class="xbox-stick" id="joy-stick-v">
                   <div class="stick-outer-rim">
                     <div class="stick-dish">
@@ -312,8 +564,8 @@
             <div class="joystick-stage">
               <div class="joystick-well" id="joy-well-h" data-axis="h" title="Tilt Left / Right to scroll horizontally">
                 <div class="joy-axis-guideline h-guide"></div>
-                <div class="joy-arrow joy-arrow-left">◀</div>
-                <div class="joy-arrow joy-arrow-right">▶</div>
+                <div class="joy-arrow joy-arrow-left">&#9664;</div>
+                <div class="joy-arrow joy-arrow-right">&#9654;</div>
                 <div class="xbox-stick" id="joy-stick-h">
                   <div class="stick-outer-rim">
                     <div class="stick-dish">
@@ -470,6 +722,6 @@
 
   <div id="toast" class="toast"></div>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=1.3.0"></script>
 </body>
 </html>

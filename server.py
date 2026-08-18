@@ -4,7 +4,7 @@ server.py  —  Emittr Backend & HID Controller  v1.3.0
 =====================================================
 FastAPI server running on Android NetHunter (port 8088).
 Provides:
-  - Web UI serving (PWA / Responsive)
+  - Web UI serving (PWA / Responsive) with strict anti-caching headers
   - REST & WebSocket endpoints for USB keystrokes & mouse control
   - Native dual-axis mouse scrolling (Vertical Wheel + AC Pan Horizontal Scroll)
   - Keyboard mirror & typing queues
@@ -387,6 +387,18 @@ async def lifespan(application: "FastAPI"):
 app = FastAPI(title="Emittr", version=VERSION, lifespan=lifespan)
 
 
+# ── Middleware: Prevent Mobile Browser Asset Caching ────────────────────────
+@app.middleware("http")
+async def add_no_cache_headers(request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.startswith("/static/") or path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
 async def broadcast_status(data: dict):
     if not connected_websockets:
         return
@@ -408,7 +420,14 @@ async def broadcast_status(data: dict):
 async def get_index():
     index_file = STATIC_DIR / "index.html"
     if index_file.exists():
-        return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
+        return HTMLResponse(
+            content=index_file.read_text(encoding="utf-8"),
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            },
+        )
     return HTMLResponse("<h1>Emittr static assets missing</h1>", status_code=404)
 
 

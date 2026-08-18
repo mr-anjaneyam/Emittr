@@ -964,15 +964,32 @@ input[type=range] {
 /* 4-quadrant tactile grip dots */
 .stick-grip-cross {
   position: absolute;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 50% 2px, rgba(255,255,255,0.4) 1px, transparent 1.5px),
-    radial-gradient(circle at 50% calc(100% - 2px), rgba(255,255,255,0.4) 1px, transparent 1.5px),
-    radial-gradient(circle at 2px 50%, rgba(255,255,255,0.4) 1px, transparent 1.5px),
-    radial-gradient(circle at calc(100% - 2px) 50%, rgba(255,255,255,0.4) 1px, transparent 1.5px);
+}
+.stick-grip-cross::before {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 9px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 16px 0 rgba(255, 255, 255, 0.5);
+}
+.stick-grip-cross::after {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 1px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 16px 0 0 rgba(255, 255, 255, 0.5);
 }
 
 .stick-center-pip {
@@ -1305,5 +1322,76 @@ input:checked + .slider:before {
   .modal-sheet {
     border-radius: 28px;
     margin-bottom: 80px;
+  }
+}
+
+
+/* ── Mobile Layout (< 520px) Optimization ─────────────────────────────────── */
+@media (max-width: 520px) {
+  .app-header {
+    height: 52px;
+    padding: 0 10px;
+  }
+  .app-name-row .app-title {
+    font-size: 17px;
+  }
+  .version-badge {
+    font-size: 10px;
+    padding: 1px 5px;
+  }
+  .connection-badge {
+    padding: 2px 7px;
+    font-size: 11px;
+  }
+  #usb-status-text {
+    max-width: 70px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .header-right {
+    gap: 6px;
+  }
+  .dashboard-header-btn,
+  .unstick-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  .dashboard-header-btn .btn-text,
+  .unstick-btn .btn-text {
+    display: none !important;
+  }
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .joysticks-dock {
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .joystick-card {
+    padding: 8px 6px 10px 6px;
+  }
+  .joy-name {
+    font-size: 10px;
+  }
+  .joy-badge {
+    font-size: 8.5px;
+    padding: 1px 4px;
+  }
+  .joystick-well {
+    width: 76px;
+    height: 76px;
+  }
+  .xbox-stick {
+    width: 44px;
+    height: 44px;
+  }
+  .stick-dish {
+    width: 28px;
+    height: 28px;
   }
 }
