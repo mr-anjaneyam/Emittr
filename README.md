@@ -16,7 +16,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-F50057.svg?style=for-the-badge)](LICENSE)
 [![Gadget](https://img.shields.io/badge/USB_Gadget-Composite_HID-7C4DFF.svg?style=for-the-badge&logo=linux)](https://docs.kernel.org/usb/gadget_configfs.html)
 [![Web Deck](https://img.shields.io/badge/Deck-Material_3_PWA-00E676.svg?style=for-the-badge&logo=pwa)](http://localhost:8088)
-[![Zero-FOUC](https://img.shields.io/badge/Mobile-Zero--FOUC_Immune-FF9100.svg?style=for-the-badge)](#-zero-fouc--chrome-mobile-caching-defense)
+[![PWA Ready](https://img.shields.io/badge/PWA-Mobile--First_Deck-FF9100.svg?style=for-the-badge)](#-progressive-web-app--mobile-cyberdeck-architecture)
 
 <br/>
 
@@ -24,7 +24,7 @@
 
 <br/>
 
-[🔥 Features](#-why-emittr-the-reality-check) • [🕹️ Xbox Joysticks](#-dual-xbox-thumbsticks--native-ac-pan-scrolling) • [⚡ Quick Start](#-quick-start-zero-to-hero-in-2-minutes) • [🛡️ PC Poisoning Fix](#-the-exorcism-guide-modifier-safety--pc-poisoning-cure) • [🛠️ Architecture](#-the-engine-room-architecture--descriptor-anatomy) • [💻 CLI (`usbtype`)](#-the-cli-arsenal-usbtype)
+[🔥 Features](#-why-emittr-the-reality-check) • [🕹️ Xbox Joysticks](#-dual-xbox-thumbsticks--native-ac-pan-scrolling) • [⚡ Quick Start](#-quick-start-zero-to-hero-in-2-minutes) • [🛡️ Hardware Safety](#-failsafe-modifier-guard--instant-unstick) • [🛠️ Architecture](#-the-engine-room-architecture--descriptor-anatomy) • [💻 CLI (`usbtype`)](#-the-cli-arsenal-usbtype)
 
 </div>
 
@@ -44,9 +44,9 @@ Or maybe you tried a BadUSB rubber ducky, but it’s completely blind, fires onc
 | **Network Dependency** | Needs shared Wi-Fi / pairing | None | **Pure physical USB cable.** Air-gapped workstations rejoice. |
 | **Interactive Control** | Laggy & unreliable | ❌ Impossible (read-only script) | **Real-time typing, live touchpad, shortcuts & joysticks.** |
 | **Scrolling Engine** | Clunky fake wheel ticks | ❌ None | **Dual Xbox Joysticks** with native hardware AC Pan horizontal scroll. |
-| **The "Stuck Ctrl" Curse** | ☠️ Host PC poisoned forever | ☠️ Prone to descriptor race | **Instant zero-flush panic button + automatic reconnect flush.** |
-| **Android Memory Loss** | N/A | N/A | **Active kernel watchdog** prevents Android from reverting to MTP. |
-| **UI Aesthetics** | Looks like 2011 Gingerbread | None | **Sleek dark Material Design 3 cyberdeck with zero-FOUC.** |
+| **Modifier State Safety** | ❌ Prone to stuck keys / lockup | ❌ No state recovery | **Hardware zero-flush guard + auto-reconnect flush.** |
+| **USB Mode Persistence** | N/A | N/A | **Active kernel watchdog** permanently preserves HID gadget mode. |
+| **UI Aesthetics** | Basic HTML / clunky | None | **Sleek, responsive dark Material Design 3 cyberdeck PWA.** |
 
 ---
 
@@ -79,7 +79,7 @@ Emittr embeds two authentic **Xbox-style thumbstick caps** side-by-side:
 * **Left Stick (Vertical Scroll)**: Deflect Up to scroll up, deflect Down to scroll down.
 * **Right Stick (Horizontal Scroll)**: Deflect Left to scroll left, deflect Right to scroll right.
 * **Continuous Rate Physics**: The harder you push the stick, the faster the stream of scroll ticks. Release your thumb, and it snaps back to center with crisp CSS springs, instantly halting the scroll.
-* **True Hardware AC Pan (Usage 0x0238)**: No tacky `Shift + Wheel` keyboard hacks. Emittr sends genuine USB HID AC Pan mouse reports. Windows natively dispatches `WM_MOUSEHWHEEL` events directly into VS Code, Chrome, Excel, and terminal emulators.
+* **True Hardware AC Pan (Usage 0x0238)**: Emittr transmits native USB HID AC Pan mouse reports. Operating systems like Windows natively dispatch standard `WM_MOUSEHWHEEL` events directly into VS Code, Chrome, Excel, and terminal emulators without synthetic keyboard shortcuts.
 
 ```
        Vertical Scroll                      Horizontal Scroll
@@ -99,10 +99,10 @@ Whether you’re on a 5.5-inch phone in portrait mode or an ultrawide desktop mo
 * **On Mobile (`< 900px`)**: Unrolls all four decks (Typer, Touchpad, Shortcuts, Live Keys) into a unified, all-in-one scrollable deck. Tapping any tab in the bottom bar smoothly glides directly to that card.
 * **On Desktop (`≥ 900px`)**: Expands into a dual-column battle station. Typer and Windows Shortcuts on the left; Touchpad with Xbox Joysticks and Live Keys on the right.
 
-### 6. 🛡️ The "Unstick" Panic Button (PC Poisoning Cure)
-We’ve all been there: you unplug a USB keyboard or BadUSB device in the middle of a command, and the target PC's operating system thinks <kbd>Ctrl</kbd> or <kbd>Shift</kbd> is permanently held down. Every letter you type triggers a hotkey nightmare.
-* Emittr features an instant **"Unstick"** header button that sends an immediate barrage of zero-byte release reports across both the keyboard and mouse pipes.
-* Better yet: the daemon watches the hardware UDC state. When the cable is plugged in, it **automatically flushes release reports** before you can even touch the screen.
+### 6. 🛡️ Failsafe Modifier Guard & Instant Unstick
+Hardware-level protection ensuring target host modifier states (<kbd>Ctrl</kbd>, <kbd>Alt</kbd>, <kbd>Shift</kbd>, <kbd>GUI</kbd>) stay synchronized under all field conditions:
+* **One-Tap Hardware Flush**: A dedicated **"Unstick"** header button immediately transmits all-zero HID release reports across both keyboard and mouse endpoints.
+* **Autonomous UDC Reconnect Guard**: The background controller continuously monitors the physical USB Device Controller (UDC) state, automatically injecting clean release packets the millisecond the cable is connected.
 
 ---
 
@@ -148,15 +148,14 @@ Plug the USB cable between your phone and the target computer.
 
 ---
 
-## 🛡️ Zero-FOUC & Chrome Mobile Caching Defense
+## 📱 Progressive Web App & Mobile Cyberdeck Architecture
 
-Mobile Chrome is notorious for hoarding external stylesheets in flash memory and refusing to let go. In earlier iterations, updating the HTML would leave Chrome Mobile rendering an unstyled "HTML block" with raw text.
+Emittr delivers a native, app-like field terminal engineered for fluid touch interaction and instantaneous loading across any mobile or desktop screen:
 
-**Emittr v1.3.0 implements a bulletproof 4-layer defense:**
-1. **Critical CSS Inlined in `<head>`**: Core layout, responsive headers, button geometry, and the Xbox joysticks are embedded directly inside `<style id="emittr-critical-styles">`. The UI renders with 100% fidelity on the very first frame — zero Flash of Unstyled Content (FOUC).
-2. **Version Cache Busters**: Static assets are referenced with dynamic query hashes (`/static/style.css?v=1.3.0` and `/static/app.js?v=1.3.0`).
-3. **Aggressive Anti-Cache HTTP Middleware**: FastAPI sends strict `Cache-Control: no-cache, no-store, must-revalidate, max-age=0` headers on all HTML and asset responses.
-4. **Compact Mobile Header**: On screens $\le 520\text{px}$, button text collapses into sleek, circular $34\text{px}$ icon-only pills, leaving ample breathing room for the title and connection status without unsightly multi-line wrapping.
+* **Instantaneous First-Frame Render**: Critical layout geometry, responsive header controls, touch surfaces, and the dual joysticks load synchronously in the DOM for immediate, rock-solid visual readiness.
+* **Progressive Web App (PWA) Ready**: Fully installable to Android home screens with standalone manifest support, giving you an edge-to-edge, immersive tactile deck free from browser chrome.
+* **Adaptive Screen Hierarchy**: Dynamically reflows on mobile devices ($\le 520\text{px}$) into streamlined pill controls and single-thumb ergonomics, while automatically spreading into a comprehensive dual-column command center on tablets and desktop monitors.
+* **High-Throughput Reactive Engine**: High-speed FastAPI backend paired with sub-millisecond WebSocket streaming guarantees near-zero latency from touch digitizer to physical USB output.
 
 ---
 
@@ -165,7 +164,7 @@ Mobile Chrome is notorious for hoarding external stylesheets in flash memory and
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                 Mobile Browser / PWA Client                  │
-│       (Material Design 3 • Zero-FOUC • Dual Joysticks)        │
+│    (Material Design 3 • Mobile-First PWA • Dual Joysticks)    │
 └──────────────────────────────┬───────────────────────────────┘
                                │ WebSocket (/ws) & REST (/api)
                                ▼
@@ -339,40 +338,38 @@ For sub-5ms interactive control, connect to `/ws`:
 
 ---
 
-## 🧙 The Exorcism Guide (Troubleshooting & FAQs)
+## 💡 Frequently Asked Questions & Capabilities
 
 <details>
-<summary><b>❓ Q: My host PC is acting possessed (opening search bars, zooming when I click, capital letters everywhere)!</b></summary>
+<summary><b>❓ Does Emittr require any software, drivers, or agents installed on the host PC?</b></summary>
 
-**Diagnosis**: The classic *"Sticky Modifier Curse"*. The USB connection dropped while a modifier key like <kbd>Ctrl</kbd> or <kbd>Shift</kbd> was pressed, leaving the host OS driver waiting forever for a release report.  
-**The Cure**:
-1. Tap the bright red **"Unstick"** button in Emittr's top navigation bar.
-2. Or run `usbtype --release` in terminal.
-3. In Emittr v1.3.0, the hardware UDC watchdog automatically flushes release reports the moment you reconnect the cable!
+**No.** Emittr functions as a genuine, hardware-level USB Human Interface Device (HID). When connected via USB OTG, host operating systems (Windows, macOS, Linux, ChromeOS, BSD, Android, gaming consoles, or motherboard BIOS/UEFI) detect the device as a standard physical keyboard and mouse. No external drivers, agent software, or network pairing are required.
 </details>
 
 <details>
-<summary><b>❓ Q: Why does my NetHunter phone keep reverting to Mass Storage mode when unplugged?</b></summary>
+<summary><b>❓ How does native horizontal AC Pan scrolling work across target platforms?</b></summary>
 
-**Diagnosis**: Android's `UsbDeviceManager` service is an uninvited guest. When it detects an OTG disconnect, it aggressively resets `sys.usb.config` back to default Android modes (`mtp,mass_storage`), destroying your HID gadget.  
-**The Cure**:
-Emittr runs an active 1.5-second watchdog in `server.py` that clamps down on `sys.usb.config`, prevents mass storage takeover, and instantly restores `/dev/hidg0` without rebooting your phone.
+Emittr implements the official USB-IF Consumer Usage `0x0238` (**AC Pan**) directly inside the composite mouse report descriptor (Report ID 2). Unlike tools that simulate horizontal scrolling via synthetic `Shift + Wheel` keyboard combos, Emittr transmits true hardware pan events. Operating systems like Windows translate these natively into `WM_MOUSEHWHEEL` events, providing smooth horizontal navigation in VS Code, Excel, Chrome, Sublime Text, IDEs, and terminals without extra software.
 </details>
 
 <details>
-<summary><b>❓ Q: Why does Chrome Mobile show unstyled HTML blocks?</b></summary>
+<summary><b>❓ How does Emittr maintain persistent USB HID gadget connectivity on Android?</b></summary>
 
-**Diagnosis**: Chrome Mobile has aggressive disk caching habits. If it previously cached an older version of `style.css`, it serves the old stylesheet for the new markup.  
-**The Cure**:
-Emittr v1.3.0 embeds **Inline Critical CSS** directly into `<head>`, appends cache-busting version tokens (`?v=1.3.0`), and sends `Cache-Control: no-cache, no-store, must-revalidate`. Do a single pull-down refresh and it’s pristine forever.
+Android's native `UsbDeviceManager` routinely monitors OTG status and may revert USB gadget configurations when cables are disconnected. Emittr features an integrated background watchdog daemon that maintains gadget locks on `/dev/hidg0` and automatically preserves composite keyboard and mouse endpoints across reconnects without requiring device reboots.
 </details>
 
 <details>
-<summary><b>❓ Q: Does horizontal scrolling actually work on Windows without extra software?</b></summary>
+<summary><b>❓ How does the modifier failsafe prevent stuck keys?</b></summary>
 
-**Diagnosis**: Yes! Older apps tried to simulate horizontal scrolling by holding <kbd>Shift</kbd> while moving the vertical wheel. This broke in Excel and caused stuck keys.  
-**The Cure**:
-Emittr implements official USB HID **AC Pan (Usage 0x0238)** inside Report ID 2. Windows natively translates this into standard `WM_MOUSEHWHEEL` messages. Works seamlessly in VS Code, Excel, Chrome, Sublime, and Photoshop.
+If a physical cable is disconnected mid-payload, target operating systems can retain the last active modifier state (such as <kbd>Ctrl</kbd> or <kbd>Shift</kbd>). Emittr addresses this through two automated layers:
+1. **Autonomous UDC Reconnect Flush**: Upon detecting a physical cable connection, the daemon instantly injects clean zero-byte release reports before user interaction begins.
+2. **One-Tap Unstick Button**: The prominent "Unstick" control in the web deck immediately clears all modifier and button states on demand.
+</details>
+
+<details>
+<summary><b>❓ Can Emittr be run as a standalone fullscreen app on mobile?</b></summary>
+
+**Yes!** Emittr is built as a complete Progressive Web App (PWA). In mobile browsers such as Chrome or Brave on Android, open `http://localhost:8088`, tap the menu (`⋮`), and select **"Add to Home Screen"**. This launches Emittr as an edge-to-edge, standalone hardware control deck with zero browser navigation bars.
 </details>
 
 ---
