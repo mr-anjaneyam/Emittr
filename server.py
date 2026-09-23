@@ -412,6 +412,33 @@ typing_lock = asyncio.Lock()  # Serializes /api/type job start against concurren
 
 STATIC_DIR = Path(__file__).parent / "static"
 
+# ── HID Mode (manual toggle) ────────────────────────────────────────────────
+# Whether Emittr is allowed to claim/hold the USB gadget as HID. This mirrors
+# NetHunter's own USB-function switch: it's a persisted, user-controlled setting
+# rather than something silently re-asserted regardless of what the user picked
+# elsewhere. Toggling it off releases the UDC so NetHunter (or any other app) can
+# take over USB function selection; toggling it on hands control back to Emittr.
+HID_MODE_FILE = Path(__file__).parent / ".emittr_hid_mode"
+
+
+def _load_hid_mode() -> bool:
+    try:
+        if HID_MODE_FILE.exists():
+            return HID_MODE_FILE.read_text(encoding="utf-8").strip() != "0"
+    except Exception:
+        pass
+    return True  # default on: preserves prior plug-and-play behavior for existing installs
+
+
+def _save_hid_mode(enabled: bool):
+    try:
+        HID_MODE_FILE.write_text("1" if enabled else "0", encoding="utf-8")
+    except Exception as e:
+        log.warning(f"Could not persist HID mode setting: {e}")
+
+
+hid_mode_enabled = _load_hid_mode()
+
 
 def ensure_hid_gadget():
     """Verify composite HID gadget is active. If Android reverted to mass_storage, restore it."""
@@ -428,16 +455,30 @@ def ensure_hid_gadget():
             log.error(f"Failed to restore gadget: {e}")
 
 
+def release_hid_gadget():
+    """Unbind the UDC so another USB function (e.g. one picked in NetHunter) can claim it."""
+    udc_file = "/config/usb_gadget/g1/UDC"
+    try:
+        if os.path.exists(udc_file):
+            with open(udc_file, "w") as f:
+                f.write("none\n")
+            log.info("HID gadget released; UDC freed for other USB functions.")
+    except Exception as e:
+        log.warning(f"Could not release HID gadget UDC: {e}")
+
+
 def get_status_payload() -> Dict[str, Any]:
     """USB status plus the current authenticated WebSocket client count."""
     payload = hid.get_usb_status()
     payload["clients"] = len(connected_websockets)
+    payload["hid_mode_enabled"] = hid_mode_enabled
     return payload
 
 
 async def lifespan(application: "FastAPI"):
-    # Startup: ensure gadget is bound and flush releases
-    ensure_hid_gadget()
+    # Startup: ensure gadget is bound (only if HID mode is enabled) and flush releases
+    if hid_mode_enabled:
+        ensure_hid_gadget()
     hid.release_all()
 
     asyncio.create_task(connection_monitor_loop())
@@ -511,6 +552,30 @@ async def emergency_release():
     """Emergency unstick endpoint: release all modifier keys and mouse buttons."""
     hid.release_all()
     return {"ok": True, "msg": "All keys and mouse buttons released"}
+
+
+@app.post("/api/hid_mode", dependencies=[Depends(verify_token)])
+async def set_hid_mode(data: dict = Body(...)):
+    """Manually enable/disable USB HID mode. Mirrors NetHunter's own USB-function switch:
+    a persisted, user-controlled setting instead of Emittr silently re-claiming the UDC."""
+    global hid_mode_enabled
+    enabled = bool(data.get("enabled", True))
+    hid_mode_enabled = enabled
+    _save_hid_mode(enabled)
+    loop = asyncio.get_event_loop()
+
+    if enabled:
+        try:
+            import setup_gadget
+            ok = await loop.run_in_executor(None, lambda: setup_gadget.init_gadget(force=True))
+        except Exception as e:
+            log.error(f"Failed to enable HID gadget: {e}")
+            ok = False
+        msg = "HID mode enabled" if ok else "Failed to bind HID gadget (check logs)"
+        return {"ok": ok, "hid_mode_enabled": True, "msg": msg}
+
+    await loop.run_in_executor(None, release_hid_gadget)
+    return {"ok": True, "hid_mode_enabled": False, "msg": "HID mode released — you can now switch USB function from NetHunter"}
 
 
 @app.post("/api/type", dependencies=[Depends(verify_token)])
@@ -737,7 +802,10 @@ async def connection_monitor_loop():
         await asyncio.sleep(1.5)
         try:
             # ensure_hid_gadget() does blocking filesystem I/O; keep it off the event loop.
-            await loop.run_in_executor(None, ensure_hid_gadget)
+            # Only auto-restore while HID mode is enabled — when disabled, Emittr must not
+            # fight whatever USB function the user picked elsewhere (e.g. via NetHunter).
+            if hid_mode_enabled:
+                await loop.run_in_executor(None, ensure_hid_gadget)
             st = await loop.run_in_executor(None, hid.get_usb_status)
             current_state = st.get("attached", False)
 

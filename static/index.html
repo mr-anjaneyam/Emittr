@@ -708,6 +708,17 @@
           </label>
         </div>
 
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">USB HID Mode</span>
+            <span class="setting-sub">Off releases the USB port so you can switch function (e.g. file transfer) from NetHunter</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-hidmode" checked onchange="toggleHidMode(this.checked)" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
         <div class="hw-info-card">
           <div class="hw-title">Hardware Information</div>
           <div class="hw-line"><span>App Version:</span> <strong id="hw-ver">v1.3.0</strong></div>

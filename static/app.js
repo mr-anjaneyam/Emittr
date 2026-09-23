@@ -147,6 +147,19 @@ function applyTheme(theme) {
   document.body.classList.toggle('light-theme', theme === 'light');
 }
 
+async function toggleHidMode(enabled) {
+  triggerHaptic(15);
+  const toggle = document.getElementById('cfg-hidmode');
+  try {
+    const result = await apiPost('/api/hid_mode', { enabled });
+    showToast(result.msg || (enabled ? 'HID mode enabled' : 'HID mode released'));
+    if (toggle) toggle.checked = !!result.hid_mode_enabled;
+  } catch (e) {
+    showToast(e.message || 'Failed to change HID mode');
+    if (toggle) toggle.checked = !enabled; // revert the switch on failure
+  }
+}
+
 function triggerHaptic(duration = 10) {
   if (State.config.haptic && navigator.vibrate) {
     try { navigator.vibrate(duration); } catch (e) {}
@@ -276,10 +289,12 @@ function updateConnectionUI(data) {
   const speed   = document.getElementById('hw-speed');
   const node    = document.getElementById('hw-node');
   const clients = document.getElementById('hw-clients');
+  const hidmode = document.getElementById('cfg-hidmode');
   if (udc)     udc.innerText     = data.udc   || 'hisi-usb-otg';
   if (speed)   speed.innerText   = data.speed || 'N/A';
   if (clients && typeof data.clients === 'number') clients.innerText = String(data.clients);
   if (node)  node.innerText  = data.hid_node || '/dev/hidg0';
+  if (hidmode && typeof data.hid_mode_enabled === 'boolean') hidmode.checked = data.hid_mode_enabled;
 
   if (data.version) {
     initVersionBadge(data.version);

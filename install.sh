@@ -23,9 +23,14 @@ chmod +x "${INSTALL_DIR}/usbtype"
 # Link CLI tool to PATH
 ln -sf "${INSTALL_DIR}/usbtype" /usr/local/bin/usbtype
 
-# Prevent Android framework from reverting USB to mass_storage
-/system/bin/setprop persist.sys.usb.config none 2>/dev/null || true
-/system/bin/setprop sys.usb.config none 2>/dev/null || true
+# Skip forcing HID mode if the user previously toggled it off from the web UI/settings
+# (mirrors NetHunter's own USB-function switch instead of overriding it on every install).
+HID_MODE_FILE="${INSTALL_DIR}/.emittr_hid_mode"
+if [ ! -f "${HID_MODE_FILE}" ] || [ "$(cat "${HID_MODE_FILE}" 2>/dev/null)" != "0" ]; then
+    # Prevent Android framework from reverting USB to mass_storage
+    /system/bin/setprop persist.sys.usb.config none 2>/dev/null || true
+    /system/bin/setprop sys.usb.config none 2>/dev/null || true
+fi
 
 # Initialize composite HID gadget
 if [ -x "/opt/tactical_venv/bin/python3" ]; then
@@ -36,8 +41,10 @@ else
     PY_BIN="python3"
 fi
 
-"${PY_BIN}" "${INSTALL_DIR}/setup_gadget.py" || true
-chmod 660 /dev/hidg* 2>/dev/null || true
+if [ ! -f "${HID_MODE_FILE}" ] || [ "$(cat "${HID_MODE_FILE}" 2>/dev/null)" != "0" ]; then
+    "${PY_BIN}" "${INSTALL_DIR}/setup_gadget.py" || true
+    chmod 660 /dev/hidg* 2>/dev/null || true
+fi
 
 # Add hid.keyboard hostname to chroot /etc/hosts
 if ! grep -q "hid.keyboard" /etc/hosts 2>/dev/null; then
