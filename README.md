@@ -302,9 +302,36 @@ usbtype --key enter
 
 ---
 
-## 🔌 REST & WebSocket API Reference
+## � Security Notes
 
-Need to control Emittr from Python, Node.js, Bash, or Home Assistant? The entire engine is exposed over HTTP and WebSocket on port `8088`.
+Emittr binds to your LAN by default (`0.0.0.0:8088`) so any device on the same
+Wi-Fi/hotspot can reach the dashboard — this is intentional and is what makes it
+"walk up and use it from any phone/laptop" convenient. Understand the trade-offs:
+
+- **Token authentication is on by default.** On first run, a random token is
+  generated and saved to `.emittr_token` (mode `600`, root/owner-readable only)
+  next to `server.py`. The web UI reads it automatically; all mutating REST
+  calls (`/api/type`, `/api/key`, `/api/mouse`, etc.) and the WebSocket connection
+  require it via the `X-Emittr-Token` header / `?token=` query param respectively.
+  Anyone who can load the page in a browser session gets the token embedded for
+  them — treat access to the dashboard URL itself as the credential boundary.
+- **Restrict network exposure** by setting `EMITTR_HOST=127.0.0.1` (loopback only,
+  e.g. if you only ever connect via `adb forward` or a reverse proxy) before
+  starting the server, instead of the LAN-wide default.
+- **Optional TLS**: set both `EMITTR_SSL_CERT` and `EMITTR_SSL_KEY` to PEM file
+  paths to serve over `https://`/`wss://` instead of plaintext HTTP/WS.
+- **Only use Emittr on networks you trust** (home Wi-Fi, personal hotspot).
+  Avoid public/shared Wi-Fi, since anyone on the same LAN segment can attempt to
+  reach port `8088` (though they still need the token to issue commands).
+- Bulk `/api/type` requests are capped at 50,000 characters and live keystrokes
+  are rate-limited server-side to prevent a runaway client from flooding the
+  HID device.
+
+---
+
+## �🔌 REST & WebSocket API Reference
+
+Need to control Emittr from Python, Node.js, Bash, or Home Assistant? The entire engine is exposed over HTTP and WebSocket on port `8088`. All mutating calls below require the `X-Emittr-Token` header (read the token from `.emittr_token` on the device, or from `window.EMITTR_TOKEN` when scripting against the served page).
 
 ### HTTP Endpoints
 
@@ -317,8 +344,8 @@ Need to control Emittr from Python, Node.js, Bash, or Home Assistant? The entire
 | `POST` | `/api/key` | Injects a modifier combo or named key | `{"combo": "win+r"}` or `{"key": "enter"}` |
 | `POST` | `/api/mouse` | Injects mouse movement, buttons, or scroll | `{"dx": 10, "dy": -5, "wheel": 2, "wheel_h": 0}` |
 
-### WebSocket (`ws://<phone-ip>:8088/ws`)
-For sub-5ms interactive control, connect to `/ws`:
+### WebSocket (`ws://<phone-ip>:8088/ws?token=<your-token>`)
+For sub-5ms interactive control, connect to `/ws` with your token as a query param:
 ```json
 // Live keystroke injection
 { "action": "live_char", "char": "x" }

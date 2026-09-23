@@ -37,7 +37,7 @@ else
 fi
 
 "${PY_BIN}" "${INSTALL_DIR}/setup_gadget.py" || true
-chmod 666 /dev/hidg* 2>/dev/null || true
+chmod 660 /dev/hidg* 2>/dev/null || true
 
 # Add hid.keyboard hostname to chroot /etc/hosts
 if ! grep -q "hid.keyboard" /etc/hosts 2>/dev/null; then
@@ -58,16 +58,26 @@ sleep 1
 
 # Launch daemon
 echo "[*] Starting Emittr service on port ${PORT} using ${PY_BIN}..."
-nohup "${PY_BIN}" "${INSTALL_DIR}/server.py" > /var/log/usb_deck.log 2>&1 &
+# server.py owns its own rotating log file (/var/log/usb_deck.log); stdout is
+# discarded here to avoid a second, non-rotating writer targeting the same path.
+nohup "${PY_BIN}" "${INSTALL_DIR}/server.py" > /dev/null 2>> /var/log/usb_deck.crash.log &
 
-sleep 2
+# Health check — poll instead of a fixed sleep so slow-booting devices aren't
+# falsely reported as failed, while fast devices don't wait unnecessarily.
+HEALTHY=0
+for i in $(seq 1 15); do
+    sleep 1
+    if curl -s "http://127.0.0.1:${PORT}/api/status" | grep -qE '"hid_node"|"version"'; then
+        HEALTHY=1
+        break
+    fi
+done
 
-# Health check
-if curl -s "http://127.0.0.1:${PORT}/api/status" | grep -qE '"hid_node"|"version"'; then
+if [ "${HEALTHY}" -eq 1 ]; then
     echo "[+] Emittr v1.3.0 is ONLINE and HEALTHY!"
     echo "    Local URL:   http://localhost:${PORT} or http://hid.keyboard"
     echo "    Network URL: http://$(hostname -I 2>/dev/null | awk '{print $1}'):${PORT}"
     echo "    CLI Tool:    usbtype --help"
 else
-    echo "[-] Warning: Server started but health check inconclusive. Check /var/log/usb_deck.log"
+    echo "[-] Warning: Server did not respond healthy within 15s. Check /var/log/usb_deck.log"
 fi

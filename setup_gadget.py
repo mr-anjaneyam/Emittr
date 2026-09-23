@@ -20,8 +20,39 @@ import time
 GADGET = "/config/usb_gadget/g1"
 
 
+def _detect_udc() -> str:
+    """Return the first available UDC name from /sys/class/udc, falling back to the
+    historical HiSilicon name so behavior on already-supported devices is unchanged."""
+    try:
+        udc_root = "/sys/class/udc"
+        if os.path.isdir(udc_root):
+            names = sorted(os.listdir(udc_root))
+            if names:
+                return names[0]
+    except Exception:
+        pass
+    return "hisi-usb-otg"
+
+
+def _already_configured() -> bool:
+    """True if the composite HID function is already linked and a UDC is bound."""
+    f1_path = f"{GADGET}/configs/b.1/f1"
+    udc_file = f"{GADGET}/UDC"
+    if not os.path.islink(f1_path):
+        return False
+    try:
+        with open(udc_file, "r") as f:
+            return bool(f.read().strip())
+    except Exception:
+        return False
+
+
 def init_gadget(force: bool = False) -> bool:
-    """Initialize or restore the composite HID gadget."""
+    """Initialize or restore the composite HID gadget.
+
+    When the gadget is already fully configured and bound, skip the teardown/rebuild
+    (which briefly drops the USB connection) unless force=True is explicitly requested.
+    """
     # Ensure configfs is mounted
     if not os.path.exists("/config/usb_gadget"):
         os.system("mkdir -p /config && mount -t configfs none /config 2>/dev/null")
@@ -30,6 +61,11 @@ def init_gadget(force: bool = False) -> bool:
             return False
 
     os.makedirs(GADGET, exist_ok=True)
+
+    if not force and _already_configured():
+        os.system("chmod 660 /dev/hidg* 2>/dev/null")
+        print("Emittr Composite HID Gadget already configured; skipping rebuild.")
+        return True
 
     # 1. Suppress Android framework from hijacking USB back to mass_storage
     os.system("/system/bin/setprop persist.sys.usb.config none 2>/dev/null")
@@ -67,6 +103,19 @@ def init_gadget(force: bool = False) -> bool:
     except Exception as e:
         print(f"VID/PID write error: {e}")
 
+    # 4b. Device strings so the gadget enumerates with a readable name in Device Manager
+    try:
+        strings_dir = f"{GADGET}/strings/0x409"
+        os.makedirs(strings_dir, exist_ok=True)
+        with open(f"{strings_dir}/manufacturer", "w") as f:
+            f.write("Emittr\n")
+        with open(f"{strings_dir}/product", "w") as f:
+            f.write("Emittr Composite HID Keyboard & Mouse\n")
+        with open(f"{strings_dir}/serialnumber", "w") as f:
+            f.write("EMITTR-0001\n")
+    except Exception as e:
+        print(f"Device strings warning (non-fatal): {e}")
+
     # 5. Create composite HID function hid.0
     kbd_dir = f"{GADGET}/functions/hid.0"
     os.makedirs(kbd_dir, exist_ok=True)
@@ -102,19 +151,20 @@ def init_gadget(force: bool = False) -> bool:
             pass
     os.symlink(f"{GADGET}/functions/hid.0", f1_path)
 
-    # 7. Bind UDC
+    # 7. Bind UDC — discover the real controller name instead of assuming HiSilicon hardware.
+    udc_name = _detect_udc()
     try:
         with open(f"{GADGET}/UDC", "w") as f:
-            f.write("hisi-usb-otg\n")
+            f.write(f"{udc_name}\n")
     except Exception as e:
         print(f"UDC bind warning: {e}")
 
     time.sleep(0.2)
 
-    # Ensure device node permissions
-    os.system("chmod 666 /dev/hidg* 2>/dev/null")
+    # Ensure device node permissions (group-writable rather than world-writable)
+    os.system("chmod 660 /dev/hidg* 2>/dev/null")
 
-    print("Emittr Composite HID Gadget v1.3.0 ready on /dev/hidg0")
+    print(f"Emittr Composite HID Gadget v1.3.0 ready on /dev/hidg0 (UDC: {udc_name})")
     return True
 
 

@@ -11,30 +11,86 @@ Provides:
   - Automatic USB watchdog (prevents mass_storage reversion)
   - Emergency unstick release mechanism (flushes all keys & mouse buttons)
   - Port 80 -> 8088 redirector
+  - Shared-secret token auth on all mutating endpoints (REST + WebSocket)
 """
 
 import asyncio
 import json
 import logging
+import logging.handlers
 import os
+import re
+import secrets
 import select
 import sys
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import Body, FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+
+_log_handlers = [logging.StreamHandler(sys.stdout)]
+try:
+    # Bounded rotating log file (5MB x 3 backups) so /var/log/usb_deck.log can't grow unbounded.
+    _log_handlers.append(
+        logging.handlers.RotatingFileHandler(
+            "/var/log/usb_deck.log", maxBytes=5 * 1024 * 1024, backupCount=3
+        )
+    )
+except Exception:
+    pass  # Path may be unwritable outside the target device — stdout logging still works.
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
+    handlers=_log_handlers,
+    force=True,
 )
 log = logging.getLogger("emittr")
 
 VERSION = "1.3.0"
+MAX_TEXT_LENGTH = 50_000  # Guard against unbounded /api/type payloads
+LIVE_CHAR_MIN_INTERVAL = 0.003  # ~330/s ceiling per WebSocket client on live_char
+
+# ── Auth Token ──────────────────────────────────────────────────────────────
+# A per-install shared secret is required on every mutating REST/WS call.
+# It's generated once, persisted next to this file, and embedded into the
+# served index.html so the legitimate web UI can read it — third parties on
+# the same network never see it unless they already have page access.
+TOKEN_FILE = Path(__file__).parent / ".emittr_token"
+
+
+def _load_or_create_token() -> str:
+    try:
+        if TOKEN_FILE.exists():
+            existing = TOKEN_FILE.read_text(encoding="utf-8").strip()
+            if existing:
+                return existing
+        token = secrets.token_urlsafe(24)
+        TOKEN_FILE.write_text(token, encoding="utf-8")
+        try:
+            os.chmod(TOKEN_FILE, 0o600)
+        except Exception:
+            pass
+        return token
+    except Exception as e:
+        log.warning(f"Could not persist auth token ({e}); using in-memory token for this run.")
+        return secrets.token_urlsafe(24)
+
+
+AUTH_TOKEN = _load_or_create_token()
+
+
+def check_token(supplied: Optional[str]) -> bool:
+    return bool(supplied) and secrets.compare_digest(supplied, AUTH_TOKEN)
+
+
+async def verify_token(x_emittr_token: str = Header(default="")):
+    """FastAPI dependency: reject mutating requests that don't carry the shared token."""
+    if not check_token(x_emittr_token):
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
 # ── HID Scancode Tables (Standard USB HID Boot Protocol) ───────────────────
 MOD_NONE   = 0x00
@@ -258,9 +314,11 @@ class HIDDevice:
         try:
             self.write_kbd_report(mod, key)
         finally:
-            time.sleep(max(0.012, delay_s))
+            # Floor scales with the requested delay so "Instant" presets aren't
+            # silently clamped to the old fixed ~20ms/char minimum.
+            time.sleep(max(0.004, min(delay_s, 0.012)))
             self.release_keys()
-            time.sleep(0.008)
+            time.sleep(0.003)
 
     def write_mouse_report(self, buttons: int, dx: int, dy: int, wheel: int = 0, pan: int = 0) -> bool:
         """
@@ -350,6 +408,7 @@ hid = HIDDevice()
 connected_websockets: List[WebSocket] = []
 current_typing_task: Optional[asyncio.Task] = None
 stop_event = asyncio.Event()
+typing_lock = asyncio.Lock()  # Serializes /api/type job start against concurrent requests
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -367,6 +426,13 @@ def ensure_hid_gadget():
             setup_gadget.init_gadget()
         except Exception as e:
             log.error(f"Failed to restore gadget: {e}")
+
+
+def get_status_payload() -> Dict[str, Any]:
+    """USB status plus the current authenticated WebSocket client count."""
+    payload = hid.get_usb_status()
+    payload["clients"] = len(connected_websockets)
+    return payload
 
 
 async def lifespan(application: "FastAPI"):
@@ -420,8 +486,12 @@ async def broadcast_status(data: dict):
 async def get_index():
     index_file = STATIC_DIR / "index.html"
     if index_file.exists():
+        html = index_file.read_text(encoding="utf-8")
+        # Embed the shared auth token for the legitimate web UI to attach to its own requests.
+        token_script = f'<script>window.EMITTR_TOKEN="{AUTH_TOKEN}";</script>'
+        html = html.replace("<head>", "<head>\n  " + token_script, 1)
         return HTMLResponse(
-            content=index_file.read_text(encoding="utf-8"),
+            content=html,
             headers={
                 "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
                 "Pragma": "no-cache",
@@ -433,17 +503,17 @@ async def get_index():
 
 @app.get("/api/status")
 async def get_status():
-    return hid.get_usb_status()
+    return get_status_payload()
 
 
-@app.post("/api/release")
+@app.post("/api/release", dependencies=[Depends(verify_token)])
 async def emergency_release():
     """Emergency unstick endpoint: release all modifier keys and mouse buttons."""
     hid.release_all()
     return {"ok": True, "msg": "All keys and mouse buttons released"}
 
 
-@app.post("/api/type")
+@app.post("/api/type", dependencies=[Depends(verify_token)])
 async def type_text(data: dict = Body(...)):
     global current_typing_task
     text          = data.get("text", "")
@@ -453,16 +523,38 @@ async def type_text(data: dict = Body(...)):
     if not text:
         return JSONResponse({"ok": False, "msg": "No text provided"}, status_code=400)
 
-    if hid.is_typing:
-        return JSONResponse({"ok": False, "msg": "Another typing job is in progress"}, status_code=409)
+    if len(text) > MAX_TEXT_LENGTH:
+        return JSONResponse(
+            {"ok": False, "msg": f"Text exceeds max length of {MAX_TEXT_LENGTH} characters"},
+            status_code=413,
+        )
+
+    # Atomically check-and-set under a lock so two concurrent requests can't both
+    # slip past the busy check and interleave keystrokes on /dev/hidg0.
+    async with typing_lock:
+        if hid.is_typing:
+            return JSONResponse({"ok": False, "msg": "Another typing job is in progress"}, status_code=409)
+        hid.is_typing = True
 
     delay_s = max(0.001, delay_ms / 1000.0)
     current_typing_task = asyncio.create_task(_type_worker(text, delay_s, initial_delay))
+    current_typing_task.add_done_callback(_on_typing_task_done)
     return {"ok": True, "length": len(text), "delay_ms": delay_ms}
 
 
+def _on_typing_task_done(task: asyncio.Task):
+    """Surface otherwise-silent exceptions from the fire-and-forget typing task."""
+    if task.cancelled():
+        return
+    exc = task.exception()
+    if exc is not None:
+        log.error(f"Typing task failed: {exc}")
+        hid.is_typing = False
+        asyncio.create_task(broadcast_status({"type": "typing_error", "msg": str(exc)}))
+
+
 async def _type_worker(text: str, delay_s: float, initial_delay: float):
-    hid.is_typing = True
+    # hid.is_typing is already set True by the caller under typing_lock.
     stop_event.clear()
     total = len(text)
     await broadcast_status({"type": "typing_start", "total": total})
@@ -493,7 +585,7 @@ async def _type_worker(text: str, delay_s: float, initial_delay: float):
         await broadcast_status({"type": "typing_end", "aborted": stop_event.is_set()})
 
 
-@app.post("/api/stop")
+@app.post("/api/stop", dependencies=[Depends(verify_token)])
 async def stop_typing():
     if not hid.is_typing:
         return {"ok": True, "msg": "Not typing"}
@@ -502,26 +594,27 @@ async def stop_typing():
     return {"ok": True, "msg": "Typing stopped"}
 
 
-@app.post("/api/key")
+@app.post("/api/key", dependencies=[Depends(verify_token)])
 async def press_key(data: dict = Body(...)):
     combo = data.get("combo", "").lower().strip()
     key   = data.get("key",   "").lower().strip()
+    loop  = asyncio.get_event_loop()
     if combo and combo in COMBOS:
         mod, code = COMBOS[combo]
-        hid.press_and_release(mod, code, 0.015)
+        await loop.run_in_executor(None, hid.press_and_release, mod, code, 0.015)
         return {"ok": True, "combo": combo}
     if key and key in SPECIAL_KEYS:
         mod, code = SPECIAL_KEYS[key]
-        hid.press_and_release(mod, code, 0.015)
+        await loop.run_in_executor(None, hid.press_and_release, mod, code, 0.015)
         return {"ok": True, "key": key}
     if key and len(key) == 1 and key in ASCII_MAP:
         mod, code = ASCII_MAP[key]
-        hid.press_and_release(mod, code, 0.015)
+        await loop.run_in_executor(None, hid.press_and_release, mod, code, 0.015)
         return {"ok": True, "char": key}
     return JSONResponse({"ok": False, "msg": f"Unknown: {combo or key}"}, status_code=400)
 
 
-@app.post("/api/mouse")
+@app.post("/api/mouse", dependencies=[Depends(verify_token)])
 async def mouse_action(data: dict = Body(...)):
     """Send mouse event. Body: {dx, dy, buttons, wheel, wheel_h, pan, click}"""
     dx      = int(data.get("dx",      0))
@@ -549,38 +642,51 @@ async def mouse_action(data: dict = Body(...)):
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
+    token = ws.query_params.get("token", "")
+    if not check_token(token):
+        await ws.close(code=4401)
+        return
+
     await ws.accept()
     connected_websockets.append(ws)
+    loop = asyncio.get_event_loop()
+    last_live_char_ts = 0.0
     try:
-        await ws.send_text(json.dumps({"type": "status", "data": hid.get_usb_status()}))
+        await ws.send_text(json.dumps({"type": "status", "data": get_status_payload()}))
         while True:
             raw    = await ws.receive_text()
             data   = json.loads(raw)
             action = data.get("action")
 
             if action == "release_all":
-                hid.release_all()
+                await loop.run_in_executor(None, hid.release_all)
                 await ws.send_text(json.dumps({"type": "released", "ok": True}))
 
             elif action == "live_char":
+                # Simple per-connection throttle to prevent flooding the HID pipe.
+                now = time.monotonic()
+                if now - last_live_char_ts < LIVE_CHAR_MIN_INTERVAL:
+                    continue
+                last_live_char_ts = now
+
                 ch      = data.get("char", "")
                 k_lower = ch.lower().strip()
                 if ch in ASCII_MAP:
                     mod, code = ASCII_MAP[ch]
-                    hid.press_and_release(mod, code, 0.015)
+                    await loop.run_in_executor(None, hid.press_and_release, mod, code, 0.015)
                 elif k_lower in SPECIAL_KEYS:
                     mod, code = SPECIAL_KEYS[k_lower]
-                    hid.press_and_release(mod, code, 0.015)
+                    await loop.run_in_executor(None, hid.press_and_release, mod, code, 0.015)
                 elif k_lower in COMBOS:
                     mod, code = COMBOS[k_lower]
-                    hid.press_and_release(mod, code, 0.015)
+                    await loop.run_in_executor(None, hid.press_and_release, mod, code, 0.015)
                 else:
                     log.warning(f"Unmapped live_char: {ch!r}")
 
             elif action == "mouse_scroll":
                 wv = int(data.get("wheel_v", data.get("wheel", 0)))
                 wh = int(data.get("wheel_h", data.get("pan", 0)))
-                hid.write_scroll(wheel_v=wv, wheel_h=wh)
+                await loop.run_in_executor(None, hid.write_scroll, wv, wh)
 
             elif action == "mouse_move":
                 btn     = int(data.get("buttons", 0))
@@ -590,18 +696,18 @@ async def websocket_endpoint(ws: WebSocket):
                 wheel_h = int(data.get("wheel_h", data.get("pan", 0)))
 
                 if wheel != 0 or wheel_h != 0:
-                    hid.write_scroll(wheel_v=wheel, wheel_h=wheel_h)
+                    await loop.run_in_executor(None, hid.write_scroll, wheel, wheel_h)
                 else:
-                    hid.write_mouse_report(btn, dx, dy, 0, 0)
+                    await loop.run_in_executor(None, hid.write_mouse_report, btn, dx, dy, 0, 0)
 
             elif action == "mouse_click":
                 btn = int(data.get("button", 1))
-                hid.write_mouse_report(btn, 0, 0, 0, 0)
+                await loop.run_in_executor(None, hid.write_mouse_report, btn, 0, 0, 0, 0)
                 await asyncio.sleep(0.02)
-                hid.write_mouse_report(0, 0, 0, 0, 0)
+                await loop.run_in_executor(None, hid.write_mouse_report, 0, 0, 0, 0, 0)
 
             elif action == "get_status":
-                await ws.send_text(json.dumps({"type": "status", "data": hid.get_usb_status()}))
+                await ws.send_text(json.dumps({"type": "status", "data": get_status_payload()}))
 
     except WebSocketDisconnect:
         pass
@@ -626,22 +732,30 @@ async def connection_monitor_loop():
       3. Broadcasts state changes to all connected clients.
     """
     last_state = None
+    loop = asyncio.get_event_loop()
     while True:
         await asyncio.sleep(1.5)
         try:
-            ensure_hid_gadget()
-            st = hid.get_usb_status()
+            # ensure_hid_gadget() does blocking filesystem I/O; keep it off the event loop.
+            await loop.run_in_executor(None, ensure_hid_gadget)
+            st = await loop.run_in_executor(None, hid.get_usb_status)
             current_state = st.get("attached", False)
 
             # Detect transition from not-attached -> attached (PC plugged in or rebooted)
             if last_state is not None and not last_state and current_state:
                 log.info("PC attached! Flushing zero report to unstick any rogue keys...")
-                hid.release_all()
+                await loop.run_in_executor(None, hid.release_all)
 
             last_state = current_state
+            st["clients"] = len(connected_websockets)
             await broadcast_status({"type": "status", "data": st})
         except Exception as e:
             log.warning(f"Connection monitor exception: {e}")
+
+
+# A conservative hostname/IPv4 matcher used to validate the client-supplied Host header
+# before echoing it back in a redirect (prevents header-injection / open-redirect abuse).
+_SAFE_HOST_RE = re.compile(r"^[A-Za-z0-9.\-]{1,253}$")
 
 
 async def start_http_port80_redirector():
@@ -649,10 +763,14 @@ async def start_http_port80_redirector():
     async def handle_port80(reader, writer):
         try:
             req_data = await asyncio.wait_for(reader.read(1024), timeout=2.0)
-            host_header = "192.168.1.10"
+            host_header = "hid.keyboard"
             for line in req_data.decode("utf-8", errors="ignore").split("\r\n"):
                 if line.lower().startswith("host:"):
-                    host_header = line.split(":", 1)[1].strip().split(":")[0]
+                    candidate = line.split(":", 1)[1].strip().split(":")[0]
+                    # Reject anything that isn't a plausible hostname/IP to avoid
+                    # reflecting attacker-controlled values into the Location header.
+                    if _SAFE_HOST_RE.match(candidate):
+                        host_header = candidate
                     break
             redirect_response = (
                 "HTTP/1.1 302 Found\r\n"
@@ -682,4 +800,18 @@ async def start_http_port80_redirector():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server:app", host="0.0.0.0", port=8088, reload=False, access_log=False)
+
+    # Default preserves existing LAN-accessible behavior; set EMITTR_HOST=127.0.0.1
+    # to restrict to the device itself. Optional TLS via EMITTR_SSL_CERT/EMITTR_SSL_KEY.
+    bind_host = os.environ.get("EMITTR_HOST", "0.0.0.0")
+    ssl_cert  = os.environ.get("EMITTR_SSL_CERT")
+    ssl_key   = os.environ.get("EMITTR_SSL_KEY")
+    uvicorn.run(
+        "server:app",
+        host=bind_host,
+        port=8088,
+        reload=False,
+        access_log=False,
+        ssl_certfile=ssl_cert if ssl_cert and ssl_key else None,
+        ssl_keyfile=ssl_key if ssl_cert and ssl_key else None,
+    )
