@@ -369,12 +369,10 @@ html.theme-transitioning .docs-topbar {
 @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
 
 /* -------------------------------------------------------------------------
-   Story / contrast reveal — pinned scroll, one line at a time
+   Story / contrast reveal — one line at a time, paced by JS scroll-stepping
    ------------------------------------------------------------------------- */
-.story-section { padding: 0; }
-.story-track { position: relative; height: calc(var(--story-lines, 4) * 100vh); }
-.story-sticky {
-  position: sticky; top: 0; height: 100vh;
+.story-section {
+  height: 100vh;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }

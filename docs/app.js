@@ -213,37 +213,87 @@
   }
 
   // ==========================================================================
-  // 7. Story Section — pinned scroll reveal, one line at a time
+  // 7. Story Section — scroll-stepped reveal, one line at a time
+  //    While the section fills the viewport, wheel/touch scrolling is
+  //    intercepted so a single fast flick can only advance one line at a
+  //    time (instead of skipping straight to whichever line matches the
+  //    raw scroll distance). Once the last/first line is reached, scrolling
+  //    is released so the page continues to the next/previous section.
   // ==========================================================================
   function initStoryReveal() {
-    const track = document.querySelector('.story-track');
+    const section = document.getElementById('story');
     const lines = document.querySelectorAll('.story-line');
-    if (!track || !lines.length) return;
+    if (!section || !lines.length) return;
 
-    track.style.setProperty('--story-lines', lines.length);
+    const STEP_COOLDOWN = 650; // matches the line's CSS transition duration
+    let index = 0;
+    let cooldown = false;
+    let wasFullyInView = false;
+    let lastScrollY = window.scrollY;
 
-    let ticking = false;
-    function update() {
-      ticking = false;
-      const rect = track.getBoundingClientRect();
-      const total = rect.height - window.innerHeight;
-      const progress = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0;
-      const activeIndex = Math.min(lines.length - 1, Math.floor(progress * lines.length));
-      lines.forEach((line, i) => {
-        line.classList.toggle('is-active', i === activeIndex);
-        line.classList.toggle('is-passed', i < activeIndex);
+    function setActive(i) {
+      index = Math.max(0, Math.min(lines.length - 1, i));
+      lines.forEach((line, idx) => {
+        line.classList.toggle('is-active', idx === index);
+        line.classList.toggle('is-passed', idx < index);
       });
     }
 
-    function onScroll() {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(update);
+    function isFullyInView() {
+      const rect = section.getBoundingClientRect();
+      return rect.top <= 1 && rect.bottom >= window.innerHeight - 1;
     }
 
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    update();
+    // Returns false at a boundary (caller should let the browser scroll
+    // normally), true otherwise (caller should swallow the scroll input).
+    function step(direction) {
+      const atStart = index === 0;
+      const atEnd = index === lines.length - 1;
+      if ((direction > 0 && atEnd) || (direction < 0 && atStart)) return false;
+      if (!cooldown) {
+        cooldown = true;
+        setActive(index + direction);
+        setTimeout(() => { cooldown = false; }, STEP_COOLDOWN);
+      }
+      return true;
+    }
+
+    function onWheel(e) {
+      if (!isFullyInView() || e.deltaY === 0) return;
+      if (step(e.deltaY > 0 ? 1 : -1)) e.preventDefault();
+    }
+
+    let touchStartY = null;
+    function onTouchStart(e) {
+      touchStartY = e.touches[0].clientY;
+    }
+    function onTouchMove(e) {
+      if (touchStartY === null || !isFullyInView()) return;
+      const deltaY = touchStartY - e.touches[0].clientY;
+      if (Math.abs(deltaY) < 12) return;
+      if (step(deltaY > 0 ? 1 : -1)) {
+        e.preventDefault();
+        touchStartY = e.touches[0].clientY;
+      }
+    }
+
+    window.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+
+    // Re-entering the section scrolling down starts at the first line;
+    // re-entering scrolling up (coming back from the next section) resumes
+    // at the last line.
+    window.addEventListener('scroll', () => {
+      const fully = isFullyInView();
+      if (fully && !wasFullyInView) {
+        setActive(window.scrollY > lastScrollY ? 0 : lines.length - 1);
+      }
+      wasFullyInView = fully;
+      lastScrollY = window.scrollY;
+    }, { passive: true });
+
+    setActive(0);
   }
 
   // ==========================================================================
