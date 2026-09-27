@@ -77,7 +77,10 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+html::-webkit-scrollbar { display: none; }
 
 body {
   min-height: 100vh;
@@ -307,7 +310,7 @@ html.theme-transitioning .docs-topbar {
 /* -------------------------------------------------------------------------
    Hero — pins in place and fades out as the story section takes over
    ------------------------------------------------------------------------- */
-.hero-section { position: relative; }
+.hero-section { position: relative; z-index: 2; }
 .hero-track { position: relative; height: 200vh; }
 .hero-sticky {
   position: sticky;
@@ -372,9 +375,11 @@ html.theme-transitioning .docs-topbar {
 @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
 
 /* -------------------------------------------------------------------------
-   Story / contrast reveal — pinned scroll, one line at a time
+   Story / contrast reveal — pinned scroll, one line at a time.
+   Pulled up to overlap the tail of the hero's fade so there's no blank
+   scroll gap between the hero disappearing and the first line appearing.
    ------------------------------------------------------------------------- */
-.story-section { padding: 0; }
+.story-section { position: relative; z-index: 1; margin-top: -130vh; padding: 0; }
 .story-track { position: relative; height: calc(var(--story-lines, 4) * 100vh); }
 .story-sticky {
   position: sticky; top: 0; height: 100vh;
@@ -393,12 +398,10 @@ html.theme-transitioning .docs-topbar {
   line-height: 1.4;
   color: var(--text-tertiary);
   opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+  transition: opacity 0.6s var(--ease);
   pointer-events: none;
 }
-.story-line.is-passed { transform: translateY(-28px); }
-.story-line.is-active { opacity: 1; transform: translateY(0); color: var(--text-secondary); pointer-events: auto; }
+.story-line.is-active { opacity: 1; color: var(--text-secondary); pointer-events: auto; }
 .story-line.punch { font-weight: 700; }
 .story-line.punch.is-active { color: var(--accent); }
 
@@ -552,6 +555,36 @@ html.theme-transitioning .docs-topbar {
 @keyframes blink { 50% { opacity: 0; } }
 
 .grid-scroll-surface { max-height: 300px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+
+/* themed scrollbars for the deck/monitor's own scrollable surfaces */
+.clean-textarea,
+.doc-scroll-surface,
+.grid-scroll-surface {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.clean-textarea::-webkit-scrollbar,
+.doc-scroll-surface::-webkit-scrollbar,
+.grid-scroll-surface::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.clean-textarea::-webkit-scrollbar-track,
+.doc-scroll-surface::-webkit-scrollbar-track,
+.grid-scroll-surface::-webkit-scrollbar-track {
+  background: transparent;
+}
+.clean-textarea::-webkit-scrollbar-thumb,
+.doc-scroll-surface::-webkit-scrollbar-thumb,
+.grid-scroll-surface::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong);
+  border-radius: var(--radius-full);
+}
+.clean-textarea::-webkit-scrollbar-thumb:hover,
+.doc-scroll-surface::-webkit-scrollbar-thumb:hover,
+.grid-scroll-surface::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-tertiary);
+}
 .data-table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
 .data-table th, .data-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
 .data-table th { background: var(--bg-subtle); color: var(--text-tertiary); font-weight: 600; position: sticky; top: 0; }

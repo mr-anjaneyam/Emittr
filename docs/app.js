@@ -260,7 +260,6 @@
       const activeIndex = Math.min(lines.length - 1, Math.floor(progress * lines.length));
       lines.forEach((line, i) => {
         line.classList.toggle('is-active', i === activeIndex);
-        line.classList.toggle('is-passed', i < activeIndex);
       });
     }
 
