@@ -41,6 +41,57 @@
       themeToggle.addEventListener('click', (e) => applyThemeChange(e.currentTarget));
     }
 
+    // Builds a series of clip-path("path(...)") keyframes: a grid of square
+    // tiles that each grow from a pinpoint to full size, staggered by
+    // distance from the click point. Animated directly via the Web Animations
+    // API (the same mechanism the old circle-ripple used), since neither
+    // mask-image nor SMIL-driven SVG geometry actually render on the
+    // view-transition pseudo-elements in current Chromium — only genuine
+    // WAAPI/CSS-animated clip-path values do.
+    function buildMosaicKeyframes(originX, originY) {
+      const TILE = 90;
+      const HALF = TILE / 2;
+      const DURATION = 620;
+      const STEPS = 18;
+      const RAMP = 0.22; // fraction of total progress a single tile takes to grow in
+      const JITTER = 0.05;
+
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const cols = Math.ceil(w / TILE);
+      const rows = Math.ceil(h / TILE);
+      const maxDist = Math.hypot(
+        Math.max(originX, w - originX),
+        Math.max(originY, h - originY)
+      ) || 1;
+
+      const tiles = [];
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const cx = col * TILE + HALF;
+          const cy = row * TILE + HALF;
+          const dist = Math.hypot(cx - originX, cy - originY);
+          const trigger = (dist / maxDist) * (1 - RAMP) + Math.random() * JITTER;
+          tiles.push({ cx, cy, trigger });
+        }
+      }
+
+      const keyframes = [];
+      for (let s = 0; s <= STEPS; s++) {
+        const p = s / STEPS;
+        let d = '';
+        for (const tile of tiles) {
+          const local = Math.max(0, Math.min(1, (p - tile.trigger) / RAMP));
+          const half = Math.max(0.5, HALF * local);
+          const { cx, cy } = tile;
+          d += `M${(cx - half).toFixed(1)} ${(cy - half).toFixed(1)}L${(cx + half).toFixed(1)} ${(cy - half).toFixed(1)}L${(cx + half).toFixed(1)} ${(cy + half).toFixed(1)}L${(cx - half).toFixed(1)} ${(cy + half).toFixed(1)}Z`;
+        }
+        keyframes.push(`path('${d}')`);
+      }
+
+      return { keyframes, duration: DURATION };
+    }
+
     function applyThemeChange(originBtn) {
       const current = html.getAttribute('data-theme') || 'dark';
       const next = current === 'dark' ? 'light' : 'dark';
@@ -60,30 +111,18 @@
       const rect = originBtn.getBoundingClientRect();
       const x = rect.left + rect.width / 2;
       const y = rect.top + rect.height / 2;
-      const endRadius = Math.hypot(
-        Math.max(x, window.innerWidth - x),
-        Math.max(y, window.innerHeight - y)
-      );
+      const { keyframes, duration } = buildMosaicKeyframes(x, y);
 
       // drop expensive blur filters for the ripple's duration so the full-page
-      // snapshot capture and clip-path animation stay smooth
+      // snapshot capture and mosaic reveal stay smooth
       html.classList.add('theme-transitioning');
 
       const transition = document.startViewTransition(commit);
 
       transition.ready.then(() => {
         document.documentElement.animate(
-          {
-            clipPath: [
-              `circle(0px at ${x}px ${y}px)`,
-              `circle(${endRadius}px at ${x}px ${y}px)`,
-            ],
-          },
-          {
-            duration: 600,
-            easing: 'ease-in-out',
-            pseudoElement: '::view-transition-new(root)',
-          }
+          { clipPath: keyframes },
+          { duration, easing: 'linear', pseudoElement: '::view-transition-new(root)' }
         );
       });
 
