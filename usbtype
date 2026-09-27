@@ -13,21 +13,44 @@ Usage:
 import sys
 import os
 import time
+import ssl
 import argparse
 import urllib.request
 import json
 
-SERVER_URL = "http://127.0.0.1:8088"
+INSTALL_DIR = os.environ.get("EMITTR_INSTALL_DIR", "/opt/usb_hid_deck")
+TOKEN_FILE = os.path.join(INSTALL_DIR, ".emittr_token")
+_CERT_DIR = os.path.join(INSTALL_DIR, "certs")
+_HAS_TLS = os.path.exists(os.path.join(_CERT_DIR, "emittr.crt")) and os.path.exists(os.path.join(_CERT_DIR, "emittr.key"))
+_PORT = os.environ.get("EMITTR_PORT", "8088")
+SERVER_URL = os.environ.get("EMITTR_SERVER_URL", f"{'https' if _HAS_TLS else 'http'}://127.0.0.1:{_PORT}")
+# Server uses a self-signed cert for this loopback call; verification isn't meaningful here.
+_SSL_CTX = ssl._create_unverified_context() if SERVER_URL.startswith("https") else None
+
+
+def _load_token():
+    try:
+        with open(TOKEN_FILE, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except Exception:
+        return ""
+
+
+AUTH_TOKEN = _load_token()
+
 
 def send_via_api(endpoint, payload):
     try:
         data = json.dumps(payload).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        if AUTH_TOKEN:
+            headers["X-Emittr-Token"] = AUTH_TOKEN
         req = urllib.request.Request(
             f"{SERVER_URL}{endpoint}",
             data=data,
-            headers={"Content-Type": "application/json"}
+            headers=headers,
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=5, context=_SSL_CTX) as resp:
             return json.loads(resp.read().decode())
     except Exception as e:
         return {"ok": False, "error": str(e)}
@@ -45,12 +68,15 @@ def main():
 
     if args.status:
         try:
-            with urllib.request.urlopen(f"{SERVER_URL}/api/status", timeout=3) as resp:
+            headers = {"X-Emittr-Token": AUTH_TOKEN} if AUTH_TOKEN else {}
+            req = urllib.request.Request(f"{SERVER_URL}/api/status", headers=headers)
+            with urllib.request.urlopen(req, timeout=3, context=_SSL_CTX) as resp:
                 status = json.loads(resp.read().decode())
-                print(f"USB Host Connected: {status.get('connected')}")
-                print(f"UDC State:          {status.get('udc_state')}")
+                print(f"USB Host Connected: {status.get('attached')}")
+                print(f"UDC State:          {status.get('state')}")
                 print(f"Speed:              {status.get('speed')}")
-                print(f"Keyboard Node:      {status.get('kbd_node')}")
+                print(f"Keyboard Node:      {status.get('hid_node_exists')}")
+                print(f"HID Mode Enabled:   {status.get('hid_mode_enabled')}")
         except Exception as e:
             print(f"Error checking status: {e}")
         return

@@ -218,6 +218,7 @@ COMBOS: Dict[str, tuple] = {
 }
 
 HID_DEVICE_PATH = "/dev/hidg0"
+PORT = int(os.environ.get("EMITTR_PORT", "8088"))
 
 
 class HIDDevice:
@@ -483,7 +484,7 @@ async def lifespan(application: "FastAPI"):
 
     asyncio.create_task(connection_monitor_loop())
     asyncio.create_task(start_http_port80_redirector())
-    log.info(f"Emittr Server v{VERSION} initialized on port 8088.")
+    log.info(f"Emittr Server v{VERSION} initialized on port {PORT}.")
 
     yield
 
@@ -827,7 +828,7 @@ _SAFE_HOST_RE = re.compile(r"^[A-Za-z0-9.\-]{1,253}$")
 
 
 async def start_http_port80_redirector():
-    """Userland HTTP 302 redirect on port 80 -> port 8088."""
+    """Userland HTTP 302 redirect on port 80 -> the configured app port."""
     async def handle_port80(reader, writer):
         try:
             req_data = await asyncio.wait_for(reader.read(1024), timeout=2.0)
@@ -842,7 +843,7 @@ async def start_http_port80_redirector():
                     break
             redirect_response = (
                 "HTTP/1.1 302 Found\r\n"
-                f"Location: http://{host_header}:8088/\r\n"
+                f"Location: http://{host_header}:{PORT}/\r\n"
                 "Connection: close\r\n"
                 "Content-Length: 0\r\n\r\n"
             )
@@ -859,7 +860,7 @@ async def start_http_port80_redirector():
 
     try:
         server = await asyncio.start_server(handle_port80, "0.0.0.0", 80)
-        log.info("Port 80 redirector listening (redirects to :8088)")
+        log.info(f"Port 80 redirector listening (redirects to :{PORT})")
         async with server:
             await server.serve_forever()
     except Exception as e:
@@ -877,7 +878,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "server:app",
         host=bind_host,
-        port=8088,
+        port=PORT,
         reload=False,
         access_log=False,
         ssl_certfile=ssl_cert if ssl_cert and ssl_key else None,

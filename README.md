@@ -12,11 +12,12 @@
 ### *Tactical USB HID Deck • Ghost Keyboard • Dual Xbox Joysticks*
 **Turn any rooted Android or NetHunter phone into an unapologetic hardware-grade USB keyboard, precision trackpad, and continuous scrolling deck.**
 
-[![Release](https://img.shields.io/badge/Release-v1.3.0-00E5FF.svg?style=for-the-badge&logo=github)](https://github.com/)
+[![Release](https://img.shields.io/badge/Release-v1.3.0-00E5FF.svg?style=for-the-badge&logo=github)](https://github.com/mr-anjaneyam/emittr)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F50057.svg?style=for-the-badge)](LICENSE)
 [![Gadget](https://img.shields.io/badge/USB_Gadget-Composite_HID-7C4DFF.svg?style=for-the-badge&logo=linux)](https://docs.kernel.org/usb/gadget_configfs.html)
 [![Web Deck](https://img.shields.io/badge/Deck-Material_3_PWA-00E676.svg?style=for-the-badge&logo=pwa)](http://localhost:8088)
 [![PWA Ready](https://img.shields.io/badge/PWA-Mobile--First_Deck-FF9100.svg?style=for-the-badge)](#-progressive-web-app--mobile-cyberdeck-architecture)
+[![Website](https://img.shields.io/badge/Website-emittr.srianjaneyam.me-00E5FF.svg?style=for-the-badge)](https://emittr.srianjaneyam.me)
 
 <br/>
 
@@ -115,8 +116,8 @@ Hardware-level protection ensuring target host modifier states (<kbd>Ctrl</kbd>,
 
 ### 1. Clone & Deploy
 ```bash
-git clone https://github.com/mranj/usb-typer.git
-cd usb-typer
+git clone https://github.com/mr-anjaneyam/emittr.git
+cd emittr
 ```
 
 ### 2. Run the Autonomous Installer
@@ -408,5 +409,6 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for complete ter
 Designed & built for hackers, sysadmins, and anyone who believes typing passwords manually onto headless servers is a relic of the past.
 
 <div align="center">
-  <sub>Built with ⚡ by <a href="https://github.com/mranj">mranj</a> & pair-programmed with Antigravity</sub>
+  <sub>Built with ⚡ by <a href="https://github.com/mr-anjaneyam">mr-anjaneyam</a> & pair-programmed with Antigravity</sub><br/>
+  <sub><a href="https://emittr.srianjaneyam.me">emittr.srianjaneyam.me</a> • <a href="https://github.com/mr-anjaneyam/emittr">github.com/mr-anjaneyam/emittr</a></sub>
 </div>

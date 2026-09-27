@@ -26,3 +26,12 @@ ENV/
 temp/
 scratch/
 test_*.py
+
+# Emittr runtime secrets & per-device state — never commit these
+.emittr_token
+.emittr_hid_mode
+certs/
+*.pem
+*.key
+*.crt
+
