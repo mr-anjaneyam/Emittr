@@ -413,10 +413,10 @@ typing_lock = asyncio.Lock()  # Serializes /api/type job start against concurren
 STATIC_DIR = Path(__file__).parent / "static"
 
 # ── HID Mode (manual toggle) ────────────────────────────────────────────────
-# Whether Emittr is allowed to claim/hold the USB gadget as HID. This mirrors
-# NetHunter's own USB-function switch: it's a persisted, user-controlled setting
-# rather than something silently re-asserted regardless of what the user picked
-# elsewhere. Toggling it off releases the UDC so NetHunter (or any other app) can
+# Whether Emittr is allowed to claim/hold the USB gadget as HID. This defers to
+# NetHunter's own USB-function switch by default: Emittr stays hands-off until the
+# user explicitly opts in from Settings, instead of silently claiming the UDC on
+# every boot. Toggling it off releases the UDC so NetHunter (or any other app) can
 # take over USB function selection; toggling it on hands control back to Emittr.
 HID_MODE_FILE = Path(__file__).parent / ".emittr_hid_mode"
 
@@ -424,10 +424,10 @@ HID_MODE_FILE = Path(__file__).parent / ".emittr_hid_mode"
 def _load_hid_mode() -> bool:
     try:
         if HID_MODE_FILE.exists():
-            return HID_MODE_FILE.read_text(encoding="utf-8").strip() != "0"
+            return HID_MODE_FILE.read_text(encoding="utf-8").strip() == "1"
     except Exception:
         pass
-    return True  # default on: preserves prior plug-and-play behavior for existing installs
+    return False  # default off: let NetHunter's own USB-function choice stand until opted in
 
 
 def _save_hid_mode(enabled: bool):

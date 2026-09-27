@@ -148,8 +148,20 @@ function applyTheme(theme) {
 }
 
 async function toggleHidMode(enabled) {
-  triggerHaptic(15);
   const toggle = document.getElementById('cfg-hidmode');
+
+  if (enabled) {
+    const proceed = confirm(
+      'NetHunter should decide USB function first.\n\n' +
+      'Overwriting the enablement through Emittr can have unprecedented consequences. Continue?'
+    );
+    if (!proceed) {
+      if (toggle) toggle.checked = false;
+      return;
+    }
+  }
+
+  triggerHaptic(15);
   try {
     const result = await apiPost('/api/hid_mode', { enabled });
     showToast(result.msg || (enabled ? 'HID mode enabled' : 'HID mode released'));

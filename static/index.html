@@ -711,10 +711,10 @@
         <div class="setting-item">
           <div class="setting-info">
             <span class="setting-title">USB HID Mode</span>
-            <span class="setting-sub">Off releases the USB port so you can switch function (e.g. file transfer) from NetHunter</span>
+            <span class="setting-sub">Off (default) lets NetHunter's own USB-function switch decide. On makes Emittr hold the port for keyboard/mouse.</span>
           </div>
           <label class="switch">
-            <input type="checkbox" id="cfg-hidmode" checked onchange="toggleHidMode(this.checked)" />
+            <input type="checkbox" id="cfg-hidmode" onchange="toggleHidMode(this.checked)" />
             <span class="slider"></span>
           </label>
         </div>

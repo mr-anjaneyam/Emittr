@@ -7,12 +7,9 @@ until [ "$(getprop sys.boot_completed)" = "1" ]; do
     sleep 2
 done
 
-# Suppress Android framework from forcing mass_storage
-setprop persist.sys.usb.config none 2>/dev/null || true
-setprop sys.usb.config none 2>/dev/null || true
-
-# Ensure HID node permissions
-chmod 660 /dev/hidg* 2>/dev/null || true
+# HID mode is opt-in (Settings toggle inside the app), so USB function suppression
+# only happens via setup_gadget.py when actually enabling HID — not unconditionally
+# at every boot. This lets NetHunter's own USB-function choice stand by default.
 
 # Setup hid.keyboard in /system/etc/hosts via safe bind mount
 if ! grep -q "hid.keyboard" /system/etc/hosts 2>/dev/null; then
@@ -27,7 +24,7 @@ fi
 
 # Launch Emittr server in Kali NetHunter chroot
 if [ -f /data/local/nhsystem/bin/bootkali ]; then
-    /data/local/nhsystem/bin/bootkali bash -c "mkdir -p /config && mount -t configfs none /config 2>/dev/null; if [ -x /opt/tactical_venv/bin/python3 ]; then PY=/opt/tactical_venv/bin/python3; else PY=python3; fi; if [ ! -f /opt/usb_hid_deck/.emittr_hid_mode ] || [ \"\$(cat /opt/usb_hid_deck/.emittr_hid_mode)\" != \"0\" ]; then \"\${PY}\" /opt/usb_hid_deck/setup_gadget.py 2>/dev/null; fi; nohup \"\${PY}\" /opt/usb_hid_deck/server.py > /dev/null 2>> /var/log/usb_deck.crash.log &" >> "${BOOT_LOG}" 2>&1 || echo "[$(date '+%Y-%m-%d %H:%M:%S')] bootkali launch FAILED (non-fatal)" >> "${BOOT_LOG}" 2>/dev/null
+    /data/local/nhsystem/bin/bootkali bash -c "mkdir -p /config && mount -t configfs none /config 2>/dev/null; if [ -x /opt/tactical_venv/bin/python3 ]; then PY=/opt/tactical_venv/bin/python3; else PY=python3; fi; if [ -f /opt/usb_hid_deck/.emittr_hid_mode ] && [ \"\$(cat /opt/usb_hid_deck/.emittr_hid_mode)\" = \"1\" ]; then \"\${PY}\" /opt/usb_hid_deck/setup_gadget.py 2>/dev/null; chmod 660 /dev/hidg* 2>/dev/null; fi; nohup \"\${PY}\" /opt/usb_hid_deck/server.py > /dev/null 2>> /var/log/usb_deck.crash.log &" >> "${BOOT_LOG}" 2>&1 || echo "[$(date '+%Y-%m-%d %H:%M:%S')] bootkali launch FAILED (non-fatal)" >> "${BOOT_LOG}" 2>/dev/null
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] bootkali launch attempted" >> "${BOOT_LOG}" 2>/dev/null
 else
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] bootkali binary not found, skipping server launch" >> "${BOOT_LOG}" 2>/dev/null

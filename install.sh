@@ -23,10 +23,11 @@ chmod +x "${INSTALL_DIR}/usbtype"
 # Link CLI tool to PATH
 ln -sf "${INSTALL_DIR}/usbtype" /usr/local/bin/usbtype
 
-# Skip forcing HID mode if the user previously toggled it off from the web UI/settings
-# (mirrors NetHunter's own USB-function switch instead of overriding it on every install).
+# HID mode is opt-in: only claim the USB gadget/UDC if the user has explicitly
+# enabled it from Settings (mirrors NetHunter's own USB-function switch instead
+# of overriding it on every install).
 HID_MODE_FILE="${INSTALL_DIR}/.emittr_hid_mode"
-if [ ! -f "${HID_MODE_FILE}" ] || [ "$(cat "${HID_MODE_FILE}" 2>/dev/null)" != "0" ]; then
+if [ -f "${HID_MODE_FILE}" ] && [ "$(cat "${HID_MODE_FILE}" 2>/dev/null)" = "1" ]; then
     # Prevent Android framework from reverting USB to mass_storage
     /system/bin/setprop persist.sys.usb.config none 2>/dev/null || true
     /system/bin/setprop sys.usb.config none 2>/dev/null || true
@@ -41,7 +42,7 @@ else
     PY_BIN="python3"
 fi
 
-if [ ! -f "${HID_MODE_FILE}" ] || [ "$(cat "${HID_MODE_FILE}" 2>/dev/null)" != "0" ]; then
+if [ -f "${HID_MODE_FILE}" ] && [ "$(cat "${HID_MODE_FILE}" 2>/dev/null)" = "1" ]; then
     "${PY_BIN}" "${INSTALL_DIR}/setup_gadget.py" || true
     chmod 660 /dev/hidg* 2>/dev/null || true
 fi
