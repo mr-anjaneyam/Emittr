@@ -65,6 +65,10 @@
         Math.max(y, window.innerHeight - y)
       );
 
+      // drop expensive blur filters for the ripple's duration so the full-page
+      // snapshot capture and clip-path animation stay smooth
+      html.classList.add('theme-transitioning');
+
       const transition = document.startViewTransition(commit);
 
       transition.ready.then(() => {
@@ -84,6 +88,7 @@
       });
 
       transition.finished.then(() => {
+        html.classList.remove('theme-transitioning');
         showToast(`Switched to ${next} mode`, next === 'dark' ? 'dark_mode' : 'light_mode');
       });
     }

@@ -98,7 +98,19 @@ img { max-width: 100%; display: block; }
   mix-blend-mode: normal;
 }
 ::view-transition-old(root) { z-index: 1; }
-::view-transition-new(root) { z-index: 2; }
+::view-transition-new(root) { z-index: 2; will-change: clip-path; }
+
+/* blur/backdrop-filter are expensive to rasterize into the transition's full-page
+   snapshot, so they're stripped for the ripple's duration to keep it smooth */
+html.theme-transitioning body { transition: none; }
+html.theme-transitioning .hero-glow { filter: none; }
+html.theme-transitioning .brand-mark,
+html.theme-transitioning .menu-fab,
+html.theme-transitioning .theme-fab,
+html.theme-transitioning .docs-topbar {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
 
 /* -------------------------------------------------------------------------
    Layout helpers
