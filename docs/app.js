@@ -213,25 +213,37 @@
   }
 
   // ==========================================================================
-  // 7. Story Section Scroll Reveal
+  // 7. Story Section — pinned scroll reveal, one line at a time
   // ==========================================================================
   function initStoryReveal() {
-    const lines = document.querySelectorAll('[data-reveal]');
-    if (!lines.length || !('IntersectionObserver' in window)) {
-      lines.forEach((l) => l.classList.add('is-visible'));
-      return;
+    const track = document.querySelector('.story-track');
+    const lines = document.querySelectorAll('.story-line');
+    if (!track || !lines.length) return;
+
+    track.style.setProperty('--story-lines', lines.length);
+
+    let ticking = false;
+    function update() {
+      ticking = false;
+      const rect = track.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      const progress = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0;
+      const activeIndex = Math.min(lines.length - 1, Math.floor(progress * lines.length));
+      lines.forEach((line, i) => {
+        line.classList.toggle('is-active', i === activeIndex);
+        line.classList.toggle('is-passed', i < activeIndex);
+      });
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) entry.target.classList.add('is-visible');
-        });
-      },
-      { threshold: 0.6 }
-    );
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    }
 
-    lines.forEach((line) => observer.observe(line));
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    update();
   }
 
   // ==========================================================================

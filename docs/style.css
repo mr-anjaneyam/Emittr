@@ -369,21 +369,35 @@ html.theme-transitioning .docs-topbar {
 @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
 
 /* -------------------------------------------------------------------------
-   Story / contrast reveal
+   Story / contrast reveal — pinned scroll, one line at a time
    ------------------------------------------------------------------------- */
-.story-section { padding: 160px 24px; }
-.story-inner { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; text-align: center; }
+.story-section { padding: 0; }
+.story-track { position: relative; height: calc(var(--story-lines, 4) * 100vh); }
+.story-sticky {
+  position: sticky; top: 0; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.story-inner {
+  position: relative; width: 100%; max-width: 820px; margin: 0 auto;
+  padding: 0 24px; height: clamp(200px, 30vw, 260px); text-align: center;
+}
 .story-line {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
   font-size: clamp(22px, 3.6vw, 34px);
   font-weight: 600;
   line-height: 1.4;
   color: var(--text-tertiary);
-  opacity: 0.35;
-  transition: opacity 0.7s var(--ease), color 0.7s var(--ease);
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+  pointer-events: none;
 }
-.story-line.is-visible { opacity: 1; color: var(--text-secondary); }
+.story-line.is-passed { transform: translateY(-28px); }
+.story-line.is-active { opacity: 1; transform: translateY(0); color: var(--text-secondary); pointer-events: auto; }
 .story-line.punch { font-weight: 700; }
-.story-line.punch.is-visible { color: var(--accent); }
+.story-line.punch.is-active { color: var(--accent); }
 
 /* -------------------------------------------------------------------------
    Demo section (embedded, desktop-first experience)
@@ -836,6 +850,6 @@ html.theme-transitioning .docs-topbar {
    ------------------------------------------------------------------------- */
 @media (max-width: 680px) {
   .section { padding: 90px 0; }
-  .story-section { padding: 100px 24px; }
+  .story-inner { height: clamp(220px, 60vw, 320px); }
   .closing-section { padding: 100px 24px 80px 24px; }
 }
