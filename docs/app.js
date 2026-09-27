@@ -213,91 +213,70 @@
   }
 
   // ==========================================================================
-  // 7. Story Section — scroll-stepped reveal, one line at a time
-  //    While the section fills the viewport, wheel/touch scrolling is
-  //    intercepted so a single fast flick can only advance one line at a
-  //    time (instead of skipping straight to whichever line matches the
-  //    raw scroll distance). Once the last/first line is reached, scrolling
-  //    is released so the page continues to the next/previous section.
+  // 7. Hero Section — pins in place and slowly fades out on scroll,
+  //    handing off to the story section's first line
   // ==========================================================================
-  function initStoryReveal() {
-    const section = document.getElementById('story');
-    const lines = document.querySelectorAll('.story-line');
-    if (!section || !lines.length) return;
+  function initHeroFade() {
+    const track = document.querySelector('.hero-track');
+    const sticky = document.querySelector('.hero-sticky');
+    if (!track || !sticky) return;
 
-    const STEP_COOLDOWN = 650; // matches the line's CSS transition duration
-    let index = 0;
-    let cooldown = false;
-    let wasFullyInView = false;
-    let lastScrollY = window.scrollY;
-
-    function setActive(i) {
-      index = Math.max(0, Math.min(lines.length - 1, i));
-      lines.forEach((line, idx) => {
-        line.classList.toggle('is-active', idx === index);
-        line.classList.toggle('is-passed', idx < index);
-      });
+    let ticking = false;
+    function update() {
+      ticking = false;
+      const rect = track.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      const progress = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0;
+      sticky.style.opacity = String(1 - progress);
     }
 
-    function isFullyInView() {
-      const rect = section.getBoundingClientRect();
-      return rect.top <= 1 && rect.bottom >= window.innerHeight - 1;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
     }
 
-    // Returns false at a boundary (caller should let the browser scroll
-    // normally), true otherwise (caller should swallow the scroll input).
-    function step(direction) {
-      const atStart = index === 0;
-      const atEnd = index === lines.length - 1;
-      if ((direction > 0 && atEnd) || (direction < 0 && atStart)) return false;
-      if (!cooldown) {
-        cooldown = true;
-        setActive(index + direction);
-        setTimeout(() => { cooldown = false; }, STEP_COOLDOWN);
-      }
-      return true;
-    }
-
-    function onWheel(e) {
-      if (!isFullyInView() || e.deltaY === 0) return;
-      if (step(e.deltaY > 0 ? 1 : -1)) e.preventDefault();
-    }
-
-    let touchStartY = null;
-    function onTouchStart(e) {
-      touchStartY = e.touches[0].clientY;
-    }
-    function onTouchMove(e) {
-      if (touchStartY === null || !isFullyInView()) return;
-      const deltaY = touchStartY - e.touches[0].clientY;
-      if (Math.abs(deltaY) < 12) return;
-      if (step(deltaY > 0 ? 1 : -1)) {
-        e.preventDefault();
-        touchStartY = e.touches[0].clientY;
-      }
-    }
-
-    window.addEventListener('wheel', onWheel, { passive: false });
-    window.addEventListener('touchstart', onTouchStart, { passive: true });
-    window.addEventListener('touchmove', onTouchMove, { passive: false });
-
-    // Re-entering the section scrolling down starts at the first line;
-    // re-entering scrolling up (coming back from the next section) resumes
-    // at the last line.
-    window.addEventListener('scroll', () => {
-      const fully = isFullyInView();
-      if (fully && !wasFullyInView) {
-        setActive(window.scrollY > lastScrollY ? 0 : lines.length - 1);
-      }
-      wasFullyInView = fully;
-      lastScrollY = window.scrollY;
-    }, { passive: true });
-
-    setActive(0);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    update();
   }
 
   // ==========================================================================
-  // 8. Demo Scroll Button (hero CTA jumps to embedded demo)
+  // 8. Story Section — pinned scroll reveal, one line at a time
+  // ==========================================================================
+  function initStoryReveal() {
+    const track = document.querySelector('.story-track');
+    const lines = document.querySelectorAll('.story-line');
+    if (!track || !lines.length) return;
+
+    track.style.setProperty('--story-lines', lines.length);
+
+    let ticking = false;
+    function update() {
+      ticking = false;
+      const rect = track.getBoundingClientRect();
+      const total = rect.height - window.innerHeight;
+      const progress = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0;
+      const activeIndex = Math.min(lines.length - 1, Math.floor(progress * lines.length));
+      lines.forEach((line, i) => {
+        line.classList.toggle('is-active', i === activeIndex);
+        line.classList.toggle('is-passed', i < activeIndex);
+      });
+    }
+
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    update();
+  }
+
+  // ==========================================================================
+  // 9. Demo Scroll Button (hero CTA jumps to embedded demo)
   // ==========================================================================
   function initDemoScrollBtn() {
     const btn = document.getElementById('demoScrollBtn');
@@ -307,7 +286,7 @@
   }
 
   // ==========================================================================
-  // 9. Footer Rotating Tagline
+  // 10. Footer Rotating Tagline
   // ==========================================================================
   function initFooterTagline() {
     const el = document.getElementById('footerTagline');
@@ -323,7 +302,7 @@
   }
 
   // ==========================================================================
-  // 10. Docs Page — Table of Contents scroll-spy
+  // 11. Docs Page — Table of Contents scroll-spy
   // ==========================================================================
   function initDocsToc() {
     const toc = document.querySelector('.docs-toc');
@@ -352,7 +331,7 @@
   }
 
   // ==========================================================================
-  // 11. Interactive Simulator Logic (embedded demo)
+  // 12. Interactive Simulator Logic (embedded demo)
   // ==========================================================================
   const essayPreset = `In an era where technology promises frictionless collaboration, the simplest acts often remain the most stubborn. Consider the humble paragraph: five hundred words of structured thought, carefully composed, waiting on one screen to be transferred to another. In theory, modern networks should make this instantaneous. In practice, we encounter locked-down corporate networks, disabled clipboard sharing, guest network barriers, and workstations with USB ports restricted by security policy.
 
@@ -520,7 +499,7 @@ By using the phone you already carry as a genuine physical input device, typing 
   }
 
   // ==========================================================================
-  // 12. Data Grid Generator (spreadsheet demo pane)
+  // 13. Data Grid Generator (spreadsheet demo pane)
   // ==========================================================================
   function populateDataTable() {
     const tbody = document.getElementById('dataTableBody');
@@ -558,7 +537,7 @@ By using the phone you already carry as a genuine physical input device, typing 
   }
 
   // ==========================================================================
-  // 13. Dual-Stick Scroll Engine
+  // 14. Dual-Stick Scroll Engine
   // ==========================================================================
   function initSimJoystick(wellId, stickId, statusId, axis) {
     const well = document.getElementById(wellId);
@@ -677,7 +656,7 @@ By using the phone you already carry as a genuine physical input device, typing 
   }
 
   // ==========================================================================
-  // 14. Simulated Trackpad
+  // 15. Simulated Trackpad
   // ==========================================================================
   function initSimTrackpad() {
     const pad = document.getElementById('simTouchpadSurface');
@@ -734,7 +713,7 @@ By using the phone you already carry as a genuine physical input device, typing 
   }
 
   // ==========================================================================
-  // 15. Interactive Feature Widget (dual-stick preview in the features section)
+  // 16. Interactive Feature Widget (dual-stick preview in the features section)
   // ==========================================================================
   function initBentoMiniStick() {
     const stickBox = document.getElementById('bentoMiniStick');
@@ -771,7 +750,7 @@ By using the phone you already carry as a genuine physical input device, typing 
   }
 
   // ==========================================================================
-  // 16. FAQ Accordion
+  // 17. FAQ Accordion
   // ==========================================================================
   function initFaq() {
     const faqItems = document.querySelectorAll('.faq-item');
@@ -788,7 +767,7 @@ By using the phone you already carry as a genuine physical input device, typing 
   }
 
   // ==========================================================================
-  // 17. Copy Buttons
+  // 18. Copy Buttons
   // ==========================================================================
   function initCopyButtons() {
     document.querySelectorAll('.copy-btn').forEach(btn => {
@@ -816,6 +795,7 @@ By using the phone you already carry as a genuine physical input device, typing 
     initTheme();
     initNavOverlay();
     initDotNav();
+    initHeroFade();
     initStoryReveal();
     initDemoScrollBtn();
     initFooterTagline();
