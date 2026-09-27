@@ -1,85 +1,14 @@
 /**
- * Emittr — Modern Apple-Grade Product Showcase & Interactive Studio Logic
- * High-performance, clean, zero external framework dependencies
+ * Emittr — Product Page Interactions
+ * Zero external framework dependencies. Shared by index.html and docs.html;
+ * every init function no-ops if its target elements aren't on the page.
  */
 
 (function () {
   'use strict';
 
   // ==========================================================================
-  // 1. Audio Engine (Web Audio API - Synthetic Mechanical Sound)
-  // ==========================================================================
-  class AudioEngine {
-    constructor() {
-      this.ctx = null;
-      this.enabled = false;
-    }
-
-    init() {
-      if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        this.ctx = new AudioCtx();
-      }
-      if (this.ctx && this.ctx.state === 'suspended') {
-        this.ctx.resume();
-      }
-    }
-
-    toggle() {
-      this.enabled = !this.enabled;
-      if (this.enabled) this.init();
-      return this.enabled;
-    }
-
-    playKeyClick() {
-      if (!this.enabled || !this.ctx) return;
-      try {
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(550 + Math.random() * 150, now);
-        osc.frequency.exponentialRampToValueAtTime(120, now + 0.03);
-
-        gain.gain.setValueAtTime(0.18, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-
-        osc.start(now);
-        osc.stop(now + 0.035);
-      } catch (e) {}
-    }
-
-    playReleaseChime() {
-      if (!this.enabled || !this.ctx) return;
-      try {
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(520, now);
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.14);
-
-        gain.gain.setValueAtTime(0.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-
-        osc.start(now);
-        osc.stop(now + 0.18);
-      } catch (e) {}
-    }
-  }
-
-  const audio = new AudioEngine();
-
-  // ==========================================================================
-  // 2. Toast Notification Helper
+  // 1. Toast Notification Helper
   // ==========================================================================
   const toastBox = document.getElementById('toastBox');
   let toastTimer = null;
@@ -96,7 +25,8 @@
   }
 
   // ==========================================================================
-  // 3. Theme Controller (Apple Light / Dark Titanium)
+  // 3. Theme Controller — dark by default, remembered per visitor,
+  //    with a circular reveal ("ripple") transition on toggle.
   // ==========================================================================
   function initTheme() {
     const html = document.documentElement;
@@ -108,12 +38,52 @@
     updateThemeIcon(savedTheme);
 
     if (themeToggle) {
-      themeToggle.addEventListener('click', () => {
-        const current = html.getAttribute('data-theme') || 'dark';
-        const next = current === 'dark' ? 'light' : 'dark';
+      themeToggle.addEventListener('click', (e) => applyThemeChange(e.currentTarget));
+    }
+
+    function applyThemeChange(originBtn) {
+      const current = html.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+
+      const commit = () => {
         html.setAttribute('data-theme', next);
         localStorage.setItem('emittr_theme', next);
         updateThemeIcon(next);
+      };
+
+      if (!document.startViewTransition || !originBtn) {
+        commit();
+        showToast(`Switched to ${next} mode`, next === 'dark' ? 'dark_mode' : 'light_mode');
+        return;
+      }
+
+      const rect = originBtn.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      const endRadius = Math.hypot(
+        Math.max(x, window.innerWidth - x),
+        Math.max(y, window.innerHeight - y)
+      );
+
+      const transition = document.startViewTransition(commit);
+
+      transition.ready.then(() => {
+        document.documentElement.animate(
+          {
+            clipPath: [
+              `circle(0px at ${x}px ${y}px)`,
+              `circle(${endRadius}px at ${x}px ${y}px)`,
+            ],
+          },
+          {
+            duration: 600,
+            easing: 'ease-in-out',
+            pseudoElement: '::view-transition-new(root)',
+          }
+        );
+      });
+
+      transition.finished.then(() => {
         showToast(`Switched to ${next} mode`, next === 'dark' ? 'dark_mode' : 'light_mode');
       });
     }
@@ -125,83 +95,167 @@
   }
 
   // ==========================================================================
-  // 4. Sound Toggle Controller
+  // 5. Full-screen Nav Overlay
   // ==========================================================================
-  function initSoundToggle() {
-    const soundToggle = document.getElementById('soundToggle');
-    const soundIcon = document.getElementById('soundIcon');
-    if (!soundToggle) return;
+  function initNavOverlay() {
+    const fab = document.getElementById('menuFab');
+    const overlay = document.getElementById('navOverlay');
+    if (!fab || !overlay) return;
 
-    soundToggle.addEventListener('click', () => {
-      const enabled = audio.toggle();
-      if (soundIcon) soundIcon.textContent = enabled ? 'volume_up' : 'volume_off';
-      if (enabled) {
-        audio.playReleaseChime();
-        showToast('Mechanical Switch Audio: Enabled 🔊', 'volume_up');
-      } else {
-        showToast('Audio Muted', 'volume_off');
-      }
-    });
-  }
-
-  // ==========================================================================
-  // 5. Interactive Demo Studio Modal
-  // ==========================================================================
-  function initDemoModal() {
-    const modal = document.getElementById('demoModal');
-    const openBtns = [document.getElementById('openDemoBtn'), document.getElementById('heroDemoBtn')];
-    const closeBtn = document.getElementById('closeDemoBtn');
-
-    openBtns.forEach(btn => {
-      if (btn) {
-        btn.addEventListener('click', () => {
-          modal.classList.add('active');
-          modal.setAttribute('aria-hidden', 'false');
-          document.body.style.overflow = 'hidden';
-          audio.playKeyClick();
-          showToast('Interactive Studio Ready', 'play_circle');
-        });
-      }
-    });
-
-    function closeModal() {
-      modal.classList.remove('active');
-      modal.setAttribute('aria-hidden', 'true');
+    function closeOverlay() {
+      fab.classList.remove('active');
+      fab.setAttribute('aria-expanded', 'false');
+      overlay.classList.remove('active');
+      overlay.setAttribute('aria-hidden', 'true');
       document.body.style.overflow = '';
-      stopTyping();
     }
 
-    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    function openOverlay() {
+      fab.classList.add('active');
+      fab.setAttribute('aria-expanded', 'true');
+      overlay.classList.add('active');
+      overlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
 
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
+    fab.addEventListener('click', () => {
+      if (overlay.classList.contains('active')) closeOverlay();
+      else openOverlay();
+    });
+
+    overlay.querySelectorAll('[data-nav-link]').forEach((link) => {
+      link.addEventListener('click', closeOverlay);
     });
 
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && modal.classList.contains('active')) {
-        closeModal();
-      }
+      if (e.key === 'Escape' && overlay.classList.contains('active')) closeOverlay();
     });
   }
 
   // ==========================================================================
-  // 6. Interactive Simulator Logic
+  // 6. Dot Navigation (scroll-spy + click-to-jump)
   // ==========================================================================
-  const essayPreset = `In an era where technology promises frictionless collaboration, the simplest acts often remain the most stubborn. Consider the humble paragraph: five hundred words of structured thought, carefully composed, waiting on one screen to be transferred to another. In theory, modern networks should make this instantaneous. In practice, we encounter air-gapped corporate firewalls, disabled clipboard sharing, guest network barriers, and workstations with USB mass storage ports permanently locked down by enterprise security policies.
+  function initDotNav() {
+    const dotNav = document.getElementById('dotNav');
+    if (!dotNav) return;
+    const dots = Array.from(dotNav.querySelectorAll('.dot-nav-item'));
+    const sections = dots
+      .map((dot) => document.querySelector(dot.getAttribute('data-target')))
+      .filter(Boolean);
 
-This is where the distinction between software and hardware becomes profound. Software asks for permission; hardware simply exists. When an operating system boots, long before high-level networking stacks, cloud synchronization daemons, or security endpoint agents initialize, the kernel queries the physical USB bus. It searches for standard human interface devices: a keyboard and a mouse.
+    dots.forEach((dot) => {
+      dot.addEventListener('click', () => {
+        const target = document.querySelector(dot.getAttribute('data-target'));
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+      });
+    });
 
-Human Interface Device standards were forged decades ago to be universal, unencumbered, and immortal. A keyboard does not negotiate protocols; it asserts electrical state. It sends an eight-byte report: a modifier byte, a reserved byte, and an array of keycodes representing depressed physical switches. Because this contract is immutable across every computing architecture from industrial programmable logic controllers and legacy server BIOS menus to modern desktop operating systems, it represents the ultimate universal bridge.
+    if (!sections.length || !('IntersectionObserver' in window)) return;
 
-By utilizing Linux kernel USB Gadget ConfigFS, our mobile phone ceases to be merely a handheld computer. It becomes an authentic physical input deck. When we command it to type, it does not send high-level text over an insecure Wi-Fi socket; it injects precise, synchronized USB scancodes directly across copper wires. At a cadence of one thousand words per minute, five hundred words materialize across the host screen not as a pasted block that might trigger security filters, but as the relentless, rhythmic arrival of physical keystrokes.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const idx = sections.indexOf(entry.target);
+          if (idx === -1) return;
+          dots.forEach((d) => d.classList.remove('active'));
+          dots[idx].classList.add('active');
+        });
+      },
+      { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+    );
 
-Beyond raw speed, the physical deck restores tactile dignity to everyday tasks. When reviewing an exhaustive spreadsheet containing tens of thousands of rows, modern touchpad gestures often feel disconnected. Dual Xbox-style analog thumbsticks translate continuous rate physics into native horizontal and vertical pan reports, allowing your eyes to glide across dense data architectures effortlessly. When speech recognition captures fleeting spoken insights, your phone translates voice dictation into physical keystrokes directly into your active workstation document.
+    sections.forEach((section) => observer.observe(section));
+  }
 
-Technology reaches its peak not when it adds more complexity, but when it bridges existing interfaces with elegance. In the end, hardware truth always triumphs over software friction.`;
+  // ==========================================================================
+  // 7. Story Section Scroll Reveal
+  // ==========================================================================
+  function initStoryReveal() {
+    const lines = document.querySelectorAll('[data-reveal]');
+    if (!lines.length || !('IntersectionObserver' in window)) {
+      lines.forEach((l) => l.classList.add('is-visible'));
+      return;
+    }
 
-  const wifiPreset = `wpa_passphrase "Executive_Secure_5G" "9F#kL$8mP!2vQ@9xR&4tS*7yT%1nU^5eV#3jW$8aB@4cD!7eF#2gH$9jK%3mN^8pQ*1rS"`;
-  const codePreset = `sudo apt update && sudo apt install -y build-essential htop iotop dstat
-dmesg -wH | grep -i --color=auto usb`;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add('is-visible');
+        });
+      },
+      { threshold: 0.6 }
+    );
+
+    lines.forEach((line) => observer.observe(line));
+  }
+
+  // ==========================================================================
+  // 8. Demo Scroll Button (hero CTA jumps to embedded demo)
+  // ==========================================================================
+  function initDemoScrollBtn() {
+    const btn = document.getElementById('demoScrollBtn');
+    const demo = document.getElementById('demo');
+    if (!btn || !demo) return;
+    btn.addEventListener('click', () => demo.scrollIntoView({ behavior: 'smooth' }));
+  }
+
+  // ==========================================================================
+  // 9. Footer Rotating Tagline
+  // ==========================================================================
+  function initFooterTagline() {
+    const el = document.getElementById('footerTagline');
+    if (!el) return;
+    const taglines = [
+      'Built at 2am. Works during the day.',
+      'No frameworks were harmed in the making of this page.',
+      'MIT licensed. Sarcasm included at no extra cost.',
+      'Tested on real computers. Mostly.',
+      'Your phone called. It wants a raise.',
+    ];
+    el.textContent = taglines[Math.floor(Math.random() * taglines.length)];
+  }
+
+  // ==========================================================================
+  // 10. Docs Page — Table of Contents scroll-spy
+  // ==========================================================================
+  function initDocsToc() {
+    const toc = document.querySelector('.docs-toc');
+    if (!toc) return;
+    const links = Array.from(toc.querySelectorAll('a'));
+    const sections = links
+      .map((link) => document.querySelector(link.getAttribute('href')))
+      .filter(Boolean);
+
+    if (!sections.length || !('IntersectionObserver' in window)) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const idx = sections.indexOf(entry.target);
+          if (idx === -1) return;
+          links.forEach((l) => l.classList.remove('active'));
+          links[idx].classList.add('active');
+        });
+      },
+      { rootMargin: '-20% 0px -70% 0px', threshold: 0 }
+    );
+
+    sections.forEach((section) => observer.observe(section));
+  }
+
+  // ==========================================================================
+  // 11. Interactive Simulator Logic (embedded demo)
+  // ==========================================================================
+  const essayPreset = `In an era where technology promises frictionless collaboration, the simplest acts often remain the most stubborn. Consider the humble paragraph: five hundred words of structured thought, carefully composed, waiting on one screen to be transferred to another. In theory, modern networks should make this instantaneous. In practice, we encounter locked-down corporate networks, disabled clipboard sharing, guest network barriers, and workstations with USB ports restricted by security policy.
+
+This is where the distinction between software and hardware becomes meaningful. Software asks for permission; hardware simply exists. When a computer starts up, long before any network stack or security agent initializes, it looks for a keyboard and a mouse.
+
+By using the phone you already carry as a genuine physical input device, typing stops depending on the network entirely. A five-hundred-word document doesn't arrive as a pasted block that might be filtered — it arrives as the steady, natural rhythm of real keystrokes.`;
+
+  const passwordPreset = `Th1s-Is-An-Ex4mple-Of-A-Very-L0ng-Complex-Passphrase-2026!Emittr#Secure*9247`;
+  const notePreset = `Reminder: the quarterly review moves to Thursday at 2pm. Please bring the updated forecast and the two open action items from last week.`;
 
   let typingTimer = null;
   let isTyping = false;
@@ -212,16 +266,14 @@ dmesg -wH | grep -i --color=auto usb`;
       typingTimer = null;
     }
     isTyping = false;
-    const docCursor = document.getElementById('docCursor');
-    if (docCursor) docCursor.style.display = 'inline-block';
     const wpmBadge = document.getElementById('telemetryWpm');
     if (wpmBadge) wpmBadge.textContent = '0 WPM';
   }
 
   function initSimulator() {
-    // Deck tabs
     const deckTabs = document.querySelectorAll('.deck-tab');
     const deckPanes = document.querySelectorAll('.deck-pane');
+    if (!deckTabs.length) return;
 
     deckTabs.forEach(tab => {
       tab.addEventListener('click', () => {
@@ -232,11 +284,9 @@ dmesg -wH | grep -i --color=auto usb`;
         const targetId = `pane-${tab.getAttribute('data-tab')}`;
         const pane = document.getElementById(targetId);
         if (pane) pane.classList.add('active');
-        audio.playKeyClick();
       });
     });
 
-    // Laptop monitor mode tabs
     const btnModeDoc = document.getElementById('btnModeDoc');
     const btnModeGrid = document.getElementById('btnModeGrid');
     const viewDoc = document.getElementById('viewDoc');
@@ -248,7 +298,6 @@ dmesg -wH | grep -i --color=auto usb`;
         btnModeGrid.classList.remove('active');
         viewDoc.classList.add('active');
         viewGrid.classList.remove('active');
-        audio.playKeyClick();
       });
 
       btnModeGrid.addEventListener('click', () => {
@@ -256,11 +305,9 @@ dmesg -wH | grep -i --color=auto usb`;
         btnModeDoc.classList.remove('active');
         viewGrid.classList.add('active');
         viewDoc.classList.remove('active');
-        audio.playKeyClick();
       });
     }
 
-    // Typer controls
     const presetSelect = document.getElementById('essayPresetSelect');
     const textContent = document.getElementById('simTextContent');
     const speedRange = document.getElementById('simSpeedRange');
@@ -279,9 +326,8 @@ dmesg -wH | grep -i --color=auto usb`;
       presetSelect.addEventListener('change', () => {
         const val = presetSelect.value;
         if (val === 'essay') textContent.value = essayPreset;
-        else if (val === 'wifi') textContent.value = wifiPreset;
-        else if (val === 'code') textContent.value = codePreset;
-        audio.playKeyClick();
+        else if (val === 'wifi') textContent.value = passwordPreset;
+        else if (val === 'code') textContent.value = notePreset;
       });
     }
 
@@ -301,7 +347,6 @@ dmesg -wH | grep -i --color=auto usb`;
       btnStartTyping.addEventListener('click', () => {
         if (isTyping) stopTyping();
 
-        // Switch laptop view to doc
         if (btnModeDoc && !btnModeDoc.classList.contains('active')) {
           btnModeDoc.click();
         }
@@ -315,39 +360,30 @@ dmesg -wH | grep -i --color=auto usb`;
         const totalChars = text.length;
         const delayMs = parseInt(speedRange.value, 10) || 5;
 
-        // Calculate simulated WPM: (chars / 5) / (total_time_in_minutes)
         const estWpm = Math.min(1000, Math.round((60000 / (delayMs * 5))));
         if (telemetryWpm) telemetryWpm.textContent = `${estWpm} WPM`;
-
-        const startTime = Date.now();
 
         function streamNext() {
           if (!isTyping) return;
 
-          // Stream chunks of chars if delay is tiny (for 1,000 WPM feel)
           const chunkSize = delayMs <= 10 ? 3 : 1;
           const chunk = text.slice(charIndex, charIndex + chunkSize);
           charIndex += chunkSize;
 
           docTypedContent.textContent += chunk;
 
-          // Update stats
           const charsCount = docTypedContent.textContent.length;
           const wordsCount = docTypedContent.textContent.trim().split(/\s+/).filter(Boolean).length;
           if (docStats) docStats.textContent = `${charsCount} chars • ${wordsCount} words`;
 
-          // Auto-scroll doc viewport
           const docScroll = document.getElementById('docScrollSurface');
           if (docScroll) docScroll.scrollTop = docScroll.scrollHeight;
-
-          // Sound effect occasionally
-          if (charIndex % 12 === 0) audio.playKeyClick();
 
           if (charIndex < totalChars && isTyping) {
             typingTimer = setTimeout(streamNext, delayMs);
           } else {
             isTyping = false;
-            showToast('Document streamed at hardware speed! ⚡', 'bolt');
+            showToast('Streamed at hardware speed', 'bolt');
             if (telemetryWpm) telemetryWpm.textContent = '0 WPM';
           }
         }
@@ -359,38 +395,34 @@ dmesg -wH | grep -i --color=auto usb`;
     if (btnAbortTyping) {
       btnAbortTyping.addEventListener('click', () => {
         stopTyping();
-        showToast('Typing stream paused', 'stop');
+        showToast('Typing stopped', 'stop');
       });
     }
 
     if (simUnstickBtn) {
       simUnstickBtn.addEventListener('click', () => {
-        audio.playReleaseChime();
-        showToast('Zero-Flush Injected • All Modifiers Released', 'lock_open');
+        showToast('All keys released', 'lock_open');
       });
     }
 
-    // Populate data table for joysticks test
     populateDataTable();
 
-    // Init Joysticks
     initSimJoystick('joyWellV', 'joyStickV', 'joyStatusV', 'v');
     initSimJoystick('joyWellH', 'joyStickH', 'joyStatusH', 'h');
 
-    // Init Trackpad
     initSimTrackpad();
   }
 
   // ==========================================================================
-  // 7. Data Grid Generator for Joysticks
+  // 12. Data Grid Generator (spreadsheet demo pane)
   // ==========================================================================
   function populateDataTable() {
     const tbody = document.getElementById('dataTableBody');
     if (!tbody) return;
 
     const regions = ['North America', 'EMEA', 'Asia Pacific', 'Latin America', 'Nordics'];
-    const categories = ['Enterprise Cloud', 'Hardware Security', 'Embedded Systems', 'Network Telemetry'];
-    const statuses = ['Optimized', 'Active', 'Monitoring', 'Verified'];
+    const categories = ['Product', 'Services', 'Support', 'Infrastructure'];
+    const statuses = ['On Track', 'Active', 'Reviewing', 'Verified'];
 
     let rowsHtml = '';
     for (let i = 1; i <= 60; i++) {
@@ -404,7 +436,7 @@ dmesg -wH | grep -i --color=auto usb`;
         <td>${reg}</td>
         <td>${cat}</td>
         <td>$${rev}</td>
-        <td style="color:var(--accent-green)">${grow}</td>
+        <td style="color:var(--good)">${grow}</td>
         <td>+0.4%</td>
         <td>42.8%</td>
         <td>${stat}</td>
@@ -420,7 +452,7 @@ dmesg -wH | grep -i --color=auto usb`;
   }
 
   // ==========================================================================
-  // 8. Dual Xbox Joysticks Engine with Continuous Physics
+  // 13. Dual-Stick Scroll Engine
   // ==========================================================================
   function initSimJoystick(wellId, stickId, statusId, axis) {
     const well = document.getElementById(wellId);
@@ -444,7 +476,6 @@ dmesg -wH | grep -i --color=auto usb`;
       if (loopTimer) clearInterval(loopTimer);
       loopTimer = setInterval(() => {
         if (scrollSpeed !== 0 && gridScroll) {
-          // Auto switch to grid if not active
           if (btnModeGrid && !btnModeGrid.classList.contains('active')) {
             btnModeGrid.click();
           }
@@ -481,13 +512,12 @@ dmesg -wH | grep -i --color=auto usb`;
 
         if (Math.abs(clampedY) > DEADZONE) {
           const norm = (Math.abs(clampedY) - DEADZONE) / (MAX_RADIUS - DEADZONE);
-          // dy < 0 is push up -> scroll up (speed positive)
           const dir = clampedY < 0 ? 1 : -1;
           scrollSpeed = dir * Math.round(norm * 14);
-          if (status) status.textContent = dir > 0 ? `▲ Scroll Up (${Math.abs(scrollSpeed)})` : `▼ Scroll Down (${Math.abs(scrollSpeed)})`;
+          if (status) status.textContent = dir > 0 ? `Scrolling up` : `Scrolling down`;
         } else {
           scrollSpeed = 0;
-          if (status) status.textContent = 'Center';
+          if (status) status.textContent = 'Centered';
         }
       } else {
         const clampedX = Math.max(-MAX_RADIUS, Math.min(MAX_RADIUS, dx));
@@ -495,13 +525,12 @@ dmesg -wH | grep -i --color=auto usb`;
 
         if (Math.abs(clampedX) > DEADZONE) {
           const norm = (Math.abs(clampedX) - DEADZONE) / (MAX_RADIUS - DEADZONE);
-          // dx > 0 is push right -> scroll right (speed positive)
           const dir = clampedX > 0 ? 1 : -1;
           scrollSpeed = dir * Math.round(norm * 14);
-          if (status) status.textContent = dir > 0 ? `▶ Pan Right (${Math.abs(scrollSpeed)})` : `◀ Pan Left (${Math.abs(scrollSpeed)})`;
+          if (status) status.textContent = dir > 0 ? `Panning right` : `Panning left`;
         } else {
           scrollSpeed = 0;
-          if (status) status.textContent = 'Center';
+          if (status) status.textContent = 'Centered';
         }
       }
     }
@@ -528,7 +557,6 @@ dmesg -wH | grep -i --color=auto usb`;
       centerY = rect.top + rect.height / 2;
 
       well.classList.add('dragging');
-      audio.playKeyClick();
 
       window.addEventListener('mousemove', onPointerMove);
       window.addEventListener('mouseup', onPointerEnd);
@@ -543,47 +571,64 @@ dmesg -wH | grep -i --color=auto usb`;
   }
 
   // ==========================================================================
-  // 9. Simulated Trackpad
+  // 14. Simulated Trackpad
   // ==========================================================================
   function initSimTrackpad() {
     const pad = document.getElementById('simTouchpadSurface');
     const pointer = document.getElementById('simMousePointer');
     const monitor = document.querySelector('.monitor-viewport');
+    const dot = document.getElementById('touchpadDot');
+    const hint = pad ? pad.querySelector('.touchpad-hint') : null;
     if (!pad || !pointer || !monitor) return;
 
-    let posX = 50;
-    let posY = 50;
-
-    pad.addEventListener('mousemove', (e) => {
+    function updatePositions(clientX, clientY) {
       const rect = pad.getBoundingClientRect();
-      const relX = (e.clientX - rect.left) / rect.width;
-      const relY = (e.clientY - rect.top) / rect.height;
+      const relX = (clientX - rect.left) / rect.width;
+      const relY = (clientY - rect.top) / rect.height;
 
-      posX = Math.max(5, Math.min(95, relX * 100));
-      posY = Math.max(5, Math.min(95, relY * 100));
+      // dot stays visible inside the well so gliding is felt where you touch
+      if (dot) {
+        dot.style.display = 'block';
+        dot.style.left = `${Math.max(3, Math.min(97, relX * 100))}%`;
+        dot.style.top = `${Math.max(3, Math.min(97, relY * 100))}%`;
+      }
+      if (hint) hint.style.opacity = '0';
 
+      const posX = Math.max(5, Math.min(95, relX * 100));
+      const posY = Math.max(5, Math.min(95, relY * 100));
       pointer.style.display = 'block';
       pointer.style.left = `${posX}%`;
       pointer.style.top = `${posY}%`;
-    });
+    }
 
-    pad.addEventListener('mouseleave', () => {
+    function resetPositions() {
       pointer.style.display = 'none';
-    });
+      if (dot) dot.style.display = 'none';
+      if (hint) hint.style.opacity = '1';
+    }
+
+    pad.addEventListener('mousemove', (e) => updatePositions(e.clientX, e.clientY));
+    pad.addEventListener('mouseleave', resetPositions);
+
+    pad.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      if (touch) updatePositions(touch.clientX, touch.clientY);
+    }, { passive: false });
+    pad.addEventListener('touchend', resetPositions);
 
     ['btnSimLeft', 'btnSimMid', 'btnSimRight'].forEach(id => {
       const btn = document.getElementById(id);
       if (btn) {
         btn.addEventListener('click', () => {
-          audio.playKeyClick();
-          showToast(`${btn.textContent} Emitted over USB`, 'mouse');
+          showToast(`${btn.textContent} click sent`, 'mouse');
         });
       }
     });
   }
 
   // ==========================================================================
-  // 10. Interactive Bento Mini-Stick Widget
+  // 15. Interactive Feature Widget (dual-stick preview in the features section)
   // ==========================================================================
   function initBentoMiniStick() {
     const stickBox = document.getElementById('bentoMiniStick');
@@ -595,7 +640,6 @@ dmesg -wH | grep -i --color=auto usb`;
 
     stickBox.addEventListener('mousedown', (e) => {
       isInteracting = true;
-      audio.playKeyClick();
       updateStick(e.clientX, e.clientY);
     });
 
@@ -614,14 +658,14 @@ dmesg -wH | grep -i --color=auto usb`;
       const rect = stickBox.getBoundingClientRect();
       const midX = rect.left + rect.width / 2;
       const midY = rect.top + rect.height / 2;
-      const dx = Math.max(-12, Math.min(12, cx - midX));
-      const dy = Math.max(-12, Math.min(12, cy - midY));
+      const dx = Math.max(-24, Math.min(24, cx - midX));
+      const dy = Math.max(-24, Math.min(24, cy - midY));
       dish.style.transform = `translate(${dx}px, ${dy}px)`;
     }
   }
 
   // ==========================================================================
-  // 11. FAQ Accordion
+  // 16. FAQ Accordion
   // ==========================================================================
   function initFaq() {
     const faqItems = document.querySelectorAll('.faq-item');
@@ -632,14 +676,13 @@ dmesg -wH | grep -i --color=auto usb`;
           const isOpen = item.classList.contains('open');
           faqItems.forEach(i => i.classList.remove('open'));
           if (!isOpen) item.classList.add('open');
-          audio.playKeyClick();
         });
       }
     });
   }
 
   // ==========================================================================
-  // 12. Copy Buttons
+  // 17. Copy Buttons
   // ==========================================================================
   function initCopyButtons() {
     document.querySelectorAll('.copy-btn').forEach(btn => {
@@ -647,7 +690,7 @@ dmesg -wH | grep -i --color=auto usb`;
         const text = btn.getAttribute('data-copy');
         if (text) {
           navigator.clipboard.writeText(text).then(() => {
-            showToast('Copied command to clipboard! 📋', 'check_circle');
+            showToast('Copied to clipboard', 'check_circle');
             const icon = btn.querySelector('.material-symbols-outlined');
             if (icon) {
               const orig = icon.textContent;
@@ -665,8 +708,12 @@ dmesg -wH | grep -i --color=auto usb`;
   // ==========================================================================
   document.addEventListener('DOMContentLoaded', () => {
     initTheme();
-    initSoundToggle();
-    initDemoModal();
+    initNavOverlay();
+    initDotNav();
+    initStoryReveal();
+    initDemoScrollBtn();
+    initFooterTagline();
+    initDocsToc();
     initSimulator();
     initBentoMiniStick();
     initFaq();

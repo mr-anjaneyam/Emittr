@@ -3,789 +3,376 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0B0C10" />
-  <meta name="description" content="Emittr: High-speed hardware-level USB keyboard, precision trackpad, and continuous scroll deck for any computer." />
-  <title>Emittr — Hardware USB Keyboard, Trackpad & Scroll Deck</title>
+  <meta name="theme-color" content="#06070B" />
+  <meta name="description" content="Emittr turns the phone in your pocket into a real, physical USB keyboard, trackpad, and scroll wheel for any computer. No drivers, no software, no compromise." />
+  <meta property="og:title" content="Emittr — Your Phone Just Got Promoted" />
+  <meta property="og:description" content="Plug your phone into any computer and watch it become a genuine hardware keyboard, trackpad, and scroll wheel." />
+  <meta property="og:type" content="website" />
+  <title>Emittr — Your Phone Just Got Promoted</title>
   <link rel="icon" type="image/png" href="icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-  <link rel="stylesheet" href="style.css?v=2.0.0" />
+  <link rel="stylesheet" href="style.css?v=4.0.0" />
 </head>
 <body>
 
-  <!-- ======================================================================== -->
-  <!-- FLOATING DYNAMIC ISLAND DOCK (Innovative Apple Navigation)                -->
-  <!-- ======================================================================== -->
-  <header class="island-dock-container">
-    <nav class="island-dock" id="islandDock">
-      <a href="#hero" class="dock-brand" aria-label="Emittr Home">
-        <span class="dock-logo-mark">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-            <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/>
-          </svg>
-        </span>
-        <span class="dock-title">Emittr</span>
-        <span class="dock-version">v1.3.0</span>
-      </a>
+  <!-- ============================================================ FLOATING CHROME -->
+  <a href="#hero" class="brand-mark" aria-label="Emittr Home">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+      <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/>
+    </svg>
+    <span>Emittr</span>
+  </a>
 
-      <div class="dock-links">
-        <a href="#use-cases" class="dock-link">Use Cases</a>
-        <a href="#features" class="dock-link">Features</a>
-        <a href="#how-it-works" class="dock-link">How It Works</a>
-        <a href="#quickstart" class="dock-link">Setup</a>
-        <a href="#faq" class="dock-link">FAQ</a>
-      </div>
+  <button class="menu-fab" id="menuFab" aria-label="Open menu" aria-expanded="false">
+    <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+  </button>
 
-      <div class="dock-actions">
-        <!-- Experience Live Demo Trigger -->
-        <button class="dock-btn-demo" id="openDemoBtn" title="Launch Interactive Demo Studio">
-          <span class="material-symbols-outlined demo-play-icon">play_arrow</span>
-          <span class="demo-btn-label">Experience Demo</span>
-        </button>
-
-        <!-- Subtle Audio Toggle -->
-        <button class="dock-icon-btn" id="soundToggle" title="Toggle Mechanical Audio Feedback" aria-label="Sound Toggle">
-          <span class="material-symbols-outlined" id="soundIcon">volume_off</span>
-        </button>
-
-        <!-- Light/Dark Mode Switcher -->
-        <button class="dock-icon-btn" id="themeToggle" title="Switch Light/Dark Mode" aria-label="Theme Toggle">
-          <span class="material-symbols-outlined" id="themeIcon">light_mode</span>
-        </button>
-
-        <!-- GitHub Repository Link -->
-        <a href="https://github.com/mranj/usb-typer" target="_blank" rel="noopener" class="dock-icon-btn" title="View Source on GitHub" aria-label="GitHub">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-            <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/>
-          </svg>
+  <nav class="nav-overlay" id="navOverlay" aria-hidden="true">
+    <div class="nav-overlay-inner">
+      <a href="#hero" class="nav-overlay-link" data-nav-link>Home</a>
+      <a href="#story" class="nav-overlay-link" data-nav-link>The Problem</a>
+      <a href="#demo" class="nav-overlay-link" data-nav-link>Live Demo</a>
+      <a href="#features" class="nav-overlay-link" data-nav-link>Features</a>
+      <a href="#use-cases" class="nav-overlay-link" data-nav-link>Use Cases</a>
+      <div class="nav-overlay-foot">
+        <a href="docs.html">
+          <span class="material-symbols-outlined">menu_book</span><span>Documentation</span>
+        </a>
+        <a href="https://github.com/mr-anjaneyam/Emittr" target="_blank" rel="noopener">
+          <span class="material-symbols-outlined">code</span><span>GitHub</span>
         </a>
       </div>
-    </nav>
-  </header>
+    </div>
+  </nav>
 
-  <!-- ======================================================================== -->
-  <!-- HERO SECTION: Apple Product Keynote Elegance                              -->
-  <!-- ======================================================================== -->
+  <div class="dot-nav" id="dotNav">
+    <span class="dot-nav-item" data-target="#hero" data-label="Home"></span>
+    <span class="dot-nav-item" data-target="#story" data-label="The Problem"></span>
+    <span class="dot-nav-item" data-target="#demo" data-label="Live Demo"></span>
+    <span class="dot-nav-item" data-target="#features" data-label="Features"></span>
+    <span class="dot-nav-item" data-target="#use-cases" data-label="Use Cases"></span>
+  </div>
+
+  <button class="theme-fab" id="themeToggle" aria-label="Toggle theme">
+    <span class="material-symbols-outlined" id="themeIcon">light_mode</span>
+  </button>
+
   <main>
+    <!-- ============================================================ HERO -->
     <section class="hero-section" id="hero">
-      <div class="hero-content">
-        <div class="hero-pill-badge">
-          <span class="badge-dot"></span>
-          <span>HARDWARE-LEVEL USB EMULATION • DIRECT &amp; WI-FI RELAY</span>
-        </div>
-
-        <h1 class="hero-headline">
-          Your phone is now a high-speed keyboard, trackpad, and scroll deck.
-        </h1>
-
-        <p class="hero-subheadline">
-          Plug your rooted phone into any PC as a hardware bridge. Control it on-screen, or relax on the couch and control it from your main phone over Wi-Fi. Type 500-word essays in seconds, glide across screens, and scroll massive spreadsheets with dual Xbox joysticks. Zero host drivers required.
-        </p>
-
-        <div class="hero-cta-group">
-          <button class="btn-apple-primary" id="heroDemoBtn">
-            <span class="material-symbols-outlined btn-icon">play_circle</span>
-            <span>Experience Interactive Demo</span>
-          </button>
-          <a href="#quickstart" class="btn-apple-secondary">
-            <span>View 3-Step Setup</span>
-            <span class="material-symbols-outlined btn-arrow">arrow_downward</span>
-          </a>
-        </div>
-
-        <!-- Clean Product Staging Mockup -->
-        <div class="hero-product-stage">
-          <div class="stage-ambient-glow"></div>
-          
-          <div class="stage-devices-wrapper">
-            <!-- Simulated Phone Frame -->
-            <div class="mockup-phone">
-              <div class="phone-speaker"></div>
-              <div class="phone-screen">
-                <div class="phone-app-header">
-                  <span class="phone-app-title">Emittr</span>
-                  <span class="phone-app-badge">Ready</span>
-                </div>
-                <div class="phone-typer-preview">
-                  <div class="preview-essay-card">
-                    <span class="preview-label">Active Document</span>
-                    <span class="preview-text">"The Art of Writing at the Speed of Light..." (500 words)</span>
-                  </div>
-                  <div class="preview-speed-indicator">
-                    <span class="speed-dot"></span>
-                    <span>1,000 WPM • Hardware Keystroke Streamer</span>
-                  </div>
-                </div>
-                <div class="phone-joysticks-preview">
-                  <div class="mini-stick-card">
-                    <div class="mini-stick-dish"></div>
-                    <span>Vertical Scroll</span>
-                  </div>
-                  <div class="mini-stick-card">
-                    <div class="mini-stick-dish"></div>
-                    <span>Horizontal AC Pan</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Sleek Minimal USB-C Cable Bridge -->
-            <div class="mockup-cable-bridge">
-              <div class="cable-cord">
-                <div class="cable-packet-stream"></div>
-              </div>
-              <span class="cable-pill-tag">Physical USB Cable • Control Directly or from Any Phone on Wi-Fi</span>
-            </div>
-
-            <!-- Simulated Laptop Workstation -->
-            <div class="mockup-laptop">
-              <div class="laptop-camera"></div>
-              <div class="laptop-screen">
-                <div class="laptop-titlebar">
-                  <span class="window-dot red"></span>
-                  <span class="window-dot yellow"></span>
-                  <span class="window-dot green"></span>
-                  <span class="window-title">Target Workstation (Windows / Mac / Linux / BIOS)</span>
-                </div>
-                <div class="laptop-content-preview">
-                  <div class="laptop-editor-preview">
-                    <div class="editor-header">
-                      <span class="doc-icon">📄</span>
-                      <span class="doc-title">essay_submission.docx</span>
-                      <span class="typing-status-pill">Streaming at 1,000 WPM</span>
-                    </div>
-                    <div class="editor-body">
-                      <span class="typed-stream">In an era where technology promises frictionless collaboration, the simplest acts often remain the most stubborn. Consider the humble paragraph: five hundred words of structured thought...</span>
-                      <span class="typing-cursor"></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="laptop-base"></div>
-            </div>
-          </div>
-        </div>
-
+      <div class="hero-glow"></div>
+      <span class="hero-eyebrow">Introducing Emittr</span>
+      <h1 class="hero-headline">Your phone just clocked in <span class="accent-word">as a keyboard.</span></h1>
+      <p class="hero-sub">
+        Plug it into anything with a USB port and watch a computer fall for the oldest trick in hardware:
+        thinking your phone is a keyboard. Technically, now it is.
+      </p>
+      <div class="hero-cta-group">
+        <button class="btn-primary" id="demoScrollBtn">
+          <span class="material-symbols-outlined">bolt</span>
+          <span>Watch It Type</span>
+        </button>
+        <a href="docs.html" class="btn-secondary">
+          <span class="material-symbols-outlined">menu_book</span>
+          <span>Read The Fine Print</span>
+        </a>
+      </div>
+      <div class="scroll-cue">
+        <span>Keep scrolling. It gets weirder.</span>
+        <span class="material-symbols-outlined scroll-cue-arrow">expand_more</span>
       </div>
     </section>
 
-    <!-- ======================================================================== -->
-    <!-- REAL-WORLD SUPERPOWERS (Relatable, Practical Use Cases)                   -->
-    <!-- ======================================================================== -->
-    <section class="section use-cases-section" id="use-cases">
+    <!-- ============================================================ STORY -->
+    <section class="story-section" id="story">
+      <div class="story-inner">
+        <p class="story-line" data-reveal>Bluetooth keyboards die exactly when you need them most.</p>
+        <p class="story-line" data-reveal>Wired ones tangle like they're plotting something.</p>
+        <p class="story-line" data-reveal>Voice typing hears "schedule the meeting" and types "shed you'll the meeting."</p>
+        <p class="story-line punch" data-reveal>Emittr skips all of that. One phone. One cable. Zero drama.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ DEMO -->
+    <section class="demo-section" id="demo">
       <div class="section-container">
-        <div class="section-header">
-          <span class="section-eyebrow">PRACTICAL SUPERPOWERS</span>
-          <h2 class="section-title">Built for problems software cannot solve.</h2>
-          <p class="section-desc">
-            When networks are restricted, drivers are prohibited, or keyboards fail, physical hardware emulation is the ultimate solution.
-          </p>
+        <div class="demo-header">
+          <span class="section-eyebrow">Try it, don't trust us</span>
+          <h2 class="section-title">Experience it live.</h2>
+          <p class="section-desc">This is the actual interface, doing the actual thing. Type something. Wiggle a stick. Poke the trackpad.</p>
         </div>
 
-        <div class="use-cases-grid">
-                    <!-- Case: Couch Relay & Living Room Bridge -->
-          <div class="use-case-card featured">
-            <div class="use-case-badge">COUCH RELAY &amp; LIVING ROOM BRIDGE</div>
-            <div class="use-case-icon-box">
-              <span class="material-symbols-outlined">weekend</span>
-            </div>
-            <h3 class="use-case-title">Control your PC from the couch without balancing a clunky keyboard.</h3>
-            <p class="use-case-text">
-              You are relaxing on the couch watching movies on your PC or TV, or managing a living room workstation. 
-              There is nowhere to rest a bulky keyboard or mouse pad, and Bluetooth keyboards drop connection or suffer pairing headaches.
-            </p>
-            <div class="use-case-solution">
-              <strong>The Emittr Superpower:</strong> Leave your rooted phone plugged into the PC as a dedicated USB hardware bridge. 
-              Grab your everyday smartphone (iPhone, Android, or tablet) from your pocket, open the browser over Wi-Fi, and the control shifts instantly to the phone in your hand. 
-              The PC receives authentic physical USB keystrokes and mouse movements while you stay comfortable on the couch.
-            </div>
-          </div>
+        <div class="demo-stage">
+          <div class="simulator-rig">
+            <div class="sim-phone-deck">
+              <div class="deck-topbar">
+                <div class="deck-brand"><span class="deck-dot green"></span><span>Emittr Deck</span></div>
+                <button class="deck-unstick-btn" id="simUnstickBtn" title="Reset all keys">
+                  <span class="material-symbols-outlined">lock_open</span><span>Reset</span>
+                </button>
+              </div>
 
-          <!-- Case 1: 500-Word Essay Blitz -->
-          <div class="use-case-card featured">
-            <div class="use-case-badge">THE 500-WORD BLITZ</div>
-            <div class="use-case-icon-box">
-              <span class="material-symbols-outlined">bolt</span>
-            </div>
-            <h3 class="use-case-title">Pasting essays & documents into restricted computers.</h3>
-            <p class="use-case-text">
-              You have a 500-word essay, long report, application form, or complex code snippet on your phone. 
-              The target PC has disabled USB drives, blocks personal email, or won't allow clipboard synchronization.
-            </p>
-            <div class="use-case-solution">
-              <strong>The Emittr Fix:</strong> Paste text into Emittr on your phone. Hit Type. Emittr injects all 500 words directly into the cursor at up to 1,000 WPM in just 3 seconds, bypassing all network restrictions.
-            </div>
-          </div>
+              <div class="deck-nav-tabs">
+                <button class="deck-tab active" data-tab="typer"><span class="material-symbols-outlined">keyboard</span><span>Typer</span></button>
+                <button class="deck-tab" data-tab="joysticks"><span class="material-symbols-outlined">sports_esports</span><span>Sticks</span></button>
+                <button class="deck-tab" data-tab="trackpad"><span class="material-symbols-outlined">touch_app</span><span>Trackpad</span></button>
+              </div>
 
-          <!-- Case 2: Voice-to-Text Dictation -->
-          <div class="use-case-card">
-            <div class="use-case-badge">VOICE DICTATION</div>
-            <div class="use-case-icon-box">
-              <span class="material-symbols-outlined">mic</span>
-            </div>
-            <h3 class="use-case-title">Speech-to-text dictation for any workstation.</h3>
-            <p class="use-case-text">
-              Your phone has world-class speech recognition (Google Voice, Siri, SwiftKey), but your desktop PC has no microphone or native dictation.
-            </p>
-            <div class="use-case-solution">
-              <strong>The Emittr Fix:</strong> Tap speech-to-text on your phone and speak normally. Every spoken sentence streams across the USB wire directly into Word, Docs, or Slack in real time.
-            </div>
-          </div>
+              <div class="deck-pane active" id="pane-typer">
+                <div class="pane-typer-controls">
+                  <div class="preset-selector-row">
+                    <label for="essayPresetSelect">Preset text</label>
+                    <select id="essayPresetSelect" class="clean-select">
+                      <option value="essay">Short essay</option>
+                      <option value="wifi">Complex password (64 chars)</option>
+                      <option value="code">Quick note</option>
+                    </select>
+                  </div>
 
-          <!-- Case 3: Missing Keyboard & BIOS Rescue -->
-          <div class="use-case-card">
-            <div class="use-case-badge">HARDWARE RESCUE</div>
-            <div class="use-case-icon-box">
-              <span class="material-symbols-outlined">emergency</span>
-            </div>
-            <h3 class="use-case-title">Setting up servers, Raspberry Pis & dead keyboards.</h3>
-            <p class="use-case-text">
-              You're setting up a home server, Raspberry Pi, smart TV, or a PC whose keyboard suddenly failed. You can't even get past the BIOS or login screen.
-            </p>
-            <div class="use-case-solution">
-              <strong>The Emittr Fix:</strong> Plug your phone in with an OTG cable. Recognized natively by BIOS/UEFI as a physical keyboard with Esc, Tab, Enter, and arrow keys.
-            </div>
-          </div>
+                  <div class="speed-control-row">
+                    <div class="speed-header"><span>Speed</span><strong id="simSpeedLabel">Instant (5ms)</strong></div>
+                    <input type="range" id="simSpeedRange" min="5" max="60" value="5" step="5" class="clean-range" />
+                  </div>
 
-          <!-- Case 4: Dual Xbox Joysticks Continuous Scroll -->
-          <div class="use-case-card">
-            <div class="use-case-badge">EFFORTLESS SCROLLING</div>
-            <div class="use-case-icon-box">
-              <span class="material-symbols-outlined">sports_esports</span>
+                  <textarea id="simTextContent" class="clean-textarea" rows="5" spellcheck="false"></textarea>
+
+                  <div class="typer-actions-row">
+                    <button class="btn-deck-primary" id="btnStartTyping"><span class="material-symbols-outlined">send</span><span>Type it</span></button>
+                    <button class="btn-deck-secondary" id="btnAbortTyping">Stop</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="deck-pane" id="pane-joysticks">
+                <div class="joysticks-container">
+                  <div class="joy-column">
+                    <span class="joy-label v-col">Vertical</span>
+                    <div class="joy-well" id="joyWellV" title="Push up or down to scroll">
+                      <div class="joy-guide v-line"></div>
+                      <div class="joy-stick" id="joyStickV"><div class="stick-rim"><div class="stick-dish"></div></div></div>
+                    </div>
+                    <span class="joy-status" id="joyStatusV">Push up / down</span>
+                  </div>
+                  <div class="joy-column">
+                    <span class="joy-label h-col">Horizontal</span>
+                    <div class="joy-well" id="joyWellH" title="Push left or right to pan">
+                      <div class="joy-guide h-line"></div>
+                      <div class="joy-stick" id="joyStickH"><div class="stick-rim"><div class="stick-dish"></div></div></div>
+                    </div>
+                    <span class="joy-status" id="joyStatusH">Push left / right</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="deck-pane" id="pane-trackpad">
+                <div class="sim-trackpad-well" id="simTouchpadSurface">
+                  <span class="touchpad-hint">Glide here</span>
+                  <span class="touchpad-dot" id="touchpadDot"></span>
+                </div>
+                <div class="sim-mouse-buttons">
+                  <button class="btn-mouse" id="btnSimLeft">Left</button>
+                  <button class="btn-mouse" id="btnSimMid">Middle</button>
+                  <button class="btn-mouse" id="btnSimRight">Right</button>
+                </div>
+              </div>
             </div>
-            <h3 class="use-case-title">Continuous navigation for 10,000-row spreadsheets.</h3>
-            <p class="use-case-text">
-              Reviewing a massive Excel spreadsheet, long PDF manual, or wide file in VS Code. Dragging scrollbars or spinning mouse wheels tires your hand.
-            </p>
-            <div class="use-case-solution">
-              <strong>The Emittr Fix:</strong> Push the analog Xbox thumbsticks on your screen. Continuous rate physics glides through your document smoothly without repeated finger swiping.
+
+            <div class="sim-laptop-monitor">
+              <div class="monitor-titlebar">
+                <div class="monitor-controls"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                <div class="monitor-mode-tabs">
+                  <button class="mode-tab active" id="btnModeDoc">Document</button>
+                  <button class="mode-tab" id="btnModeGrid">Spreadsheet</button>
+                </div>
+                <div class="monitor-telemetry"><span class="wpm-badge" id="telemetryWpm">0 WPM</span></div>
+              </div>
+
+              <div class="monitor-viewport">
+                <div class="monitor-doc-view active" id="viewDoc">
+                  <div class="doc-meta-bar">
+                    <span class="doc-name">essay.docx</span>
+                    <span class="doc-char-count" id="docStats">0 chars • 0 words</span>
+                  </div>
+                  <div class="doc-scroll-surface" id="docScrollSurface">
+                    <p id="docTypedContent"></p><span class="cursor-blink" id="docCursor"></span>
+                  </div>
+                </div>
+
+                <div class="monitor-grid-view" id="viewGrid">
+                  <div class="grid-meta-bar">
+                    <span>quarterly_data.xlsx</span>
+                    <span class="grid-nav-hint">Use the sticks to pan</span>
+                  </div>
+                  <div class="grid-scroll-surface" id="gridScrollSurface">
+                    <table class="data-table" id="dataTable">
+                      <thead><tr><th>ID</th><th>Region</th><th>Category</th><th>Revenue</th><th>Growth</th><th>Variance</th><th>Margin</th><th>Status</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Forecast</th><th>Risk</th></tr></thead>
+                      <tbody id="dataTableBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="sim-mouse-pointer" id="simMousePointer"></div>
+              </div>
             </div>
           </div>
+        </div>
+
+        <div class="demo-mobile-fallback">
+          <span class="material-symbols-outlined">desktop_windows</span>
+          <p>This demo needs a keyboard-shaped screen. Open this page on a desktop to play with it properly.</p>
         </div>
       </div>
     </section>
 
-    <!-- ======================================================================== -->
-    <!-- CORE FEATURES BENTO GRID (Cupertino Asymmetric Cards)                     -->
-    <!-- ======================================================================== -->
-    <section class="section features-section" id="features">
+    <!-- ============================================================ FEATURES -->
+    <section class="section" id="features">
       <div class="section-container">
         <div class="section-header">
-          <span class="section-eyebrow">ENGINEERING SPECIFICATIONS</span>
-          <h2 class="section-title">Every feature engineered for tactile speed.</h2>
-          <p class="section-desc">
-            Designed to feel as refined as premium desktop hardware, powered entirely by Linux kernel ConfigFS.
-          </p>
+          <span class="section-eyebrow">What it actually does</span>
+          <h2 class="section-title">Built to feel like real hardware. Because it is.</h2>
         </div>
 
         <div class="bento-grid">
-          <!-- Bento 1: 1,000 WPM Typer (Wide) -->
-          <div class="bento-card bento-wide">
-            <div class="bento-meta">
-              <span class="bento-tag">SPEED ENGINE</span>
-              <h3 class="bento-title">1,000 WPM Bulk Keystroke Streamer</h3>
-              <p class="bento-text">
-                Granular speed control from 1ms (lightning) to 60ms (human pace). Includes an optional 1–5 second pre-flight countdown allowing you to position your cursor before typing begins.
-              </p>
-            </div>
-            <div class="bento-widget bento-speed-widget">
+          <div class="bento-card bento-card--wide">
+            <div class="bento-card-icon"><span class="material-symbols-outlined">bolt</span></div>
+            <h3>Type 500 words in 3 seconds.</h3>
+            <p>Or slow it down and pretend you're a thoughtful human who writes at human speed.</p>
+            <div class="bento-widget">
               <div class="speed-gauge-box">
                 <span class="gauge-value" id="bentoSpeedVal">1,000</span>
-                <span class="gauge-unit">WPM PEAK</span>
+                <span class="gauge-unit">WORDS PER MINUTE</span>
               </div>
               <div class="speed-presets-pills">
-                <span class="pill-spec">1ms Instant</span>
-                <span class="pill-spec">15ms Fast</span>
-                <span class="pill-spec">35ms Normal</span>
-                <span class="pill-spec">60ms Human</span>
+                <span class="pill-spec">Instant</span>
+                <span class="pill-spec">Fast</span>
+                <span class="pill-spec">Normal</span>
+                <span class="pill-spec">Human</span>
               </div>
             </div>
           </div>
 
-          <!-- Bento 2: Dual Xbox Joysticks (Standard) -->
-          <div class="bento-card">
-            <div class="bento-meta">
-              <span class="bento-tag">ANALOG SCROLLING</span>
-              <h3 class="bento-title">Dual Xbox Joysticks & AC Pan</h3>
-              <p class="bento-text">
-                Side-by-side concave thumbsticks with tactile grip dots. Spring-back physics with native USB AC Pan (0x0238) for true horizontal mouse wheel scrolling.
-              </p>
-            </div>
-            <div class="bento-widget bento-stick-widget">
+          <div class="bento-card bento-card--wide">
+            <div class="bento-card-icon"><span class="material-symbols-outlined">sports_esports</span></div>
+            <h3>Two sticks. Infinite scrolling.</h3>
+            <p>Your thumbs just got a promotion too.</p>
+            <div class="bento-widget">
               <div class="interactive-mini-stick" id="bentoMiniStick">
                 <div class="mini-stick-dish"></div>
               </div>
-              <span class="mini-stick-hint">Tilt stick to test</span>
+              <span class="mini-stick-hint">Try tilting it</span>
             </div>
           </div>
 
-          <!-- Bento 3: Precision Trackpad (Standard) -->
           <div class="bento-card">
-            <div class="bento-meta">
-              <span class="bento-tag">INPUT DIGITIZER</span>
-              <h3 class="bento-title">Precision Touchpad & Gestures</h3>
-              <p class="bento-text">
-                Sub-millisecond cursor tracking, 2-finger multi-touch scrolling, tap-to-click, and custom sensitivity tuning from 0.5× to 2.0×.
-              </p>
-            </div>
-            <div class="bento-widget bento-trackpad-widget">
-              <div class="mini-trackpad-surface">
-                <span class="trackpad-crosshair"></span>
-              </div>
-              <div class="mini-mouse-btns">
-                <span>Left</span>
-                <span>Mid</span>
-                <span>Right</span>
-              </div>
+            <div class="bento-card-icon"><span class="material-symbols-outlined">touch_app</span></div>
+            <h3>A trackpad that fits in your pocket.</h3>
+            <p>And doesn't leave crumbs.</p>
+            <div class="bento-widget">
+              <div class="mini-trackpad-surface"><span class="trackpad-crosshair"></span></div>
             </div>
           </div>
 
-          <!-- Bento 4: Modifier Safety & Auto-Flush (Wide) -->
-          <div class="bento-card bento-wide">
-            <div class="bento-meta">
-              <span class="bento-tag">FAILSAFE GUARD</span>
-              <h3 class="bento-title">Automatic Zero-Flush Modifier Protection</h3>
-              <p class="bento-text">
-                Ever unplugged a USB device while holding Ctrl, leaving the computer stuck with a ghost key? Emittr monitors hardware UDC state and automatically flushes null reports on reconnect, plus a one-tap emergency Unstick button.
-              </p>
-            </div>
-            <div class="bento-widget bento-failsafe-widget">
-              <div class="failsafe-pill-row">
-                <span class="failsafe-chip clean">
-                  <span class="material-symbols-outlined">verified</span>
-                  <span>Zero Stuck Keys</span>
-                </span>
-                <span class="failsafe-chip clean">
-                  <span class="material-symbols-outlined">restart_alt</span>
-                  <span>Auto UDC Reconnect Flush</span>
-                </span>
-                <span class="failsafe-chip warning">
-                  <span class="material-symbols-outlined">lock_open</span>
-                  <span>Instant Unstick Button</span>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Bento 5: Universal Dashboard Mode -->
           <div class="bento-card">
-            <div class="bento-meta">
-              <span class="bento-tag">RESPONSIVE ADAPTATION</span>
-              <h3 class="bento-title">Universal Dashboard Mode</h3>
-              <p class="bento-text">
-                Stacks all controls into an all-in-one scrollable deck on mobile phones, and expands into a balanced two-column battle station on desktop displays.
-              </p>
-            </div>
-            <div class="bento-widget bento-dashboard-widget">
-              <div class="mock-dash-columns">
-                <span class="col-bar left"></span>
-                <span class="col-bar right"></span>
-              </div>
-            </div>
+            <div class="bento-card-icon"><span class="material-symbols-outlined">verified</span></div>
+            <h3>Never a stuck key.</h3>
+            <p>Unplug mid-sentence. Nothing gets stuck — not even your dignity.</p>
           </div>
 
-          <!-- Bento 6: Headless CLI (usbtype) -->
           <div class="bento-card">
-            <div class="bento-meta">
-              <span class="bento-tag">AUTOMATION TOOL</span>
-              <h3 class="bento-title">Command Line Arsenal: usbtype</h3>
-              <p class="bento-text">
-                Automate typing and hotkeys directly from terminal scripts. Push commands, inject key combinations, or run tests headlessly.
-              </p>
-            </div>
-            <div class="bento-widget bento-cli-widget">
-              <code class="mini-cli-snippet">usbtype --delay 15 "Hello World"</code>
-            </div>
+            <div class="bento-card-icon"><span class="material-symbols-outlined">devices</span></div>
+            <h3>One deck. Every screen.</h3>
+            <p>Phone, tablet, ultrawide monitor — it just fits, no squinting required.</p>
+          </div>
+
+          <div class="bento-card">
+            <div class="bento-card-icon"><span class="material-symbols-outlined">terminal</span></div>
+            <h3>Or skip the UI entirely.</h3>
+            <p>One CLI command, like the wizard you secretly are.</p>
+            <code class="mini-cli-snippet">usbtype --delay 15 "Hello World"</code>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ======================================================================== -->
-    <!-- HOW IT WORKS (Technical Architecture, Clean & Lucid)                      -->
-    <!-- ======================================================================== -->
-    <section class="section tech-section" id="how-it-works">
+    <!-- ============================================================ USE CASES -->
+    <section class="section" id="use-cases">
       <div class="section-container">
         <div class="section-header">
-          <span class="section-eyebrow">TECHNICAL ARCHITECTURE</span>
-          <h2 class="section-title">Hardware truth. Zero software friction.</h2>
-          <p class="section-desc">
-            How a rooted Android phone transforms into a certified USB Human Interface Device.
-          </p>
+          <span class="section-eyebrow">Why this exists</span>
+          <h2 class="section-title">For the moments software gives up.</h2>
         </div>
 
-        <div class="tech-pipeline-wrapper">
-          <div class="pipeline-step">
-            <div class="step-num">01</div>
-            <h4 class="step-title">Local or Wi-Fi Deck</h4>
-            <p class="step-desc">Open the web deck on the plugged-in phone, or from any phone or laptop on your local Wi-Fi while relaxing on the couch.</p>
+        <div class="usecase-teaser-grid">
+          <div class="usecase-teaser-card">
+            <span class="material-symbols-outlined">lock</span>
+            <h4>The Locked-Down PC</h4>
+            <p>USB drives banned. Clipboard disabled. Your phone doesn't care about your IT policy.</p>
           </div>
-          <div class="pipeline-arrow">→</div>
-
-          <div class="pipeline-step">
-            <div class="step-num">02</div>
-            <h4 class="step-title">FastAPI Daemon</h4>
-            <p class="step-desc">Translates keystrokes, gestures, and thumbstick deflection into standardized USB HID scancodes.</p>
+          <div class="usecase-teaser-card">
+            <span class="material-symbols-outlined">weekend</span>
+            <h4>The Couch Commander</h4>
+            <p>Leave your phone plugged in, drive it from bed. Peak laziness, professionally engineered.</p>
           </div>
-          <div class="pipeline-arrow">→</div>
-
-          <div class="pipeline-step">
-            <div class="step-num">03</div>
-            <h4 class="step-title">Linux ConfigFS</h4>
-            <p class="step-desc">Kernel exposes composite gadget on /dev/hidg0 with Report ID 1 (Keyboard) and Report ID 2 (Mouse AC Pan).</p>
+          <div class="usecase-teaser-card">
+            <span class="material-symbols-outlined">mic</span>
+            <h4>The Silent Dictator</h4>
+            <p>Speak into your phone, watch it land on a desktop that's never heard of speech-to-text.</p>
           </div>
-          <div class="pipeline-arrow">→</div>
-
-          <div class="pipeline-step">
-            <div class="step-num">04</div>
-            <h4 class="step-title">Host Computer</h4>
-            <p class="step-desc">Target PC detects standard Dell USB Keyboard & Mouse over physical USB bus. Zero drivers needed.</p>
+          <div class="usecase-teaser-card">
+            <span class="material-symbols-outlined">emergency</span>
+            <h4>The BIOS Whisperer</h4>
+            <p>No keyboard, no problem. Your phone talks to computers before their OS even wakes up.</p>
           </div>
         </div>
 
-        <!-- Technical Descriptor Cards -->
-        <div class="descriptor-spec-grid">
-          <div class="spec-card">
-            <div class="spec-badge">REPORT ID 1 • 9 BYTES</div>
-            <h4 class="spec-title">Standard 104-Key Boot Keyboard</h4>
-            <p class="spec-desc">Full 6-key rollover payload with modifier byte (Ctrl, Shift, Alt, Win). Compatible with BIOS, GRUB, and all operating systems.</p>
-          </div>
-          <div class="spec-card">
-            <div class="spec-badge">REPORT ID 2 • 6 BYTES</div>
-            <h4 class="spec-title">5-Button Mouse + AC Pan Scroll</h4>
-            <p class="spec-desc">Relative X, relative Y, vertical wheel, and official USB HID AC Pan (Usage 0x0238) for native horizontal scrolling.</p>
-          </div>
+        <div class="usecase-teaser-more">
+          <a href="docs.html#use-cases" class="btn-secondary">
+            <span>Read the full stories in the docs</span>
+          </a>
         </div>
       </div>
     </section>
 
-    <!-- ======================================================================== -->
-    <!-- QUICK START GUIDE (3 Simple Steps)                                        -->
-    <!-- ======================================================================== -->
-    <section class="section quickstart-section" id="quickstart">
-      <div class="section-container">
-        <div class="section-header">
-          <span class="section-eyebrow">QUICK START GUIDE</span>
-          <h2 class="section-title">Up and running in three clean steps.</h2>
-          <p class="section-desc">
-            Deploy Emittr on your rooted Android device or NetHunter phone in under two minutes.
-          </p>
-        </div>
-
-        <div class="quickstart-steps-grid">
-          <div class="step-card">
-            <div class="step-indicator">Step 1</div>
-            <h3 class="step-card-title">Clone & Install</h3>
-            <p class="step-card-desc">Run the autonomous installer inside your phone terminal as root:</p>
-            <div class="code-terminal-box">
-              <code>git clone https://github.com/mranj/usb-typer.git
-cd usb-typer
-bash install.sh</code>
-              <button class="copy-btn" data-copy="git clone https://github.com/mranj/usb-typer.git && cd usb-typer && bash install.sh" title="Copy command">
-                <span class="material-symbols-outlined">content_copy</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="step-card">
-            <div class="step-indicator">Step 2</div>
-            <h3 class="step-card-title">Magisk Persistence</h3>
-            <p class="step-card-desc">Keep the composite gadget active even after phone reboots:</p>
-            <div class="code-terminal-box">
-              <code>cp /opt/usb_hid_deck/02-usb-deck.sh /data/adb/service.d/
-chmod +x /data/adb/service.d/02-usb-deck.sh</code>
-              <button class="copy-btn" data-copy="cp /opt/usb_hid_deck/02-usb-deck.sh /data/adb/service.d/ && chmod +x /data/adb/service.d/02-usb-deck.sh" title="Copy command">
-                <span class="material-symbols-outlined">content_copy</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="step-card">
-            <div class="step-indicator">Step 3</div>
-            <h3 class="step-card-title">Connect & Control</h3>
-            <p class="step-card-desc">Plug in with an OTG cable and open the web app on your phone:</p>
-            <div class="url-card-box">
-              <span class="url-label">Direct URL:</span>
-              <a href="http://localhost:8088" target="_blank" class="url-link">http://localhost:8088</a>
-              <span class="url-hint">or http://hid.keyboard</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ======================================================================== -->
-    <!-- FREQUENTLY ASKED QUESTIONS                                               -->
-    <!-- ======================================================================== -->
-    <section class="section faq-section" id="faq">
-      <div class="section-container">
-        <div class="section-header">
-          <span class="section-eyebrow">COMMON QUESTIONS</span>
-          <h2 class="section-title">Frequently Asked Questions</h2>
-        </div>
-
-        <div class="faq-accordion">
-          <div class="faq-item">
-            <button class="faq-question">
-              <span>Do I need to install any drivers or software on the target computer?</span>
-              <span class="material-symbols-outlined faq-chevron">expand_more</span>
-            </button>
-            <div class="faq-answer">
-              <p>No. Emittr operates at the physical USB bus level. The host computer detects your phone as a standard Dell/Generic USB Keyboard and Mouse. It requires zero drivers, works on air-gapped computers, and functions in BIOS and recovery screens.</p>
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-question">
-              <span>Does horizontal scrolling work natively in Windows applications?</span>
-              <span class="material-symbols-outlined faq-chevron">expand_more</span>
-            </button>
-            <div class="faq-answer">
-              <p>Yes. Emittr v1.3.0 implements the official USB HID AC Pan (Usage 0x0238) in its mouse descriptor. When you deflect the horizontal Xbox joystick, Windows natively dispatches WM_MOUSEHWHEEL messages into Excel, VS Code, Chrome, and text editors without modifier key tricks.</p>
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-question">
-              <span>How does Emittr prevent the stuck Ctrl or modifier key problem?</span>
-              <span class="material-symbols-outlined faq-chevron">expand_more</span>
-            </button>
-            <div class="faq-answer">
-              <p>Emittr runs an active UDC connection watchdog. When the USB cable is plugged into a computer, Emittr immediately flushes a 9-byte null report to ensure all modifier keys are completely released. In addition, an instant Unstick button is always accessible on the header.</p>
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-question">
-              <span>Which phones and Android versions are supported?</span>
-              <span class="material-symbols-outlined faq-chevron">expand_more</span>
-            </button>
-            <div class="faq-answer">
-              <p>Any rooted Android phone with kernel USB Gadget ConfigFS enabled (Linux kernel 3.18, 4.4, 4.9, 4.14, 4.19, 5.x). Tested extensively on HiSilicon Kirin 659 (Honor 9 Lite), Qualcomm Snapdragon devices, and Kali NetHunter.</p>
-            </div>
-          </div>
-        </div>
+    <!-- ============================================================ CLOSING -->
+    <section class="closing-section">
+      <p class="closing-statement">Got a phone. Got a cable. You're basically done.</p>
+      <div class="closing-cta-group">
+        <a href="docs.html#quickstart" class="btn-primary">
+          <span class="material-symbols-outlined">rocket_launch</span><span>Set It Up</span>
+        </a>
+        <a href="https://github.com/mr-anjaneyam/Emittr" target="_blank" rel="noopener" class="btn-secondary">
+          <span class="material-symbols-outlined">star</span><span>Star It On GitHub</span>
+        </a>
       </div>
     </section>
   </main>
 
-  <!-- ======================================================================== -->
-  <!-- APPLE-STYLE MINIMAL FOOTER                                               -->
-  <!-- ======================================================================== -->
-  <footer class="apple-footer">
-    <div class="footer-container">
-      <div class="footer-row-top">
-        <div class="footer-brand-group">
-          <span class="footer-logo">Emittr</span>
-          <span class="footer-tagline">Hardware-grade USB input emulation.</span>
-        </div>
-        <div class="footer-links">
-          <a href="https://github.com/mranj/usb-typer" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://github.com/mranj/usb-typer/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
-          <a href="#quickstart">Documentation</a>
-        </div>
+  <!-- ============================================================ FOOTER -->
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="footer-brand-name">Emittr</span>
+        <span class="footer-tagline-rotate" id="footerTagline">Built at 2am. Works during the day.</span>
       </div>
-      <div class="footer-row-bottom">
-        <p class="copyright">Designed & engineered by <a href="https://github.com/mranj" target="_blank" rel="noopener">mranj</a>. Open source under MIT.</p>
-        <span class="footer-status-pill">
-          <span class="status-dot"></span>
-          <span>v1.3.0 Stable Release</span>
-        </span>
+      <div class="footer-links-col">
+        <span class="footer-links-heading">Project</span>
+        <a href="https://github.com/mr-anjaneyam/Emittr" target="_blank" rel="noopener">GitHub</a>
+        <a href="docs.html">Documentation</a>
+        <a href="https://github.com/mr-anjaneyam/Emittr/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+        <a href="https://github.com/mr-anjaneyam/Emittr/issues" target="_blank" rel="noopener">Report an Issue</a>
       </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 <a href="https://github.com/mr-anjaneyam" target="_blank" rel="noopener">Sri Anjaneyam</a>. Open source, mildly over-engineered, entirely on purpose.</span>
+      <span class="footer-status-pill"><span class="status-dot"></span><span>v1.3.0</span></span>
     </div>
   </footer>
 
-  <!-- ======================================================================== -->
-  <!-- INTERACTIVE DEMO STUDIO MODAL (Opened on "Experience Demo")               -->
-  <!-- ======================================================================== -->
-  <div class="demo-modal-backdrop" id="demoModal" aria-hidden="true" role="dialog">
-    <div class="demo-modal-dialog">
-      <div class="demo-modal-header">
-        <div class="modal-title-group">
-          <span class="modal-badge">INTERACTIVE STUDIO</span>
-          <h3 class="modal-title">Emittr Live Experience Studio</h3>
-          <p class="modal-sub">Interact with the simulated phone deck to type essays, scroll data grids, and control the workstation in real time.</p>
-        </div>
-        <button class="modal-close-btn" id="closeDemoBtn" aria-label="Close Demo Studio">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-
-      <div class="demo-modal-body">
-        <div class="simulator-rig">
-          <!-- PHONE DECK CONTROLLER -->
-          <div class="sim-phone-deck">
-            <div class="deck-topbar">
-              <div class="deck-brand">
-                <span class="deck-dot green"></span>
-                <span>Emittr Deck v1.3.0</span>
-              </div>
-              <button class="deck-unstick-btn" id="simUnstickBtn" title="Emergency Unstick Keys">
-                <span class="material-symbols-outlined">lock_open</span>
-                <span>Unstick</span>
-              </button>
-            </div>
-
-            <div class="deck-nav-tabs">
-              <button class="deck-tab active" data-tab="typer">
-                <span class="material-symbols-outlined">keyboard</span>
-                <span>500W Typer</span>
-              </button>
-              <button class="deck-tab" data-tab="joysticks">
-                <span class="material-symbols-outlined">sports_esports</span>
-                <span>Joysticks</span>
-              </button>
-              <button class="deck-tab" data-tab="trackpad">
-                <span class="material-symbols-outlined">touch_app</span>
-                <span>Trackpad</span>
-              </button>
-            </div>
-
-            <!-- TAB 1: 500-WORD ESSAY TYPER -->
-            <div class="deck-pane active" id="pane-typer">
-              <div class="pane-typer-controls">
-                <div class="preset-selector-row">
-                  <label for="essayPresetSelect">Preset Text:</label>
-                  <select id="essayPresetSelect" class="clean-select">
-                    <option value="essay">500-Word Essay ("The Art of Speed")</option>
-                    <option value="wifi">Complex Wi-Fi Key (64-Char)</option>
-                    <option value="code">Quick Terminal Script</option>
-                  </select>
-                </div>
-
-                <div class="speed-control-row">
-                  <div class="speed-header">
-                    <span>Speed:</span>
-                    <strong id="simSpeedLabel">Instant (5ms)</strong>
-                  </div>
-                  <input type="range" id="simSpeedRange" min="5" max="60" value="5" step="5" class="clean-range" />
-                </div>
-
-                <textarea id="simTextContent" class="clean-textarea" rows="5" spellcheck="false"></textarea>
-
-                <div class="typer-actions-row">
-                  <button class="btn-deck-primary" id="btnStartTyping">
-                    <span class="material-symbols-outlined">send</span>
-                    <span>Type Document at 1,000 WPM</span>
-                  </button>
-                  <button class="btn-deck-secondary" id="btnAbortTyping">Stop</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- TAB 2: DUAL XBOX JOYSTICKS -->
-            <div class="deck-pane" id="pane-joysticks">
-              <div class="joysticks-container">
-                <div class="joy-column">
-                  <span class="joy-label v-col">Vertical Scroll</span>
-                  <div class="joy-well" id="joyWellV" title="Push Up or Down to scroll vertically">
-                    <div class="joy-guide v-line"></div>
-                    <div class="joy-stick" id="joyStickV">
-                      <div class="stick-rim">
-                        <div class="stick-dish">
-                          <div class="stick-cross"></div>
-                          <div class="stick-pip"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <span class="joy-status" id="joyStatusV">Push up / down</span>
-                </div>
-
-                <div class="joy-column">
-                  <span class="joy-label h-col">Horizontal AC Pan</span>
-                  <div class="joy-well" id="joyWellH" title="Push Left or Right to scroll horizontally">
-                    <div class="joy-guide h-line"></div>
-                    <div class="joy-stick" id="joyStickH">
-                      <div class="stick-rim">
-                        <div class="stick-dish">
-                          <div class="stick-cross"></div>
-                          <div class="stick-pip"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <span class="joy-status" id="joyStatusH">Push left / right</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- TAB 3: TRACKPAD -->
-            <div class="deck-pane" id="pane-trackpad">
-              <div class="sim-trackpad-well" id="simTouchpadSurface">
-                <span class="touchpad-hint">Glide cursor here</span>
-              </div>
-              <div class="sim-mouse-buttons">
-                <button class="btn-mouse" id="btnSimLeft">Left Click</button>
-                <button class="btn-mouse" id="btnSimMid">Mid</button>
-                <button class="btn-mouse" id="btnSimRight">Right Click</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- TARGET LAPTOP WORKSTATION -->
-          <div class="sim-laptop-monitor">
-            <div class="monitor-titlebar">
-              <div class="monitor-controls">
-                <span class="dot red"></span>
-                <span class="dot yellow"></span>
-                <span class="dot green"></span>
-              </div>
-              <div class="monitor-mode-tabs">
-                <button class="mode-tab active" id="btnModeDoc">Document View</button>
-                <button class="mode-tab" id="btnModeGrid">Spreadsheet Data Grid</button>
-              </div>
-              <div class="monitor-telemetry">
-                <span class="wpm-badge" id="telemetryWpm">0 WPM</span>
-              </div>
-            </div>
-
-            <div class="monitor-viewport">
-              <!-- VIEW 1: ESSAY DOCUMENT EDITOR -->
-              <div class="monitor-doc-view active" id="viewDoc">
-                <div class="doc-meta-bar">
-                  <span class="doc-name">essay_500_words.docx</span>
-                  <span class="doc-char-count" id="docStats">0 chars • 0 words</span>
-                </div>
-                <div class="doc-scroll-surface" id="docScrollSurface">
-                  <p id="docTypedContent"></p>
-                  <span class="cursor-blink" id="docCursor"></span>
-                </div>
-              </div>
-
-              <!-- VIEW 2: SPREADSHEET DATA GRID -->
-              <div class="monitor-grid-view" id="viewGrid">
-                <div class="grid-meta-bar">
-                  <span>financial_data_q3.xlsx (Continuous Dual-Axis Navigation)</span>
-                  <span class="grid-nav-hint">Use Joysticks to pan</span>
-                </div>
-                <div class="grid-scroll-surface" id="gridScrollSurface">
-                  <table class="data-table" id="dataTable">
-                    <thead>
-                      <tr>
-                        <th>ID</th><th>Region</th><th>Category</th><th>Revenue</th><th>Growth</th><th>Variance</th><th>Margin</th><th>Status</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Forecast</th><th>Risk</th>
-                      </tr>
-                    </thead>
-                    <tbody id="dataTableBody">
-                      <!-- Populated dynamically via JS -->
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <!-- Virtual Simulated Mouse Cursor -->
-              <div class="sim-mouse-pointer" id="simMousePointer"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="toast-notification" id="toastBox"></div>
 
-  <script src="app.js?v=2.0.0"></script>
+  <script src="app.js?v=4.0.0"></script>
 </body>
 </html>
