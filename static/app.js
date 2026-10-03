@@ -26,6 +26,7 @@ const State = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  initIntroAnimation();
   loadConfig();
   initVersionBadge();
   initWebSocket();
@@ -35,6 +36,22 @@ document.addEventListener('DOMContentLoaded', () => {
   initTrackpad();
   fetchInitialStatus();
 });
+
+// ── Opening Intro Animation ───────────────────────────────────────────────
+
+function initIntroAnimation() {
+  const introEl = document.getElementById('intro');
+  if (!introEl) return;
+  const timer = setTimeout(() => {
+    document.body.classList.add('ready');
+  }, 3100);
+
+  // Tap or click anywhere to dismiss immediately
+  introEl.addEventListener('click', () => {
+    clearTimeout(timer);
+    document.body.classList.add('ready');
+  });
+}
 
 // ── Version Badge Initialization ──────────────────────────────────────────
 

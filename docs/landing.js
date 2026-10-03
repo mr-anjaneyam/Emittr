@@ -38,7 +38,7 @@
 
   // ── intro → ready ────────────────────────────────────────────────────────
   const skipIntro = scrollY > 40 || reduced;
-  setTimeout(() => document.body.classList.add('ready'), skipIntro ? 0 : 4500);
+  setTimeout(() => document.body.classList.add('ready'), skipIntro ? 0 : 3100);
 
   // ── toast ────────────────────────────────────────────────────────────────
   const toastEl = $('#toast');
@@ -91,12 +91,16 @@
   // ── typewriter for the hero phone ────────────────────────────────────────
   (function heroTypewriter() {
     const el = $('#heroType');
+    const chEl = $('#heroChars');
+    const plEl = $('#heroTypePlaceholder');
     const lines = ['sudo reboot --bios', 'ssh root@vault-01', 'Get-Process | Sort CPU', 'dmesg | grep -i usb', 'correct-horse-battery-staple'];
     let li = 0, ci = 0, dir = 1;
     (function tick() {
       const s = lines[li];
       ci += dir;
       el.textContent = s.slice(0, ci);
+      if (chEl) chEl.textContent = ci + ' chars';
+      if (plEl) plEl.style.opacity = ci > 0 ? '0' : '1';
       let wait = dir > 0 ? 55 + Math.random() * 55 : 22;
       if (dir > 0 && ci >= s.length) { dir = -1; wait = 1700; }
       else if (dir < 0 && ci <= 0) { dir = 1; li = (li + 1) % lines.length; wait = 420; }
