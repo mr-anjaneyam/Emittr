@@ -1,386 +1,420 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#06070B" />
-  <meta name="description" content="Emittr turns the phone in your pocket into a real, physical USB keyboard, trackpad, and scroll wheel for any computer. No drivers, no software, no compromise." />
-  <meta property="og:title" content="Emittr — Your Phone Just Got Promoted" />
-  <meta property="og:description" content="Plug your phone into any computer and watch it become a genuine hardware keyboard, trackpad, and scroll wheel." />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <title>Emittr — Your phone just clocked in as a keyboard</title>
+  <meta name="description" content="Emittr turns a rooted Android phone into a real, physical USB keyboard, mouse and scroll wheel. Zero drivers. Zero host software. Works before the OS boots." />
+  <meta property="og:title" content="Emittr — Your phone just clocked in as a keyboard" />
+  <meta property="og:description" content="Nobody blocks a keyboard. So we taught a phone to become one." />
   <meta property="og:type" content="website" />
-  <title>Emittr — Your Phone Just Got Promoted</title>
+  <meta property="og:image" content="logo.png" />
   <link rel="icon" type="image/png" href="icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-  <link rel="stylesheet" href="style.css?v=4.0.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="landing.css?v=6.0.0" />
+  <noscript><style>.intro{display:none!important}.mega .line>span,.rv,.finale-h span,.finale-links,.term pre .ln,.hero-copy .eyebrow,.hero-copy .lede,.hero-device,.wall-foot,.become-sub{opacity:1!important;transform:none!important}.become-text .w{opacity:1!important;filter:none!important}.hero-cable path{stroke-dashoffset:0!important}.finale-logo{clip-path:none!important}.track{height:auto!important}.stick{position:relative;height:auto;min-height:100vh}</style></noscript>
 </head>
 <body>
 
-  <!-- ============================================================ FLOATING CHROME -->
-  <a href="#hero" class="brand-mark" aria-label="Emittr Home">
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-      <path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/>
+  <!-- ───────────────────────────── INTRO: the cable draws itself -->
+  <div class="intro" id="intro" aria-hidden="true">
+    <svg viewBox="0 0 520 190">
+      <path pathLength="1" d="M30 150 C 120 150, 170 50, 250 52 C 330 54, 335 130, 255 132 C 175 134, 215 52, 320 82 C 380 100, 410 100, 440 100" />
+      <path class="p2" pathLength="1" d="M30 150 L60 141 M30 150 L40 122" />
+      <path class="p2" pathLength="1" d="M440 84 H486 V116 H440 Z M486 94 H502 M486 106 H502" />
     </svg>
-    <span>Emittr</span>
-  </a>
-
-  <button class="menu-fab" id="menuFab" aria-label="Open menu" aria-expanded="false">
-    <span class="bar"></span><span class="bar"></span><span class="bar"></span>
-  </button>
-
-  <nav class="nav-overlay" id="navOverlay" aria-hidden="true">
-    <div class="nav-overlay-inner">
-      <a href="#hero" class="nav-overlay-link" data-nav-link>Home</a>
-      <a href="#story" class="nav-overlay-link" data-nav-link>The Problem</a>
-      <a href="#demo" class="nav-overlay-link" data-nav-link>Live Demo</a>
-      <a href="#features" class="nav-overlay-link" data-nav-link>Features</a>
-      <a href="#use-cases" class="nav-overlay-link" data-nav-link>Use Cases</a>
-      <div class="nav-overlay-foot">
-        <a href="docs.html">
-          <span class="material-symbols-outlined">menu_book</span><span>Documentation</span>
-        </a>
-        <a href="https://github.com/mr-anjaneyam/Emittr" target="_blank" rel="noopener">
-          <span class="material-symbols-outlined">code</span><span>GitHub</span>
-        </a>
-      </div>
-    </div>
-  </nav>
-
-  <div class="dot-nav" id="dotNav">
-    <span class="dot-nav-item" data-target="#hero" data-label="Home"></span>
-    <span class="dot-nav-item" data-target="#story" data-label="The Problem"></span>
-    <span class="dot-nav-item" data-target="#demo" data-label="Live Demo"></span>
-    <span class="dot-nav-item" data-target="#features" data-label="Features"></span>
-    <span class="dot-nav-item" data-target="#use-cases" data-label="Use Cases"></span>
+    <div class="word">EMITTR</div>
   </div>
 
-  <button class="theme-fab" id="themeToggle" aria-label="Toggle theme">
-    <span class="material-symbols-outlined" id="themeIcon">light_mode</span>
-  </button>
+  <div class="spot" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
 
-  <main>
-    <!-- ============================================================ HERO -->
-    <section class="hero-section" id="hero">
-      <div class="hero-track">
-        <div class="hero-sticky">
-          <div class="hero-glow"></div>
-          <span class="hero-eyebrow">Introducing Emittr</span>
-          <h1 class="hero-headline">Your phone just clocked in <span class="accent-word">as a keyboard.</span></h1>
-          <p class="hero-sub">
-            Plug it into anything with a USB port and watch a computer fall for the oldest trick in hardware:
-            thinking your phone is a keyboard. Technically, now it is.
-          </p>
-          <div class="hero-cta-group">
-            <button class="btn-primary" id="demoScrollBtn">
-              <span class="material-symbols-outlined">bolt</span>
-              <span>Watch It Type</span>
-            </button>
-            <a href="docs.html" class="btn-secondary">
-              <span class="material-symbols-outlined">menu_book</span>
-              <span>Read The Fine Print</span>
-            </a>
+  <!-- ───────────────────────────── Fixed chrome (kept deliberately tiny) -->
+  <header class="chrome">
+    <a class="brand" href="#top" aria-label="Emittr"><img src="logo-crop.png" alt="Emittr" /></a>
+    <nav aria-label="Primary">
+      <a href="docs.html">Docs</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/mr-anjaneyam/Emittr" target="_blank" rel="noopener">GitHub ↗</a>
+    </nav>
+  </header>
+
+  <aside class="thread" aria-hidden="true">
+    <svg id="threadSvg">
+      <path class="base" id="threadBase" />
+      <path class="fill" id="threadFill" />
+      <circle class="head" id="threadHead" r="3.4" cx="14" cy="0" />
+    </svg>
+  </aside>
+
+  <div class="scene-label" id="sceneLabel" aria-hidden="true"><span class="n">01</span><span class="t">Arrival</span></div>
+
+  <main id="top">
+
+    <!-- ═════════════════════════════ 01 · ARRIVAL -->
+    <section class="scene" data-scene="hero" data-label="Arrival">
+      <div class="track hero-track">
+        <div class="stick hero-stick">
+
+          <div class="hero-copy" id="heroCopy">
+            <p class="eyebrow">Emittr — USB HID for rooted Android</p>
+            <h1 class="mega">
+              <span class="line"><span style="--i:0">Your phone</span></span>
+              <span class="line"><span style="--i:1">just clocked in</span></span>
+              <span class="line"><span style="--i:2">as a <em>keyboard.</em></span></span>
+            </h1>
+            <p class="lede">Plug it into anything with a USB port. The computer sees genuine hardware — no drivers, no software, no network. Technically, now it is.</p>
           </div>
-          <div class="scroll-cue">
-            <span>Keep scrolling. It gets weirder.</span>
-            <span class="material-symbols-outlined scroll-cue-arrow">expand_more</span>
-          </div>
-        </div>
-      </div>
-    </section>
 
-    <!-- ============================================================ STORY -->
-    <section class="story-section" id="story">
-      <div class="story-track">
-        <div class="story-sticky">
-          <div class="story-inner">
-            <p class="story-line">Bluetooth keyboards die exactly when you need them most.</p>
-            <p class="story-line">Wired ones tangle like they're plotting something.</p>
-            <p class="story-line">Voice typing hears "schedule the meeting" and types "shed you'll the meeting."</p>
-            <p class="story-line punch">Emittr skips all of that. One phone. One cable. Zero drama.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============================================================ DEMO -->
-    <section class="demo-section" id="demo">
-      <div class="section-container">
-        <div class="demo-header">
-          <span class="section-eyebrow">Try it, don't trust us</span>
-          <h2 class="section-title">Experience it live.</h2>
-          <p class="section-desc">This is the actual interface, doing the actual thing. Type something. Wiggle a stick. Poke the trackpad.</p>
-        </div>
-
-        <div class="demo-stage">
-          <div class="simulator-rig">
-            <div class="sim-phone-deck">
-              <div class="deck-topbar">
-                <div class="deck-brand"><span class="deck-dot green"></span><span>Emittr Deck</span></div>
-                <button class="deck-unstick-btn" id="simUnstickBtn" title="Reset all keys">
-                  <span class="material-symbols-outlined">lock_open</span><span>Reset</span>
-                </button>
-              </div>
-
-              <div class="deck-nav-tabs">
-                <button class="deck-tab active" data-tab="typer"><span class="material-symbols-outlined">keyboard</span><span>Typer</span></button>
-                <button class="deck-tab" data-tab="joysticks"><span class="material-symbols-outlined">sports_esports</span><span>Sticks</span></button>
-                <button class="deck-tab" data-tab="trackpad"><span class="material-symbols-outlined">touch_app</span><span>Trackpad</span></button>
-              </div>
-
-              <div class="deck-pane active" id="pane-typer">
-                <div class="pane-typer-controls">
-                  <div class="preset-selector-row">
-                    <label for="essayPresetSelect">Preset text</label>
-                    <select id="essayPresetSelect" class="clean-select">
-                      <option value="essay">Short essay</option>
-                      <option value="wifi">Complex password (64 chars)</option>
-                      <option value="code">Quick note</option>
-                    </select>
-                  </div>
-
-                  <div class="speed-control-row">
-                    <div class="speed-header"><span>Speed</span><strong id="simSpeedLabel">Instant (5ms)</strong></div>
-                    <input type="range" id="simSpeedRange" min="5" max="60" value="5" step="5" class="clean-range" />
-                  </div>
-
-                  <textarea id="simTextContent" class="clean-textarea" rows="5" spellcheck="false"></textarea>
-
-                  <div class="typer-actions-row">
-                    <button class="btn-deck-primary" id="btnStartTyping"><span class="material-symbols-outlined">send</span><span>Type it</span></button>
-                    <button class="btn-deck-secondary" id="btnAbortTyping">Stop</button>
-                  </div>
+          <div class="hero-device phone" id="heroDevice">
+            <div class="phone-tilt" id="heroTilt">
+              <div class="phone-body"></div>
+              <div class="phone-screen">
+                <div class="island"></div>
+                <div class="d-head"><span>Emittr</span><b>● Connected</b></div>
+                <div class="d-dev">
+                  <i class="dot"></i>
+                  <div><strong>Dell USB Keyboard</strong><span>Composite HID · configured</span></div>
                 </div>
+                <div class="d-field"><span id="heroType"></span><i class="caret"></i></div>
+                <div class="d-chips"><span>Instant</span><span class="on">Fast</span><span>Normal</span><span>Human</span></div>
+                <div class="d-send">Send to PC</div>
               </div>
-
-              <div class="deck-pane" id="pane-joysticks">
-                <div class="joysticks-container">
-                  <div class="joy-column">
-                    <span class="joy-label v-col">Vertical</span>
-                    <div class="joy-well" id="joyWellV" title="Push up or down to scroll">
-                      <div class="joy-guide v-line"></div>
-                      <div class="joy-stick" id="joyStickV"><div class="stick-rim"><div class="stick-dish"></div></div></div>
-                    </div>
-                    <span class="joy-status" id="joyStatusV">Push up / down</span>
-                  </div>
-                  <div class="joy-column">
-                    <span class="joy-label h-col">Horizontal</span>
-                    <div class="joy-well" id="joyWellH" title="Push left or right to pan">
-                      <div class="joy-guide h-line"></div>
-                      <div class="joy-stick" id="joyStickH"><div class="stick-rim"><div class="stick-dish"></div></div></div>
-                    </div>
-                    <span class="joy-status" id="joyStatusH">Push left / right</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="deck-pane" id="pane-trackpad">
-                <div class="sim-trackpad-well" id="simTouchpadSurface">
-                  <span class="touchpad-hint">Glide here</span>
-                  <span class="touchpad-dot" id="touchpadDot"></span>
-                </div>
-                <div class="sim-mouse-buttons">
-                  <button class="btn-mouse" id="btnSimLeft">Left</button>
-                  <button class="btn-mouse" id="btnSimMid">Middle</button>
-                  <button class="btn-mouse" id="btnSimRight">Right</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="sim-laptop-monitor">
-              <div class="monitor-titlebar">
-                <div class="monitor-controls"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-                <div class="monitor-mode-tabs">
-                  <button class="mode-tab active" id="btnModeDoc">Document</button>
-                  <button class="mode-tab" id="btnModeGrid">Spreadsheet</button>
-                </div>
-                <div class="monitor-telemetry"><span class="wpm-badge" id="telemetryWpm">0 WPM</span></div>
-              </div>
-
-              <div class="monitor-viewport">
-                <div class="monitor-doc-view active" id="viewDoc">
-                  <div class="doc-meta-bar">
-                    <span class="doc-name">essay.docx</span>
-                    <span class="doc-char-count" id="docStats">0 chars • 0 words</span>
-                  </div>
-                  <div class="doc-scroll-surface" id="docScrollSurface">
-                    <p id="docTypedContent"></p><span class="cursor-blink" id="docCursor"></span>
-                  </div>
-                </div>
-
-                <div class="monitor-grid-view" id="viewGrid">
-                  <div class="grid-meta-bar">
-                    <span>quarterly_data.xlsx</span>
-                    <span class="grid-nav-hint">Use the sticks to pan</span>
-                  </div>
-                  <div class="grid-scroll-surface" id="gridScrollSurface">
-                    <table class="data-table" id="dataTable">
-                      <thead><tr><th>ID</th><th>Region</th><th>Category</th><th>Revenue</th><th>Growth</th><th>Variance</th><th>Margin</th><th>Status</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Forecast</th><th>Risk</th></tr></thead>
-                      <tbody id="dataTableBody"></tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div class="sim-mouse-pointer" id="simMousePointer"></div>
-              </div>
+              <svg class="hero-cable" viewBox="0 0 1300 160" aria-hidden="true">
+                <path pathLength="1" d="M1300 0 C1300 90, 1240 130, 1170 130 C1080 130, 1090 40, 1170 50 C1250 62, 1180 150, 1050 140 C 800 118, 500 150, 0 128" />
+              </svg>
             </div>
           </div>
-        </div>
 
-        <div class="demo-mobile-fallback">
-          <span class="material-symbols-outlined">desktop_windows</span>
-          <p>This demo needs a keyboard-shaped screen. Open this page on a desktop to play with it properly.</p>
+          <div class="scroll-cue" aria-hidden="true"><span>Scroll</span><i></i></div>
         </div>
       </div>
     </section>
 
-    <!-- ============================================================ FEATURES -->
-    <section class="section" id="features">
-      <div class="section-container">
-        <div class="section-header">
-          <span class="section-eyebrow">What it actually does</span>
-          <h2 class="section-title">Built to feel like real hardware. Because it is.</h2>
+    <!-- ═════════════════════════════ 02 · THE WALL -->
+    <section class="scene" data-scene="wall" data-label="The problem">
+      <div class="track wall-track">
+        <div class="stick wall-stick">
+          <div class="wall-head">
+            <p class="eyebrow">The problem</p>
+            <p>Locked down means locked down.</p>
+          </div>
+          <div class="wall-rows">
+            <div class="wall-row"><span class="wall-word">USB drives<i class="strike"></i></span><span class="wall-tag">Blocked by policy</span></div>
+            <div class="wall-row"><span class="wall-word">The clipboard<i class="strike"></i></span><span class="wall-tag">Disabled by DLP</span></div>
+            <div class="wall-row"><span class="wall-word">Remote tools<i class="strike"></i></span><span class="wall-tag">Blocked by firewall</span></div>
+            <div class="wall-row"><span class="wall-word">The network<i class="strike"></i></span><span class="wall-tag">Air-gapped</span></div>
+            <div class="wall-row last"><span class="wall-word">A keyboard</span><span class="wall-tag">Allowed. Always.</span></div>
+          </div>
+          <div class="wall-foot" id="wallFoot">Nobody blocks a keyboard.</div>
         </div>
+      </div>
+    </section>
 
-        <div class="bento-grid">
-          <div class="bento-card bento-card--wide">
-            <div class="bento-card-icon"><span class="material-symbols-outlined">bolt</span></div>
-            <h3>Type 500 words in 3 seconds.</h3>
-            <p>Or slow it down and pretend you're a thoughtful human who writes at human speed.</p>
-            <div class="bento-widget">
-              <div class="speed-gauge-box">
-                <span class="gauge-value" id="bentoSpeedVal">1,000</span>
-                <span class="gauge-unit">WORDS PER MINUTE</span>
+    <!-- ═════════════════════════════ 03 · THE IDEA -->
+    <section class="scene" data-scene="become" data-label="The idea">
+      <div class="track become-track">
+        <div class="stick become-stick">
+          <p class="eyebrow">The idea</p>
+          <h2 class="become-text" id="becomeText">
+            <span class="w">So</span> <span class="w">we</span> <span class="w">taught</span> <span class="w">a</span> <span class="w"><em>phone</em></span> <span class="w">to</span> <span class="w">become</span> <span class="w">one.</span>
+          </h2>
+          <p class="become-sub" id="becomeSub">A real USB keyboard. A five-button mouse. Two thumbsticks.<br /><b>All from the phone already in your pocket.</b></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════ 04 · PROOF -->
+    <section class="scene" data-scene="type" data-label="Proof">
+      <div class="track type-track">
+        <div class="stick type-stick" id="typeStick">
+
+          <div class="type-copy">
+            <p class="eyebrow">Paste → keystrokes</p>
+            <h2 class="h2">64 characters.<br /><em>Zero</em> clipboard.</h2>
+            <p class="lede">Paste on your phone. It lands on the locked-down machine as real keystrokes — nothing to install, nothing to sync, nothing for IT to block.</p>
+            <div class="stats">
+              <div class="stat hl"><b id="statChars">0</b><span>characters<br />typed</span></div>
+              <div class="stat"><b>0</b><span>clipboard<br />writes</span></div>
+              <div class="stat"><b>0</b><span>software<br />on host</span></div>
+            </div>
+          </div>
+
+          <div class="type-monitor" aria-hidden="true">
+            <div class="screen" id="typeScreen">
+              <div class="screen-bar"><i></i><i></i><i></i><span>vault-01 — locked</span></div>
+              <div class="login">
+                <div class="k">vault-01 · corp internal</div>
+                <h3>Enter master passphrase</h3>
+                <div class="field"><span id="typedPass"></span><i class="caret"></i></div>
+                <div class="status" id="loginStatus">USB storage blocked · Clipboard disabled · No agent installed</div>
               </div>
-              <div class="speed-presets-pills">
-                <span class="pill-spec">Instant</span>
-                <span class="pill-spec">Fast</span>
-                <span class="pill-spec">Normal</span>
-                <span class="pill-spec">Human</span>
+              <div class="inspector" id="inspector"><b>HID →</b> 01 00 00 00 00 00 00 00 00</div>
+            </div>
+            <div class="monitor-port"></div>
+          </div>
+
+          <svg class="type-cable" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+            <path class="base" d="M285 948 C 285 990, 380 995, 400 940 S 410 830, 426 782" />
+            <path class="flow" d="M285 948 C 285 990, 380 995, 400 940 S 410 830, 426 782" />
+          </svg>
+
+          <div class="type-phone phone" aria-hidden="true">
+            <div class="phone-tilt">
+              <div class="phone-body"></div>
+              <div class="phone-screen">
+                <div class="island"></div>
+                <div class="d-head"><span>Emittr</span><b>● Connected</b></div>
+                <div class="d-head"><span>Clipboard → Emittr</span></div>
+                <div class="d-field" id="phoneField"></div>
+                <div class="d-chips"><span class="on">Instant</span><span>Fast</span><span>Human</span></div>
+                <div class="d-send" id="phoneSend">Type it</div>
               </div>
             </div>
           </div>
 
-          <div class="bento-card bento-card--wide">
-            <div class="bento-card-icon"><span class="material-symbols-outlined">sports_esports</span></div>
-            <h3>Two sticks. Infinite scrolling.</h3>
-            <p>Your thumbs just got a promotion too.</p>
-            <div class="bento-widget">
-              <div class="interactive-mini-stick" id="bentoMiniStick">
-                <div class="mini-stick-dish"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════ 05 · MISSIONS -->
+    <section class="scene" id="missions" data-scene="missions" data-label="Missions">
+      <div class="track missions-track" id="missionsTrack">
+        <div class="stick missions-stick">
+
+          <div class="missions-head">
+            <p class="eyebrow">Six places software gives up</p>
+            <div class="m-counter"><b id="mCount">01</b> / 06</div>
+          </div>
+
+          <div class="missions-rail" id="missionsRail">
+
+            <article class="mission">
+              <div class="m-num">01</div>
+              <div class="m-copy">
+                <h3 class="m-title">The locked-down PC.</h3>
+                <p class="m-scenario">USB drives banned. Clipboard dead. Webmail blocked. IT thought of everything — except the keyboard.</p>
+                <p class="m-solve"><b>How Emittr gets in</b>Paste on your phone. It arrives as real keystrokes. Nothing installed, nothing to block.</p>
               </div>
-              <span class="mini-stick-hint">Try tilting it</span>
-            </div>
-          </div>
+              <div class="m-art">
+                <svg viewBox="0 0 240 220" aria-hidden="true">
+                  <rect class="d" pathLength="1" x="60" y="100" width="120" height="96" rx="14" />
+                  <path class="d" pathLength="1" d="M84 100 V72 a36 36 0 0 1 72 0 V100" />
+                  <circle class="d soft" pathLength="1" cx="120" cy="146" r="10" />
+                  <path class="d soft" pathLength="1" d="M120 156 V176" />
+                  <path class="d wire" pathLength="1" d="M0 70 C 40 20, 70 120, 120 72 S 200 20, 240 70" />
+                </svg>
+              </div>
+            </article>
 
-          <div class="bento-card">
-            <div class="bento-card-icon"><span class="material-symbols-outlined">touch_app</span></div>
-            <h3>A trackpad that fits in your pocket.</h3>
-            <p>And doesn't leave crumbs.</p>
-            <div class="bento-widget">
-              <div class="mini-trackpad-surface"><span class="trackpad-crosshair"></span></div>
-            </div>
-          </div>
+            <article class="mission">
+              <div class="m-num">02</div>
+              <div class="m-copy">
+                <h3 class="m-title">The daily-driver relay.</h3>
+                <p class="m-scenario">Your passwords live on your everyday phone — not the rooted one you plugged into the PC.</p>
+                <p class="m-solve"><b>How Emittr gets in</b>Leave the rooted phone plugged in as a bridge. Open the deck from your own phone over Wi-Fi. Copy there, paste into the wire.</p>
+              </div>
+              <div class="m-art">
+                <svg viewBox="0 0 360 220" aria-hidden="true">
+                  <rect class="d" pathLength="1" x="20" y="60" width="70" height="130" rx="14" />
+                  <path class="d soft" pathLength="1" d="M45 74 H65" />
+                  <path class="d soft" pathLength="1" d="M106 112 q10 10 0 20" />
+                  <path class="d soft" pathLength="1" d="M118 100 q18 22 0 44" />
+                  <path class="d soft" pathLength="1" d="M130 88 q26 34 0 68" />
+                  <rect class="d" pathLength="1" x="160" y="80" width="56" height="100" rx="12" />
+                  <path class="d wire" pathLength="1" d="M216 150 C 250 150, 250 112, 282 112" />
+                  <rect class="d" pathLength="1" x="282" y="70" width="70" height="50" rx="6" />
+                  <path class="d" pathLength="1" d="M317 120 V140 M302 140 H332" />
+                </svg>
+              </div>
+            </article>
 
-          <div class="bento-card">
-            <div class="bento-card-icon"><span class="material-symbols-outlined">verified</span></div>
-            <h3>Never a stuck key.</h3>
-            <p>Unplug mid-sentence. Nothing gets stuck — not even your dignity.</p>
-          </div>
+            <article class="mission">
+              <div class="m-num">03</div>
+              <div class="m-copy">
+                <h3 class="m-title">Clean-room triage.</h3>
+                <p class="m-scenario">Quarantined. Offline. Possibly infected. Nothing gets plugged in and nothing gets installed.</p>
+                <p class="m-solve"><b>How Emittr gets in</b>Triage commands travel as keystrokes. No storage mounted, no agent dropped, no footprint left.</p>
+              </div>
+              <div class="m-art">
+                <svg viewBox="0 0 200 220" aria-hidden="true">
+                  <path class="d" pathLength="1" d="M100 20 L162 44 V100 C162 142 136 168 100 186 C64 168 38 142 38 100 V44 Z" />
+                  <path class="d wire" pathLength="1" d="M70 102 L92 124 L132 78" />
+                </svg>
+              </div>
+            </article>
 
-          <div class="bento-card">
-            <div class="bento-card-icon"><span class="material-symbols-outlined">devices</span></div>
-            <h3>One deck. Every screen.</h3>
-            <p>Phone, tablet, ultrawide monitor — it just fits, no squinting required.</p>
-          </div>
+            <article class="mission">
+              <div class="m-num">04</div>
+              <div class="m-copy">
+                <h3 class="m-title">Zero-trace secrets.</h3>
+                <p class="m-scenario">A 64-character master password on a machine you don't trust — with a clipboard that might be watching.</p>
+                <p class="m-solve"><b>How Emittr gets in</b>The secret never touches the host clipboard. Sniffers, extensions and DLP agents see nothing to grab.</p>
+              </div>
+              <div class="m-art">
+                <svg viewBox="0 0 260 200" aria-hidden="true">
+                  <circle class="d" pathLength="1" cx="70" cy="100" r="40" />
+                  <circle class="d soft" pathLength="1" cx="70" cy="100" r="12" />
+                  <path class="d wire" pathLength="1" d="M110 100 H236" />
+                  <path class="d" pathLength="1" d="M192 100 V134 M216 100 V122" />
+                </svg>
+              </div>
+            </article>
 
-          <div class="bento-card">
-            <div class="bento-card-icon"><span class="material-symbols-outlined">terminal</span></div>
-            <h3>Or skip the UI entirely.</h3>
-            <p>One CLI command, like the wizard you secretly are.</p>
-            <code class="mini-cli-snippet">usbtype --delay 15 "Hello World"</code>
+            <article class="mission">
+              <div class="m-num">05</div>
+              <div class="m-copy">
+                <h3 class="m-title">The BIOS whisperer.</h3>
+                <p class="m-scenario">No operating system yet. No network. Maybe no working keyboard either.</p>
+                <p class="m-solve"><b>How Emittr gets in</b>It speaks the standard USB boot protocol — firmware already knows how to listen. GRUB, BIOS, installers: all reachable.</p>
+              </div>
+              <div class="m-art">
+                <svg viewBox="0 0 240 220" aria-hidden="true">
+                  <rect class="d" pathLength="1" x="20" y="30" width="200" height="130" rx="10" />
+                  <path class="d wire" pathLength="1" d="M48 78 L72 96 L48 114" />
+                  <path class="d" pathLength="1" d="M88 114 H132" />
+                  <path class="d soft" pathLength="1" d="M48 142 H156" />
+                  <path class="d" pathLength="1" d="M120 160 V190 M86 190 H154" />
+                </svg>
+              </div>
+            </article>
+
+            <article class="mission">
+              <div class="m-num">06</div>
+              <div class="m-copy">
+                <h3 class="m-title">The field tech's skeleton key.</h3>
+                <p class="m-scenario">A kiosk behind glass. A sign twelve feet up. One USB cable hanging out of it.</p>
+                <p class="m-solve"><b>How Emittr gets in</b>Plug in the phone you're already holding. Keyboard, trackpad and scroll sticks — in the palm of one hand.</p>
+              </div>
+              <div class="m-art">
+                <svg viewBox="0 0 240 240" aria-hidden="true">
+                  <rect class="d" pathLength="1" x="50" y="20" width="140" height="110" rx="8" />
+                  <path class="d soft" pathLength="1" d="M68 42 H172 M68 60 H140" />
+                  <path class="d" pathLength="1" d="M120 130 V212 M80 212 H160" />
+                  <path class="d wire" pathLength="1" d="M190 100 C 224 100, 226 150, 204 190 S 164 230, 150 236" />
+                </svg>
+              </div>
+            </article>
+
+          </div>
+          <div class="missions-prog"><i id="mProg"></i></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════ 06 · TOUCH -->
+    <section class="touch" id="touch" data-label="Touch" data-plain="touch">
+      <div class="sheet-wrap"><div class="sheet" id="sheet"></div></div>
+
+      <div class="touch-copy rv">
+        <p class="eyebrow">Touch</p>
+        <h2 class="h2">Two sticks.<br /><em>Infinite</em> scroll.</h2>
+        <p class="lede">Push harder, scroll faster. Horizontal scrolling is real too — sent as a genuine USB wheel event, not a Shift-key hack.</p>
+      </div>
+
+      <div class="dock rv" style="--d:.2s">
+        <div class="pod">
+          <div class="well v" id="wellV" aria-label="Vertical scroll stick"><div class="knob" id="knobV"></div></div>
+          <div class="cap">↕ Scroll<b id="valV">+0.00</b></div>
+        </div>
+        <div class="pod">
+          <div class="well h" id="wellH" aria-label="Horizontal pan stick"><div class="knob" id="knobH"></div></div>
+          <div class="cap">↔ AC Pan · 0x0238<b id="valH">+0.00</b></div>
+        </div>
+      </div>
+      <div class="touch-hint">Drag a stick</div>
+    </section>
+
+    <!-- ═════════════════════════════ 07 · NINE BYTES -->
+    <section class="bytes" id="bytes" data-label="Under the glass" data-plain="bytes">
+      <div class="bytes-top">
+        <div class="rv">
+          <p class="eyebrow">Under the glass</p>
+          <h2 class="h2">Nine bytes.<br /><em>That's</em> the whole trick.</h2>
+          <p class="lede">A keyboard report is nine bytes long. Your phone writes them to <span style="color:var(--gold)">/dev/hidg0</span> — and any computer, at any stage of boot, already knows exactly what to do with them.</p>
+        </div>
+        <div class="keycap rv" style="--d:.15s" aria-hidden="true">
+          <span class="ch" id="keyChar">H</span>
+          <span class="info" id="keyInfo">Waiting…</span>
+        </div>
+      </div>
+
+      <div class="report-label rv"><b>Report 01</b> Keyboard · 9 bytes</div>
+      <div class="report k rv" id="repK">
+        <div class="byte"><span class="v">01</span><span class="l">ID</span></div>
+        <div class="byte"><span class="v">00</span><span class="l">Mods</span></div>
+        <div class="byte"><span class="v">00</span><span class="l">Rsvd</span></div>
+        <div class="byte"><span class="v">00</span><span class="l">Key 1</span></div>
+        <div class="byte"><span class="v">00</span><span class="l">Key 2</span></div>
+        <div class="byte"><span class="v">00</span><span class="l">Key 3</span></div>
+        <div class="byte"><span class="v">00</span><span class="l">Key 4</span></div>
+        <div class="byte"><span class="v">00</span><span class="l">Key 5</span></div>
+        <div class="byte"><span class="v">00</span><span class="l">Key 6</span></div>
+      </div>
+
+      <div class="report-label rv"><b>Report 02</b> Mouse · 6 bytes</div>
+      <div class="report m rv" id="repM">
+        <div class="byte"><span class="v">02</span><span class="l">ID</span></div>
+        <div class="byte"><span class="v">00</span><span class="l">Buttons</span></div>
+        <div class="byte"><span class="v">00</span><span class="l">X</span></div>
+        <div class="byte"><span class="v">00</span><span class="l">Y</span></div>
+        <div class="byte"><span class="v">00</span><span class="l">Wheel</span></div>
+        <div class="byte star"><span class="v">00</span><span class="l">AC Pan</span></div>
+      </div>
+      <p class="bytes-note rv">Six more for the mouse — and the last one is why horizontal scrolling <b>just works</b>. Real USB Consumer usage <b>0x0238</b>, no modifier-key tricks.</p>
+    </section>
+
+    <!-- ═════════════════════════════ 08 · INSTALL -->
+    <section class="install" id="install" data-label="Install" data-plain="install">
+      <div>
+        <p class="eyebrow rv">Install</p>
+        <h2 class="mega rv" style="--d:.1s"><span class="line"><span>Two</span></span><span class="line"><span><em>minutes.</em></span></span></h2>
+        <p class="lede rv" style="--d:.2s">Clone it, run the installer, plug in. The daemon, the gadget and the web deck all come up on their own.</p>
+        <p class="req rv" style="--d:.3s"><b>Needs:</b> a rooted Android phone with USB gadget (ConfigFS) support — most kernels from the last decade have it — and a data cable.</p>
+      </div>
+
+      <div class="term rv" id="term" style="--d:.15s">
+        <div class="term-bar"><i></i><i></i><i></i><span>root@nethunter</span><button class="copy" id="copyCmd" type="button">Copy</button></div>
+        <pre>
+<span class="ln c" style="--i:0"># 1 · install</span>
+<span class="ln" style="--i:1"><span class="g">$</span> git clone https://github.com/mr-anjaneyam/Emittr.git</span>
+<span class="ln" style="--i:2"><span class="g">$</span> cd Emittr &amp;&amp; bash install.sh</span>
+<span class="ln" style="--i:3">&nbsp;</span>
+<span class="ln c" style="--i:4"># 2 · survive reboots (Magisk)</span>
+<span class="ln" style="--i:5"><span class="g">$</span> cp /opt/usb_hid_deck/02-usb-deck.sh /data/adb/service.d/</span>
+<span class="ln" style="--i:6"><span class="g">$</span> chmod +x /data/adb/service.d/02-usb-deck.sh</span>
+<span class="ln" style="--i:7">&nbsp;</span>
+<span class="ln c" style="--i:8"># 3 · plug in. open the deck.</span>
+<span class="ln" style="--i:9"><span class="g">→</span> http://localhost:8088</span></pre>
+      </div>
+    </section>
+
+    <!-- ═════════════════════════════ 09 · FINALE -->
+    <section class="scene" data-scene="finale" data-label="You're in">
+      <div class="track finale-track">
+        <div class="stick finale-stick">
+          <img class="finale-logo" id="finaleLogo" src="logo-crop.png" alt="Emittr" />
+          <h2 class="finale-h"><span>Got a phone. Got a cable.</span><span><em>You're in.</em></span></h2>
+          <div class="finale-links" id="finaleLinks">
+            <a class="big-link" href="docs.html">Read the docs <i>→</i></a>
+            <a class="big-link" href="https://github.com/mr-anjaneyam/Emittr" target="_blank" rel="noopener">Star on GitHub <i>↗</i></a>
+          </div>
+          <div class="foot">
+            <span>© 2026 Sri Anjaneyam</span>
+            <a href="https://github.com/mr-anjaneyam/Emittr/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+            <span>v1.3.0</span>
+            <span>Built at 2am. Works during the day.</span>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ============================================================ USE CASES -->
-    <section class="section" id="use-cases">
-      <div class="section-container">
-        <div class="section-header">
-          <span class="section-eyebrow">Why this exists</span>
-          <h2 class="section-title">For the moments software gives up.</h2>
-        </div>
-
-        <div class="usecase-teaser-grid">
-          <div class="usecase-teaser-card">
-            <span class="material-symbols-outlined">lock</span>
-            <h4>The Locked-Down PC</h4>
-            <p>USB drives banned. Clipboard disabled. Your phone doesn't care about your IT policy.</p>
-          </div>
-          <div class="usecase-teaser-card">
-            <span class="material-symbols-outlined">weekend</span>
-            <h4>The Couch Commander</h4>
-            <p>Leave your phone plugged in, drive it from bed. Peak laziness, professionally engineered.</p>
-          </div>
-          <div class="usecase-teaser-card">
-            <span class="material-symbols-outlined">mic</span>
-            <h4>The Silent Dictator</h4>
-            <p>Speak into your phone, watch it land on a desktop that's never heard of speech-to-text.</p>
-          </div>
-          <div class="usecase-teaser-card">
-            <span class="material-symbols-outlined">emergency</span>
-            <h4>The BIOS Whisperer</h4>
-            <p>No keyboard, no problem. Your phone talks to computers before their OS even wakes up.</p>
-          </div>
-        </div>
-
-        <div class="usecase-teaser-more">
-          <a href="docs.html#use-cases" class="btn-secondary">
-            <span>Read the full stories in the docs</span>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============================================================ CLOSING -->
-    <section class="closing-section">
-      <p class="closing-statement">Got a phone. Got a cable. You're basically done.</p>
-      <div class="closing-cta-group">
-        <a href="docs.html#quickstart" class="btn-primary">
-          <span class="material-symbols-outlined">rocket_launch</span><span>Set It Up</span>
-        </a>
-        <a href="https://github.com/mr-anjaneyam/Emittr" target="_blank" rel="noopener" class="btn-secondary">
-          <span class="material-symbols-outlined">star</span><span>Star It On GitHub</span>
-        </a>
-      </div>
-    </section>
   </main>
 
-  <!-- ============================================================ FOOTER -->
-  <footer class="site-footer">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <span class="footer-brand-name">Emittr</span>
-        <span class="footer-tagline-rotate" id="footerTagline">Built at 2am. Works during the day.</span>
-      </div>
-      <div class="footer-links-col">
-        <span class="footer-links-heading">Project</span>
-        <a href="https://github.com/mr-anjaneyam/Emittr" target="_blank" rel="noopener">GitHub</a>
-        <a href="docs.html">Documentation</a>
-        <a href="https://github.com/mr-anjaneyam/Emittr/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
-        <a href="https://github.com/mr-anjaneyam/Emittr/issues" target="_blank" rel="noopener">Report an Issue</a>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <span>© 2026 <a href="https://github.com/mr-anjaneyam" target="_blank" rel="noopener">Sri Anjaneyam</a>. Open source, mildly over-engineered, entirely on purpose.</span>
-      <span class="footer-status-pill"><span class="status-dot"></span><span>v1.3.0</span></span>
-    </div>
-  </footer>
-
-  <div class="toast-notification" id="toastBox"></div>
-
-  <script src="app.js?v=4.0.0"></script>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="landing.js?v=6.0.0"></script>
 </body>
 </html>

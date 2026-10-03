@@ -660,7 +660,7 @@ html.theme-transitioning .docs-topbar {
 /* -------------------------------------------------------------------------
    Use-case teaser
    ------------------------------------------------------------------------- */
-.usecase-teaser-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.usecase-teaser-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .usecase-teaser-card {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
@@ -676,7 +676,7 @@ html.theme-transitioning .docs-topbar {
 .usecase-teaser-more { text-align: center; margin-top: 40px; }
 
 @media (max-width: 900px) { .usecase-teaser-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 520px) { .usecase-teaser-grid { grid-template-columns: 1fr; } }
+@media (max-width: 580px) { .usecase-teaser-grid { grid-template-columns: 1fr; } }
 
 /* -------------------------------------------------------------------------
    Closing + footer

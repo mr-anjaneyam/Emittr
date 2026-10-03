@@ -1,0 +1,489 @@
+/**
+ * EMITTR — Launch Experience engine
+ * No dependencies. Native scroll + damped progress values per pinned scene.
+ *
+ *  hero      parallax phone, headline exit
+ *  wall      policy strike-throughs → "A keyboard. Allowed."
+ *  become    word-by-word reveal
+ *  type      scroll scrubs a 64-char passphrase through the cable
+ *  missions  vertical scroll drives a horizontal rail + line-art drawing
+ *  touch     rate-based thumbsticks driving an endless spreadsheet
+ *  bytes     live HID report sequencer
+ *  finale    logo wipe
+ */
+(() => {
+  'use strict';
+
+  // ── helpers ──────────────────────────────────────────────────────────────
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const ease = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+  const hex = n => (n & 255).toString(16).padStart(2, '0').toUpperCase();
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const narrow = () => innerWidth <= 960;
+  if (reduced) document.documentElement.classList.add('rm');
+
+  // ── pointer (spotlight + parallax) ───────────────────────────────────────
+  const ptr = { nx: 0, ny: 0, sx: 0, sy: 0 };
+  addEventListener('pointermove', e => {
+    ptr.nx = (e.clientX / innerWidth - 0.5) * 2;
+    ptr.ny = (e.clientY / innerHeight - 0.5) * 2;
+    const r = document.documentElement.style;
+    r.setProperty('--mx', e.clientX + 'px');
+    r.setProperty('--my', e.clientY + 'px');
+  }, { passive: true });
+
+  // ── intro → ready ────────────────────────────────────────────────────────
+  const skipIntro = scrollY > 40 || reduced;
+  setTimeout(() => document.body.classList.add('ready'), skipIntro ? 0 : 2200);
+
+  // ── toast ────────────────────────────────────────────────────────────────
+  const toastEl = $('#toast');
+  let toastT;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('on');
+    clearTimeout(toastT);
+    toastT = setTimeout(() => toastEl.classList.remove('on'), 2200);
+  }
+
+  // ── reveal on view ───────────────────────────────────────────────────────
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+  }), { threshold: 0.18 });
+  $$('.rv, .term').forEach(el => io.observe(el));
+
+  // ── HID helpers ──────────────────────────────────────────────────────────
+  function hidOf(ch) {
+    if (/[a-z]/.test(ch)) return [0, 0x04 + ch.charCodeAt(0) - 97];
+    if (/[A-Z]/.test(ch)) return [2, 0x04 + ch.charCodeAt(0) - 65];
+    if (/[1-9]/.test(ch)) return [0, 0x1E + ch.charCodeAt(0) - 49];
+    if (ch === '0') return [0, 0x27];
+    const m = { '-': [0, 0x2D], '_': [2, 0x2D], ' ': [0, 0x2C], ',': [0, 0x36], '.': [0, 0x37] };
+    return m[ch] || [0, 0];
+  }
+
+  // ── thread: the cable that fills as you read ─────────────────────────────
+  const th = { base: $('#threadBase'), fill: $('#threadFill'), head: $('#threadHead'), len: 0 };
+  function buildThread() {
+    if (narrow()) return;
+    const h = innerHeight, q = h / 16;
+    let d = `M14 0 Q 26 ${q} 14 ${2 * q}`;
+    for (let i = 2; i <= 8; i++) d += ` T 14 ${2 * q * i}`;
+    th.base.setAttribute('d', d);
+    th.fill.setAttribute('d', d);
+    th.len = th.fill.getTotalLength();
+    th.fill.style.strokeDasharray = th.len;
+  }
+  function updateThread() {
+    if (!th.len) return;
+    const max = document.documentElement.scrollHeight - innerHeight;
+    const p = max > 0 ? clamp(scrollY / max) : 0;
+    th.fill.style.strokeDashoffset = th.len * (1 - p);
+    const pt = th.fill.getPointAtLength(th.len * p);
+    th.head.setAttribute('cx', pt.x);
+    th.head.setAttribute('cy', pt.y);
+  }
+
+  // ── typewriter for the hero phone ────────────────────────────────────────
+  (function heroTypewriter() {
+    const el = $('#heroType');
+    const lines = ['sudo reboot --bios', 'ssh root@vault-01', 'Get-Process | Sort CPU', 'dmesg | grep -i usb', 'correct-horse-battery-staple'];
+    let li = 0, ci = 0, dir = 1;
+    (function tick() {
+      const s = lines[li];
+      ci += dir;
+      el.textContent = s.slice(0, ci);
+      let wait = dir > 0 ? 55 + Math.random() * 55 : 22;
+      if (dir > 0 && ci >= s.length) { dir = -1; wait = 1700; }
+      else if (dir < 0 && ci <= 0) { dir = 1; li = (li + 1) % lines.length; wait = 420; }
+      setTimeout(tick, wait);
+    })();
+  })();
+
+  // ═════════════════════ SCENE HANDLERS ═══════════════════════════════════
+
+  // 01 · hero
+  const heroCopy = $('#heroCopy'), heroTilt = $('#heroTilt');
+  function hero(p) {
+    ptr.sx = lerp(ptr.sx, ptr.nx, 0.06);
+    ptr.sy = lerp(ptr.sy, ptr.ny, 0.06);
+    heroCopy.style.transform = `translate3d(0, ${-p * 90}px, 0)`;
+    heroCopy.style.opacity = clamp(1 - p * 1.7);
+    const e = ease(p);
+    heroTilt.style.transform =
+      `rotateY(${-16 + e * 16 + ptr.sx * 7}deg) rotateX(${6 - e * 6 - ptr.sy * 5}deg) rotateZ(${-3 + e * 3}deg) ` +
+      `translateY(${-e * 5}vh) scale(${1 + e * 0.22})`;
+  }
+
+  // 02 · wall
+  const wallRows = $$('.wall-row');
+  const wallFoot = $('#wallFoot');
+  function wall(p) {
+    const n = wallRows.length - 1;
+    wallRows.forEach((row, i) => {
+      if (i < n) {
+        const t = clamp((p - 0.07 - i * 0.17) / 0.13);
+        const e = ease(t);
+        $('.strike', row).style.transform = `scaleX(${e})`;
+        row.style.opacity = lerp(1, 0.24, e);
+      } else {
+        const t = clamp((p - 0.78) / 0.14);
+        row.style.opacity = lerp(0.35, 1, ease(t));
+        row.classList.toggle('lit', t > 0.45);
+      }
+    });
+    const f = clamp((p - 0.9) / 0.1);
+    wallFoot.style.opacity = f;
+    wallFoot.style.transform = `translateY(${(1 - f) * 20}px)`;
+  }
+
+  // 03 · become
+  const words = $$('#becomeText .w');
+  const becomeSub = $('#becomeSub');
+  function become(p) {
+    const N = words.length;
+    words.forEach((w, i) => {
+      const t = clamp((p * 1.15 * N - i) / 1.6);
+      w.style.opacity = lerp(0.1, 1, t);
+      w.style.filter = `blur(${(1 - t) * 8}px)`;
+    });
+    const s = clamp((p - 0.72) / 0.18);
+    becomeSub.style.opacity = s;
+    becomeSub.style.transform = `translateY(${(1 - s) * 18}px)`;
+  }
+
+  // 04 · proof (scroll-scrubbed typing)
+  const PASS = (() => {
+    const set = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789-_';
+    let s = 1337, out = '';
+    for (let i = 0; i < 64; i++) { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; out += set[(s >>> 8) % set.length]; }
+    return out;
+  })();
+  const typeEl = {
+    stick: $('#typeStick'), screen: $('#typeScreen'), pass: $('#typedPass'), status: $('#loginStatus'),
+    insp: $('#inspector'), field: $('#phoneField'), send: $('#phoneSend'), stat: $('#statChars'),
+  };
+  let lastN = -1;
+  function typeScene(p) {
+    const t = clamp((p - 0.1) / 0.74);
+    const n = Math.round(t * PASS.length);
+    if (n === lastN) return;
+    lastN = n;
+    typeEl.pass.textContent = PASS.slice(0, n);
+    typeEl.field.innerHTML = `<span class="sent">${PASS.slice(0, n)}</span><span class="rest">${PASS.slice(n)}</span>`;
+    typeEl.stat.textContent = n;
+    const live = n > 0 && n < PASS.length;
+    typeEl.stick.classList.toggle('live', live);
+    const done = n === PASS.length;
+    typeEl.screen.classList.toggle('ok', done);
+    typeEl.send.classList.toggle('done', done);
+    typeEl.send.textContent = done ? 'Sent ✓' : live ? 'Typing…' : 'Type it';
+    typeEl.status.textContent = done
+      ? 'Access granted — vault-01 unlocked'
+      : live ? 'Receiving keystrokes from Dell USB Keyboard…' : 'USB storage blocked · Clipboard disabled · No agent installed';
+    if (n > 0) {
+      const [mod, key] = hidOf(PASS[n - 1]);
+      typeEl.insp.innerHTML = `<b>HID →</b> 01 ${hex(mod)} 00 ${hex(key)} 00 00 00 00 00`;
+    } else {
+      typeEl.insp.innerHTML = '<b>HID →</b> 01 00 00 00 00 00 00 00 00';
+    }
+  }
+
+  // 05 · missions
+  const mTrack = $('#missionsTrack'), mRail = $('#missionsRail');
+  const panels = $$('.mission').map(el => ({
+    el, num: $('.m-num', el), paths: $$('.d', el), copy: $('.m-copy', el),
+  }));
+  const mCount = $('#mCount'), mProg = $('#mProg');
+  let mMax = 0;
+  function sizeMissions() {
+    mMax = Math.max(0, mRail.scrollWidth - innerWidth);
+    mTrack.style.height = (mMax * 1.15 + innerHeight) + 'px';
+  }
+  function missions(p) {
+    mRail.style.transform = `translate3d(${-p * mMax}px,0,0)`;
+    const idx = p * (panels.length - 1);
+    panels.forEach((pn, i) => {
+      const d = idx - i;
+      const t = 1 - clamp(Math.abs(d) / 0.8);
+      const off = 1 - easeOut(t);
+      pn.paths.forEach(path => { path.style.strokeDashoffset = off; });
+      pn.num.style.transform = `translate3d(${d * 90}px,0,0)`;
+      pn.copy.style.opacity = lerp(0.18, 1, clamp(t * 1.4));
+    });
+    const cur = Math.round(idx) + 1;
+    mCount.textContent = String(cur).padStart(2, '0');
+    mProg.style.transform = `scaleX(${p})`;
+  }
+
+  // 09 · finale
+  const fLogo = $('#finaleLogo'), fH = $$('.finale-h span'), fLinks = $('#finaleLinks');
+  function finale(p) {
+    const t = ease(clamp(p / 0.4));
+    const c = `inset(0 ${100 - t * 100}% 0 0)`;
+    fLogo.style.clipPath = c; fLogo.style.webkitClipPath = c;
+    fH.forEach((s, i) => {
+      const k = clamp((p - 0.4 - i * 0.12) / 0.16);
+      s.style.opacity = k; s.style.transform = `translateY(${(1 - k) * 24}px)`;
+    });
+    const l = clamp((p - 0.7) / 0.16);
+    fLinks.style.opacity = l; fLinks.style.transform = `translateY(${(1 - l) * 24}px)`;
+  }
+
+  // ═════════════════════ SCENE REGISTRY + MAIN LOOP ═══════════════════════
+  const handlers = { hero, wall, become, type: typeScene, missions, finale };
+  const scenes = $$('[data-scene]').map(el => ({ el, name: el.dataset.scene, p: 0, sp: 0, init: false }));
+  const labeled = $$('[data-label]');
+  const labelEl = $('#sceneLabel');
+  const labelN = $('.n', labelEl), labelT = $('.t', labelEl);
+  let curLabel = -1;
+
+  // touch (sticks) state is defined below but ticked from the same loop
+  let touchTick = () => {};
+  let last = performance.now();
+
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    const vh = innerHeight;
+
+    for (const s of scenes) {
+      const r = s.el.getBoundingClientRect();
+      if (r.bottom < -vh * 0.5 || r.top > vh * 1.5) continue;
+      const total = r.height - vh;
+      s.p = total > 0 ? clamp(-r.top / total) : 0;
+      if (!s.init) { s.sp = s.p; s.init = true; }
+      s.sp += (s.p - s.sp) * (reduced ? 1 : 0.13);
+      if (Math.abs(s.p - s.sp) < 0.0004) s.sp = s.p;
+      handlers[s.name](s.sp);
+    }
+
+    // active scene label
+    let idx = -1;
+    labeled.forEach((el, i) => {
+      const r = el.getBoundingClientRect();
+      if (r.top <= vh * 0.5 && r.bottom > vh * 0.5) idx = i;
+    });
+    if (idx !== -1 && idx !== curLabel) {
+      curLabel = idx;
+      labelEl.classList.add('swap');
+      setTimeout(() => {
+        labelN.textContent = String(idx + 1).padStart(2, '0');
+        labelT.textContent = labeled[idx].dataset.label;
+        labelEl.classList.remove('swap');
+      }, 260);
+    }
+
+    updateThread();
+    touchTick(now, dt);
+    requestAnimationFrame(frame);
+  }
+
+  // ═════════════════════ TOUCH: thumbsticks + endless sheet ═══════════════
+  (function initTouch() {
+    const sec = $('#touch'), sheet = $('#sheet');
+    const C = 10, R = 28, CW = 200, RH = 46;
+    const BW = C * CW, BH = R * RH;
+    const regions = ['North America', 'EMEA Central', 'Asia Pacific', 'Latin America', 'Nordics', 'Global Ops', 'Iberia', 'ANZ'];
+    const sectors = ['Cloud Compute', 'Edge Firmware', 'Hardware Sec', 'Kernel ConfigFS', 'Networking', 'HID Gadget'];
+    const risks = ['LOW', 'MINIMAL', 'NOMINAL', 'SECURE', 'OPTIMAL'];
+    function cellText(c, r) {
+      const h = ((r * 7919 + c * 104729) >>> 0) % 997;
+      switch (c) {
+        case 0: return '#' + String(1000 + r * 13 % 900);
+        case 1: return regions[(r + c) % regions.length];
+        case 2: return sectors[(r * 3 + c) % sectors.length];
+        case 3: return '$' + (60 + (h * 7) % 400) + ',' + String(100 + (h * 13) % 900);
+        case 4: return '$' + (60 + (h * 11) % 400) + ',' + String(100 + (h * 17) % 900);
+        case 5: return (h % 2 ? '+' : '−') + ((h % 180) / 10).toFixed(1) + '%';
+        case 6: return ((h % 600) / 10 + 20).toFixed(1) + '%';
+        case 7: return risks[h % risks.length];
+        case 8: return '0x' + hex(h) + hex(h * 3);
+        default: return 'Q' + (1 + h % 4) + ' · ' + (2020 + h % 7);
+      }
+    }
+    sheet.style.gridTemplateColumns = `repeat(${C * 2}, ${CW}px)`;
+    const frag = document.createDocumentFragment();
+    for (let rr = 0; rr < R * 2; rr++) {
+      for (let cc = 0; cc < C * 2; cc++) {
+        const d = document.createElement('div');
+        const c = cc % C, r = rr % R;
+        d.className = 'cell' + ((r * 5 + c * 3) % 17 === 0 ? ' hot' : '');
+        d.textContent = cellText(c, r);
+        frag.appendChild(d);
+      }
+    }
+    sheet.appendChild(frag);
+
+    const pos = { x: 0, y: 0 };
+    const S = {
+      v: { d: 0, sm: 0, active: false, well: $('#wellV'), knob: $('#knobV'), val: $('#valV'), axis: 'y' },
+      h: { d: 0, sm: 0, active: false, well: $('#wellH'), knob: $('#knobH'), val: $('#valH'), axis: 'x' },
+    };
+    let lastTouch = -1e9, inView = false;
+    new IntersectionObserver(es => { inView = es[0].isIntersecting; }, { threshold: 0.05 }).observe(sec);
+
+    Object.values(S).forEach(st => {
+      const { well, knob, axis } = st;
+      const move = e => {
+        const r = well.getBoundingClientRect();
+        const R_ = r.width * 0.27;
+        let off = axis === 'y' ? e.clientY - (r.top + r.height / 2) : e.clientX - (r.left + r.width / 2);
+        off = clamp(off, -R_, R_);
+        knob.style.transform = axis === 'y' ? `translate(0, ${off}px)` : `translate(${off}px, 0)`;
+        st.d = off / R_;
+      };
+      well.addEventListener('pointerdown', e => {
+        well.setPointerCapture(e.pointerId);
+        st.active = true; lastTouch = performance.now();
+        knob.classList.add('grab'); move(e);
+      });
+      well.addEventListener('pointermove', e => { if (st.active) { lastTouch = performance.now(); move(e); } });
+      const up = () => {
+        if (!st.active) return;
+        st.active = false; st.d = 0; lastTouch = performance.now();
+        knob.classList.remove('grab'); knob.style.transform = 'translate(0,0)';
+      };
+      well.addEventListener('pointerup', up);
+      well.addEventListener('pointercancel', up);
+    });
+
+    const curve = d => Math.sign(d) * Math.pow(Math.abs(d), 1.7);
+    touchTick = (now, dt) => {
+      if (!inView) return;
+      const idle = now - lastTouch > 3200 && !S.v.active && !S.h.active;
+      let tv = S.v.d, th_ = S.h.d;
+      if (idle) {
+        // attract mode: the sticks gently move on their own until touched
+        tv = Math.sin(now / 1500) * 0.5;
+        th_ = Math.cos(now / 2100) * 0.66;
+        [S.v, S.h].forEach((st, i) => {
+          const R_ = st.well.clientWidth * 0.27;
+          const val = i === 0 ? tv : th_;
+          st.knob.classList.add('grab');
+          st.knob.style.transform = st.axis === 'y' ? `translate(0, ${val * R_}px)` : `translate(${val * R_}px, 0)`;
+        });
+      } else {
+        [S.v, S.h].forEach(st => { if (!st.active) st.knob.classList.remove('grab'); });
+      }
+      const k = Math.min(1, dt * 9);
+      S.v.sm += (tv - S.v.sm) * k;
+      S.h.sm += (th_ - S.h.sm) * k;
+      pos.y += curve(S.v.sm) * 1500 * dt;
+      pos.x += curve(S.h.sm) * 1900 * dt;
+      const x = -(((pos.x % BW) + BW) % BW), y = -(((pos.y % BH) + BH) % BH);
+      sheet.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      S.v.val.textContent = (S.v.sm >= 0 ? '+' : '−') + Math.abs(S.v.sm).toFixed(2);
+      S.h.val.textContent = (S.h.sm >= 0 ? '+' : '−') + Math.abs(S.h.sm).toFixed(2);
+    };
+  })();
+
+  // ═════════════════════ BYTES: live HID report sequencer ═════════════════
+  (function initBytes() {
+    const sec = $('#bytes');
+    const kCells = $$('#repK .byte'), mCells = $$('#repM .byte');
+    const keyChar = $('#keyChar'), keyInfo = $('#keyInfo');
+    let inView = false;
+    new IntersectionObserver(es => { inView = es[0].isIntersecting; }, { threshold: 0.15 }).observe(sec);
+
+    function setBytes(cells, vals, pulse) {
+      vals.forEach((v, i) => {
+        const c = cells[i], vEl = c.firstElementChild, nv = hex(v);
+        if (vEl.textContent !== nv) {
+          vEl.textContent = nv;
+          if (pulse) { c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }
+        }
+        c.classList.toggle('on', v !== 0 && i > 0);
+      });
+    }
+
+    const phrase = 'Hello, BIOS.';
+    let i = 0, phase = 0;
+    setInterval(() => {
+      if (!inView) return;
+      if (phase === 0) {
+        const ch = phrase[i], [mod, key] = hidOf(ch);
+        setBytes(kCells, [1, mod, 0, key, 0, 0, 0, 0, 0], true);
+        keyChar.textContent = ch === ' ' ? '␣' : ch;
+        keyChar.classList.add('tap');
+        keyInfo.textContent = `${ch === ' ' ? 'Space' : '“' + ch + '”'} → ${mod ? 'Shift 0x02 + ' : ''}key 0x${hex(key)}`;
+        phase = 1;
+      } else {
+        setBytes(kCells, [1, 0, 0, 0, 0, 0, 0, 0, 0], false);
+        keyChar.classList.remove('tap');
+        phase = 0; i = (i + 1) % phrase.length;
+      }
+    }, 330);
+
+    setInterval(() => {
+      if (!inView) return;
+      const pan = (Math.random() < 0.5 ? -1 : 1) * (1 + Math.floor(Math.random() * 4));
+      const dx = Math.floor(Math.random() * 25) - 12, dy = Math.floor(Math.random() * 25) - 12;
+      setBytes(mCells, [2, 0, dx, dy, 0, pan], true);
+      mCells[5].classList.add('on');
+    }, 1100);
+  })();
+
+  // ═════════════════════ INSTALL: copy ════════════════════════════════════
+  $('#copyCmd').addEventListener('click', () => {
+    const text = [
+      'git clone https://github.com/mr-anjaneyam/Emittr.git',
+      'cd Emittr && bash install.sh',
+      'cp /opt/usb_hid_deck/02-usb-deck.sh /data/adb/service.d/',
+      'chmod +x /data/adb/service.d/02-usb-deck.sh',
+    ].join('\n');
+    const done = () => toast('Commands copied');
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, done);
+    else { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (_) {} ta.remove(); done(); }
+  });
+
+  // ═════════════════════ boot ═════════════════════════════════════════════
+  const typeCableSvg = $('.type-cable'), typeCableBase = $('.type-cable .base'), typeCableFlow = $('.type-cable .flow');
+  const typePhone = $('.type-phone'), typePort = $('.monitor-port'), typeStick = $('#typeStick');
+  function updateTypeCable() {
+    if (!typeStick || !typePhone || !typePort || !typeCableSvg || !typeCableBase) return;
+    const sR = typeStick.getBoundingClientRect();
+    const phR = typePhone.getBoundingClientRect();
+    const poR = typePort.getBoundingClientRect();
+    if (phR.width === 0 || poR.width === 0 || sR.width === 0) return;
+
+    const x1 = phR.left - sR.left + phR.width * 0.5;
+    const y1 = phR.bottom - sR.top - 2;
+    const x2 = poR.left - sR.left + poR.width * 0.5;
+    const y2 = poR.bottom - sR.top + 2;
+
+    typeCableSvg.setAttribute('viewBox', `0 0 ${sR.width} ${sR.height}`);
+    typeCableSvg.removeAttribute('preserveAspectRatio');
+
+    const dx = x2 - x1;
+    const floor = sR.height - 18;
+    const sag = Math.min(floor, Math.max(y1, y2) + 65);
+    const cp1x = x1 + dx * 0.28;
+    const cp1y = sag;
+    const cp2x = x1 + dx * 0.72;
+    const cp2y = sag;
+    const d = `M ${x1.toFixed(1)} ${y1.toFixed(1)} C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${x2.toFixed(1)} ${y2.toFixed(1)}`;
+    typeCableBase.setAttribute('d', d);
+    typeCableFlow.setAttribute('d', d);
+  }
+
+  function layout() { buildThread(); sizeMissions(); updateTypeCable(); }
+  addEventListener('resize', layout);
+  addEventListener('load', layout);
+  setTimeout(layout, 100);
+  layout();
+
+  if (reduced) {
+    // Show every scene in its resolved state; skip scrubbing & the rail.
+    ['hero', 'wall', 'become', 'type', 'finale'].forEach(k => handlers[k](1));
+    panels.forEach(pn => pn.paths.forEach(p => { p.style.strokeDashoffset = 0; }));
+    mRail.style.transform = 'none';
+    mRail.style.position = 'relative';
+  } else {
+    requestAnimationFrame(frame);
+  }
+})();
