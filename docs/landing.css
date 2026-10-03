@@ -23,7 +23,10 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { background: #000; -webkit-text-size-adjust: 100%; }
+html { background: #000; -webkit-text-size-adjust: 100%; scrollbar-width: none; -ms-overflow-style: none; }
+/* The page has its own wavy "thread" scrollbar — never show the native one. */
+*, html, body { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar, html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; background: transparent; }
 body {
   font-family: var(--sans);
   color: var(--ink);
@@ -55,20 +58,19 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var
   display: grid; place-items: center; align-content: center; gap: 28px;
   transition: opacity 1s var(--ease), visibility 0s linear 1s;
 }
-.intro svg { width: min(520px, 72vw); overflow: visible; }
-.intro path {
-  fill: none; stroke: var(--gold); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;
-  stroke-dasharray: 1; stroke-dashoffset: 1;
-  animation: draw 1.5s var(--ease) 0.15s forwards;
-}
-.intro path.p2 { animation-delay: 1s; animation-duration: 0.7s; }
-.intro .word {
-  font: 500 12px/1 var(--mono); letter-spacing: 0.9em; text-indent: 0.9em; color: var(--gold);
-  opacity: 0; animation: fadeIn 1s ease 0.9s forwards;
-}
+.intro svg { width: min(560px, 76vw); overflow: visible; color: var(--gold); }
+.intro .ig { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+.intro .ig.c { stroke-linecap: butt; stroke-linejoin: miter; }
+.intro .dr { stroke-dasharray: 1 2; stroke-dashoffset: 1; animation: draw 1s cubic-bezier(.45, .05, .4, 1) 0.2s forwards; }
+.intro .af { opacity: 0; transform-box: fill-box; transform-origin: 50% 50%; animation: arrowIn 0.8s var(--ease) 0.2s forwards; } /* 1 · arrow fades in */
+.intro .dr.wire { animation-delay: 1s; animation-duration: 1.7s; animation-timing-function: cubic-bezier(.4, .1, .45, 1); } /* 2 · the "e" */
+.intro .ig.b .dr { animation-delay: 2.7s; animation-duration: 0.6s; }            /* 3 · USB plug */
+.intro .fadeg { opacity: 0; animation: fadeIn 0.6s ease 3.2s forwards; }
+.intro .ig.c .dr { animation-delay: 3.2s; animation-duration: 0.8s; }           /* 4 · wordmark */
 body.ready .intro { opacity: 0; visibility: hidden; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
-@keyframes fadeIn { to { opacity: 0.85; } }
+@keyframes arrowIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn { to { opacity: 1; } }
 
 /* ── Fixed chrome ─────────────────────────────────────────────────────── */
 .chrome {
@@ -77,7 +79,8 @@ body.ready .intro { opacity: 0; visibility: hidden; }
   padding: 18px clamp(20px, 3.2vw, 48px); pointer-events: none;
 }
 .chrome > * { pointer-events: auto; }
-.brand img { height: 46px; width: auto; display: block; filter: drop-shadow(0 0 14px rgba(229, 215, 163, 0.25)); }
+.brand img { height: 54px; width: auto; display: block; filter: drop-shadow(0 0 14px rgba(229, 215, 163, 0.25)); transition: transform 0.5s var(--ease), filter 0.4s; }
+.brand:hover img { transform: translateX(3px) rotate(-1.5deg); filter: drop-shadow(0 0 18px rgba(229, 215, 163, 0.55)); }
 .chrome nav { display: flex; gap: 30px; font: 500 11px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; }
 .chrome nav a { color: var(--dim); transition: color 0.3s; position: relative; padding: 6px 0; }
 .chrome nav a:hover { color: var(--gold); }
@@ -374,7 +377,7 @@ body.ready .scroll-cue { opacity: 1; }
 /* ── 09 · Finale ──────────────────────────────────────────────────────── */
 .finale-track { height: 250vh; }
 .finale-stick { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 var(--pad); }
-.finale-logo { width: min(86vw, 980px); height: auto; clip-path: inset(0 100% 0 0); -webkit-clip-path: inset(0 100% 0 0); filter: drop-shadow(0 0 50px rgba(229, 215, 163, 0.25)); }
+.finale-logo { width: auto; height: min(40vh, 46vw); max-width: 86vw; clip-path: inset(0 100% 0 0); -webkit-clip-path: inset(0 100% 0 0); filter: drop-shadow(0 0 50px rgba(229, 215, 163, 0.25)); }
 .finale-h { margin-top: 3vh; font-weight: 700; font-size: clamp(30px, min(5.4vw, 10vh), 96px); line-height: 0.98; letter-spacing: -0.05em; }
 .finale-h span { display: block; opacity: 0; transform: translateY(24px); }
 .finale-links { margin-top: 5vh; display: flex; gap: clamp(24px, 4vw, 64px); flex-wrap: wrap; justify-content: center; opacity: 0; transform: translateY(24px); }

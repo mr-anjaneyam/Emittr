@@ -38,7 +38,7 @@
 
   // ── intro → ready ────────────────────────────────────────────────────────
   const skipIntro = scrollY > 40 || reduced;
-  setTimeout(() => document.body.classList.add('ready'), skipIntro ? 0 : 2200);
+  setTimeout(() => document.body.classList.add('ready'), skipIntro ? 0 : 4500);
 
   // ── toast ────────────────────────────────────────────────────────────────
   const toastEl = $('#toast');
