@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="35%" stop-color="#FCE5B0"/>
+      <stop offset="75%" stop-color="#F4D39A"/>
+      <stop offset="100%" stop-color="#C69E4C"/>
+    </linearGradient>
+  </defs>
+  <!-- Shadow -->
+  <path d="M 2 3.5 L 26 10.08 L 16.83 15.55 L 13 24.5 Z"
+        fill="rgba(0,0,0,0.6)"
+        stroke="rgba(0,0,0,0.7)"
+        stroke-width="2.5"
+        stroke-linejoin="round"
+        stroke-linecap="round"/>
+  <!-- Gold Ambient Glow -->
+  <path d="M 2 2 L 26 8.58 L 16.83 14.05 L 13 23 Z"
+        fill="#09090C"
+        stroke="rgba(244,211,154,0.4)"
+        stroke-width="3.2"
+        stroke-linejoin="round"
+        stroke-linecap="round"/>
+  <!-- Main Cursor Arrow -->
+  <path d="M 2 2 L 26 8.58 L 16.83 14.05 L 13 23 Z"
+        fill="#09090C"
+        stroke="url(#gold)"
+        stroke-width="1.6"
+        stroke-linejoin="round"
+        stroke-linecap="round"/>
+</svg>

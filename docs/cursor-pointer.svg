@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="gold-ptr" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="30%" stop-color="#FFF2CE"/>
+      <stop offset="70%" stop-color="#FCE1A6"/>
+      <stop offset="100%" stop-color="#E2B762"/>
+    </linearGradient>
+    <linearGradient id="fill-ptr" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2E2313"/>
+      <stop offset="100%" stop-color="#141009"/>
+    </linearGradient>
+  </defs>
+  <!-- Shadow -->
+  <path d="M 2 3.5 L 27.5 10.49 L 17.76 16.3 L 13.69 25.81 Z"
+        fill="rgba(0,0,0,0.6)"
+        stroke="rgba(0,0,0,0.7)"
+        stroke-width="3"
+        stroke-linejoin="round"
+        stroke-linecap="round"/>
+  <!-- Gold Glow Halo -->
+  <path d="M 2 2 L 27.5 8.99 L 17.76 14.8 L 13.69 24.31 Z"
+        fill="#141009"
+        stroke="rgba(244,211,154,0.65)"
+        stroke-width="4"
+        stroke-linejoin="round"
+        stroke-linecap="round"/>
+  <!-- Main Pointer Arrow -->
+  <path d="M 2 2 L 27.5 8.99 L 17.76 14.8 L 13.69 24.31 Z"
+        fill="url(#fill-ptr)"
+        stroke="url(#gold-ptr)"
+        stroke-width="2"
+        stroke-linejoin="round"
+        stroke-linecap="round"/>
+</svg>
