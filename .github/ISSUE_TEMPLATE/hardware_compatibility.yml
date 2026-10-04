@@ -1,0 +1,68 @@
+name: "📱 Hardware Compatibility Report"
+description: "Submit a compatibility test report for a phone model, custom kernel, or target device"
+title: "[COMPAT]: "
+labels: ["hardware-compatibility", "community-tested"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us build the official hardware compatibility list! Share your test results running Emittr on your specific phone and target computers.
+
+  - type: input
+    id: device-model
+    attributes:
+      label: Phone Model & SoC
+      description: Exact model and chipset.
+      placeholder: "e.g., Xiaomi Poco F1 (Snapdragon 845), OnePlus 7T (Snapdragon 855+)"
+    validations:
+      required: true
+
+  - type: input
+    id: rom-kernel
+    attributes:
+      label: Android ROM & Kernel Version
+      description: Android release and output of `uname -r`.
+      placeholder: "e.g., Kali NetHunter 2024.3, Android 11, Kernel 4.9.227-perf+"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: overall-status
+    attributes:
+      label: Overall Compatibility
+      description: How well does Emittr work on this setup?
+      options:
+        - "🟢 Flawless — Everything works out of the box"
+        - "🟡 Partial — Works with specific tweaks or workarounds"
+        - "🔴 Incompatible — Kernel missing ConfigFS HID or UDC unsupported"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: tested-features
+    attributes:
+      label: Tested Features
+      options:
+        - label: "Keyboard Typing (Bulk typer & Live mirror)"
+        - label: "Mouse Trackpad & Multi-touch scrolling"
+        - label: "Dual Xbox Thumbsticks (Vertical & Horizontal AC Pan scroll)"
+        - label: "Unstick & Reconnect Watchdog (No stuck keys on cable disconnect)"
+        - label: "BIOS / Bootloader Operation (Navigating BIOS without host OS loaded)"
+        - label: "CLI Tool (`usbtype` in terminal / SSH)"
+        - label: "Port 80 redirector (`http://hid.keyboard` works)"
+
+  - type: textarea
+    id: target-devices
+    attributes:
+      label: Tested Target Hosts
+      description: Target computers or consoles tested successfully.
+      placeholder: "e.g., Dell XPS 15 (Windows 11), MacBook Pro M2 (macOS 14), Lenovo ThinkPad (Arch Linux), PS5"
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Special Instructions or Kernel Quirks
+      description: Any SELinux permissive flags, Magisk modules, or kernel config details needed to make it work.
+      placeholder: "Requires `setenforce 0` or Magisk NetHunter kernel module..."

@@ -1,0 +1,112 @@
+name: "🐛 Bug Report"
+description: "File a reproducible bug or issue with Emittr"
+title: "[BUG]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Emittr! Please fill out the sections below as accurately as possible to help us diagnose the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: "e.g., When holding the Xbox scroll thumbstick to the right, horizontal scroll stops responding after 3 seconds..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions on how to trigger the issue.
+      placeholder: |
+        1. Connect phone to target PC using USB-C OTG cable
+        2. Open http://<phone-ip>:8088 on mobile browser
+        3. Switch to Trackpad tab
+        4. Perform two-finger scroll
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs Actual Behavior
+      description: What did you expect to happen, and what actually happened?
+      placeholder: "Expected smooth continuous scrolling; instead, the cursor jumped and locked up."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Which part of Emittr is experiencing the issue?
+      options:
+        - "Bulk Text Typer (Web UI)"
+        - "Live Keyboard Mirror / Virtual Keyboard"
+        - "Precision Trackpad / Mouse Gestures"
+        - "Dual Xbox Thumbsticks / Scrolling"
+        - "CLI Tool (usbtype)"
+        - "Kernel / ConfigFS Gadget (setup_gadget.py)"
+        - "Daemon / Reconnect Watchdog (server.py)"
+        - "PWA / Mobile UI Layout"
+        - "Other"
+    validations:
+      required: true
+
+  - type: input
+    id: phone-device
+    attributes:
+      label: Phone Model & Android ROM
+      description: Phone hardware and OS distribution.
+      placeholder: "e.g., OnePlus 7 Pro — OxygenOS 11 / NetHunter 2024.3 (Kernel 4.14.180)"
+    validations:
+      required: true
+
+  - type: input
+    id: host-os
+    attributes:
+      label: Target Host PC / Device
+      description: The computer or console receiving keystrokes/mouse inputs over USB.
+      placeholder: "e.g., Windows 11 23H2 (or macOS 14.5 / Ubuntu 24.04 / PS5 / BIOS setup)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: cable-type
+    attributes:
+      label: USB Cable Connection
+      description: Type of physical cable connecting the phone to the target PC.
+      options:
+        - "USB-C to USB-A data cable"
+        - "USB-C to USB-C direct data cable"
+        - "USB OTG adapter + standard USB cable"
+        - "Powered USB-C Hub / Dock"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server & Console Logs
+      description: Output from `/var/log/usb_deck.log` or browser developer tools console (if applicable).
+      render: shell
+      placeholder: |
+        cat /var/log/usb_deck.log
+        # or browser console errors
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Sanity Checklist
+      options:
+        - label: "I verified the cable is a **data cable**, not a charge-only cable."
+          required: true
+        - label: "I tested the **Unstick** button in the Web Deck header to ensure keys aren't physically held down."
+          required: false
+        - label: "I checked existing issues to verify this is not a duplicate."
+          required: true
