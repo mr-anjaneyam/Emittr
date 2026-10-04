@@ -3091,12 +3091,41 @@ body.ready .scroll-cue {
 }
 
 .finale-logo {
-  width: auto;
-  height: min(40vh, 46vw);
-  max-width: 86vw;
-  clip-path: inset(0 100% 0 0);
-  -webkit-clip-path: inset(0 100% 0 0);
+  width: min(560px, 86vw);
+  height: auto;
+  max-height: min(40vh, 46vw);
+  overflow: visible;
+  color: var(--gold);
   filter: drop-shadow(0 0 50px rgba(229, 215, 163, 0.25));
+}
+
+.finale-logo .fig {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.finale-logo .fig.c {
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+}
+
+.finale-logo .fdr {
+  stroke-dasharray: 1 2;
+  stroke-dashoffset: 1;
+}
+
+.finale-logo .faf {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  stroke-dasharray: 1 2;
+  stroke-dashoffset: 1;
+}
+
+.finale-logo .ffadeg {
+  opacity: 0;
 }
 
 .finale-h {
@@ -3362,8 +3391,17 @@ html.rm .hero-device {
   transition: none;
 }
 
-html.rm .hero-cable path {
+html.rm .hero-cable path,
+html.rm .finale-logo .fdr,
+html.rm .finale-logo .faf {
   stroke-dashoffset: 0;
+  transition: none;
+}
+
+html.rm .finale-logo .faf,
+html.rm .finale-logo .ffadeg {
+  opacity: 1;
+  transform: none;
   transition: none;
 }
 

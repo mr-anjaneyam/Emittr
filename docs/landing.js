@@ -9,7 +9,7 @@
  *  missions  vertical scroll drives a horizontal rail + line-art drawing
  *  touch     rate-based thumbsticks driving an endless spreadsheet
  *  bytes     live HID report sequencer
- *  finale    logo wipe
+ *  finale    logo line drawing
  */
 (() => {
   'use strict';
@@ -357,17 +357,60 @@
   }
 
   // 09 · finale
-  const fLogo = $('#finaleLogo'), fH = $$('.finale-h span'), fLinks = $('#finaleLinks');
+  const fLogo = $('#finaleLogo');
+  const fAf = $('.faf', fLogo);
+  const fWire = $('.fdr.wire', fLogo);
+  const fPlug = $$('.fig.b .fdr', fLogo);
+  const fFade = $('.ffadeg', fLogo);
+  const fLetters = $$('.fig.c .fdr', fLogo);
+  const fH = $$('.finale-h span'), fLinks = $('#finaleLinks');
+
   function finale(p) {
-    const t = ease(clamp(p / 0.4));
-    const c = `inset(0 ${100 - t * 100}% 0 0)`;
-    fLogo.style.clipPath = c; fLogo.style.webkitClipPath = c;
-    fH.forEach((s, i) => {
-      const k = clamp((p - 0.4 - i * 0.12) / 0.16);
-      s.style.opacity = k; s.style.transform = `translateY(${(1 - k) * 24}px)`;
+    // 1 · arrow plane (draws and scales into view)
+    const kArrow = clamp(p / 0.08);
+    if (fAf) {
+      fAf.style.opacity = kArrow.toFixed(3);
+      fAf.style.strokeDashoffset = (1 - easeOut(kArrow)).toFixed(3);
+      fAf.style.transform = `scale(${(0.88 + 0.12 * kArrow).toFixed(3)})`;
+    }
+
+    // 2 · wire cable draws continuously
+    const kWire = ease(clamp((p - 0.04) / 0.20));
+    if (fWire) {
+      fWire.style.strokeDashoffset = (1 - kWire).toFixed(3);
+    }
+
+    // 3 · USB plug outline
+    const kPlug = ease(clamp((p - 0.20) / 0.10));
+    fPlug.forEach(pEl => {
+      pEl.style.strokeDashoffset = (1 - kPlug).toFixed(3);
     });
-    const l = clamp((p - 0.7) / 0.16);
-    fLinks.style.opacity = l; fLinks.style.transform = `translateY(${(1 - l) * 24}px)`;
+
+    // 4 · USB pins and connector icon
+    const kFade = clamp((p - 0.26) / 0.08);
+    if (fFade) {
+      fFade.style.opacity = kFade.toFixed(3);
+    }
+
+    // 5 · EMITTR wordmark letters draw sequentially
+    fLetters.forEach((pEl, i) => {
+      const kL = ease(clamp((p - 0.28 - i * 0.022) / 0.07));
+      pEl.style.strokeDashoffset = (1 - kL).toFixed(3);
+    });
+
+    // 6 · finale headline
+    fH.forEach((s, i) => {
+      const k = clamp((p - 0.44 - i * 0.10) / 0.14);
+      s.style.opacity = k.toFixed(3);
+      s.style.transform = `translateY(${((1 - k) * 24).toFixed(1)}px)`;
+    });
+
+    // 7 · action links
+    const l = clamp((p - 0.70) / 0.14);
+    if (fLinks) {
+      fLinks.style.opacity = l.toFixed(3);
+      fLinks.style.transform = `translateY(${((1 - l) * 24).toFixed(1)}px)`;
+    }
   }
 
   // ═════════════════════ SCENE REGISTRY + MAIN LOOP ═══════════════════════
