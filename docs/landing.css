@@ -1711,7 +1711,8 @@ body.ready .scroll-cue {
   color: var(--dim);
 }
 
-.driver-payload {
+.driver-payload,
+.driver-snippet {
   font: 400 9px/1.2 var(--mono);
   color: #93c5fd;
   white-space: nowrap;
@@ -1720,7 +1721,8 @@ body.ready .scroll-cue {
   opacity: 0.92;
 }
 
-.driver-payload code {
+.driver-payload code,
+.driver-snippet code {
   font-family: inherit;
 }
 

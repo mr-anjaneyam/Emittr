@@ -336,8 +336,8 @@
           <div class="type-copy">
             <p class="eyebrow">Paste → keystrokes</p>
             <h2 class="h2">64 characters.<br /><em>Zero</em> clipboard.</h2>
-            <p class="lede">Paste on your phone. It lands on the locked-down machine as real keystrokes: nothing to
-              install, nothing to sync, nothing for IT to block.</p>
+            <p class="lede">Paste on your phone. It lands on the machine as real keystrokes: nothing to
+              install, nothing to sync, fully compliant with USB standards.</p>
             <div class="stats">
               <div class="stat hl"><b id="statChars">0</b><span>characters<br />typed</span></div>
               <div class="stat"><b>0</b><span>clipboard<br />writes</span></div>
@@ -410,7 +410,7 @@
                     <span class="driver-name">Your PC</span>
                     <span class="driver-ip">192.168.1.42</span>
                   </div>
-                  <div class="driver-payload"><code>vault.get("master_key")</code></div>
+                  <div class="driver-payload"><code>vault.get("db_credential")</code></div>
                   <div class="driver-progress"><div class="driver-fill"></div></div>
                 </div>
                 <button class="driver-send-btn" type="button" aria-label="Send from Your PC">
@@ -491,7 +491,7 @@
             <!-- Top Tags Row -->
             <div class="cluster-tags-row">
               <div class="stage-tag hl">The Hardware Bridge</div>
-              <div class="stage-tag">Target Machine</div>
+              <div class="stage-tag">Host Computer</div>
             </div>
 
             <!-- Connected Hardware Devices & Physical USB Cable -->
@@ -601,7 +601,7 @@
                 </div>
               </div>
 
-              <!-- Stage 3: Target Host PC (Terminal) -->
+              <!-- Stage 3: Host PC (Terminal) -->
               <div class="stage-device monitor-frame" id="targetMonitor">
                 <!-- USB-A Port Socket on Monitor left edge -->
                 <div class="monitor-usba-socket" aria-hidden="true"></div>
@@ -615,7 +615,7 @@
                   </div>
                   <div class="mini-terminal-body" id="termBody">
                     <div class="term-line prompt-line">
-                      <span class="term-prompt">target:~$</span>
+                      <span class="term-prompt">host:~$</span>
                       <span class="term-text" id="termLiveText"></span><span class="term-cursor" id="termCursor">_</span>
                     </div>
                     <div class="term-line response-line" id="termLiveLog">
@@ -691,11 +691,9 @@
             <article class="mission">
               <div class="m-num">01</div>
               <div class="m-copy">
-                <h3 class="m-title">The locked-down PC.</h3>
-                <p class="m-scenario">USB drives banned. Clipboard dead. Webmail blocked. IT thought of everything...
-                  except the keyboard.</p>
-                <p class="m-solve"><b>How Emittr gets in</b>Paste on your phone. It arrives as real keystrokes. Nothing
-                  installed, nothing to block.</p>
+                <h3 class="m-title">The restricted workstation.</h3>
+                <p class="m-scenario">USB mass storage blocked. Clipboard sync restricted. Webmail unavailable. Standard USB keyboards remain universally supported.</p>
+                <p class="m-solve"><b>How Emittr helps</b>Type from your phone. It arrives as genuine keystrokes: nothing installed, zero host footprint.</p>
               </div>
               <div class="m-art">
                 <svg viewBox="0 0 240 220" aria-hidden="true">
@@ -712,10 +710,8 @@
               <div class="m-num">02</div>
               <div class="m-copy">
                 <h3 class="m-title">The daily-driver relay.</h3>
-                <p class="m-scenario">Your passwords live on your everyday phone, not the rooted one you plugged into
-                  the PC.</p>
-                <p class="m-solve"><b>How Emittr gets in</b>Leave the rooted phone plugged in as a bridge. Open the deck
-                  from your own phone over Wi-Fi. Copy there, paste into the wire.</p>
+                <p class="m-scenario">Your credentials live on your everyday phone, not the rooted one you connected to the PC.</p>
+                <p class="m-solve"><b>How Emittr helps</b>Leave the rooted phone plugged in as a bridge. Open the deck from your own phone over Wi-Fi. Copy there, stream into the wire.</p>
               </div>
               <div class="m-art">
                 <svg viewBox="0 0 360 220" aria-hidden="true">
@@ -735,11 +731,9 @@
             <article class="mission">
               <div class="m-num">03</div>
               <div class="m-copy">
-                <h3 class="m-title">Clean-room triage.</h3>
-                <p class="m-scenario">Quarantined. Offline. Possibly infected. Nothing gets plugged in and nothing gets
-                  installed.</p>
-                <p class="m-solve"><b>How Emittr gets in</b>Triage commands travel as keystrokes. No storage mounted, no
-                  agent dropped, no footprint left.</p>
+                <h3 class="m-title">Clean-room diagnostics.</h3>
+                <p class="m-scenario">Isolated. Air-gapped. Strict audit requirements. Zero storage media permitted and nothing installed.</p>
+                <p class="m-solve"><b>How Emittr helps</b>Diagnostic commands travel as keystrokes. No storage mounted, no software agent, zero footprint left.</p>
               </div>
               <div class="m-art">
                 <svg viewBox="0 0 200 220" aria-hidden="true">
@@ -753,11 +747,9 @@
             <article class="mission">
               <div class="m-num">04</div>
               <div class="m-copy">
-                <h3 class="m-title">Zero-trace secrets.</h3>
-                <p class="m-scenario">A 64-character master password on a machine you don't trust, with a clipboard
-                  that might be watching.</p>
-                <p class="m-solve"><b>How Emittr gets in</b>The secret never touches the host clipboard. Sniffers,
-                  extensions and DLP agents see nothing to grab.</p>
+                <h3 class="m-title">Zero-trace credentials.</h3>
+                <p class="m-scenario">A 64-character master password on a shared workstation with an untrusted or monitored clipboard.</p>
+                <p class="m-solve"><b>How Emittr helps</b>The secret never touches the host clipboard. Extensions and clipboard scrapers see nothing to capture.</p>
               </div>
               <div class="m-art">
                 <svg viewBox="0 0 260 200" aria-hidden="true">
@@ -772,10 +764,9 @@
             <article class="mission">
               <div class="m-num">05</div>
               <div class="m-copy">
-                <h3 class="m-title">The BIOS whisperer.</h3>
-                <p class="m-scenario">No operating system yet. No network. Maybe no working keyboard either.</p>
-                <p class="m-solve"><b>How Emittr gets in</b>It speaks the standard USB boot protocol: firmware already
-                  knows how to listen. GRUB, BIOS, installers: all reachable.</p>
+                <h3 class="m-title">The BIOS navigator.</h3>
+                <p class="m-scenario">No operating system yet. No network. Maybe no working keyboard attached.</p>
+                <p class="m-solve"><b>How Emittr helps</b>It speaks the standard USB boot protocol: firmware already knows how to listen. GRUB, BIOS, recovery: all accessible.</p>
               </div>
               <div class="m-art">
                 <svg viewBox="0 0 240 220" aria-hidden="true">
@@ -791,10 +782,9 @@
             <article class="mission">
               <div class="m-num">06</div>
               <div class="m-copy">
-                <h3 class="m-title">The field tech's skeleton key.</h3>
-                <p class="m-scenario">A kiosk behind glass. A sign twelve feet up. One USB cable hanging out of it.</p>
-                <p class="m-solve"><b>How Emittr gets in</b>Plug in the phone you're already holding. Keyboard, trackpad
-                  and scroll sticks, in the palm of one hand.</p>
+                <h3 class="m-title">The field tech's pocket console.</h3>
+                <p class="m-scenario">A kiosk behind glass. A digital sign twelve feet up. One USB maintenance cable hanging down.</p>
+                <p class="m-solve"><b>How Emittr helps</b>Plug in the phone you're already holding. Keyboard, trackpad, and scroll sticks, in the palm of one hand.</p>
               </div>
               <div class="m-art">
                 <svg viewBox="0 0 240 240" aria-hidden="true">
@@ -822,7 +812,7 @@
         <p class="eyebrow">Touch</p>
         <h2 class="h2">Two sticks.<br /><em>Infinite</em> scroll.</h2>
         <p class="lede">Push harder, scroll faster. Horizontal scrolling is real too, sent as a genuine USB wheel
-          event, not a Shift-key hack.</p>
+          event, not a Shift-key workaround.</p>
       </div>
 
       <div class="dock rv" style="--d:.2s">
@@ -847,7 +837,7 @@
       <div class="bytes-top">
         <div class="rv">
           <p class="eyebrow">Under the glass</p>
-          <h2 class="h2">Nine bytes.<br /><em>That's</em> the whole trick.</h2>
+          <h2 class="h2">Nine bytes.<br /><em>That's</em> the whole secret.</h2>
           <p class="lede">A keyboard report is nine bytes long. Your phone writes them to <span
               style="color:var(--gold)">/dev/hidg0</span>: and any computer, at any stage of boot, already knows
             exactly what to do with them.</p>
@@ -881,7 +871,7 @@
         <div class="byte star"><span class="v">00</span><span class="l">AC Pan</span></div>
       </div>
       <p class="bytes-note rv">Six more for the mouse, and the last one is why horizontal scrolling <b>just works</b>.
-        Real USB Consumer usage <b>0x0238</b>, no modifier-key tricks.</p>
+        Real USB Consumer usage <b>0x0238</b>, no modifier-key workarounds.</p>
     </section>
 
     <!-- ═════════════════════════════ 08 · INSTALL -->
@@ -897,7 +887,7 @@
       </div>
 
       <div class="term rv" id="term" style="--d:.15s">
-        <div class="term-bar"><i></i><i></i><i></i><span>root@nethunter</span><button class="copy" id="copyCmd"
+        <div class="term-bar"><i></i><i></i><i></i><span>root@android</span><button class="copy" id="copyCmd"
             type="button">Copy</button></div>
         <pre>
 <span class="ln c" style="--i:0"># 1 · install</span>

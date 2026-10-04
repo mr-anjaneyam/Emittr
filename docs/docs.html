@@ -58,10 +58,10 @@
           installed on the host side.
         </p>
         <p>
-          It's not remote-desktop software, and it isn't a clipboard-sync trick. The host computer's operating system genuinely
-          believes it has a keyboard and mouse attached, because at the USB protocol level, it does. That distinction is what
-          makes Emittr work in situations where every software-based alternative fails: locked-down corporate machines, air-gapped
-          systems, and even the BIOS screen before an operating system has loaded at all.
+          It's not remote-desktop software, and it isn't a clipboard-sync workaround. The host computer's operating system natively
+          recognizes a standard keyboard and mouse, because at the USB protocol level, it is genuine HID hardware. That distinction is what
+          makes Emittr work in situations where software-based alternatives cannot run: restricted corporate machines, air-gapped
+          systems, and even the BIOS setup before an operating system has loaded at all.
         </p>
 
         <h3>The Two Modes of Operation</h3>
@@ -70,7 +70,7 @@
         </p>
         <ul style="margin-top:10px;line-height:1.7;color:var(--text-secondary);padding-left:20px;">
           <li><strong style="color:var(--text-primary);">1. Direct On-Device Mode:</strong> Hold the rooted phone in your hand and type or scroll directly on its touch display using the PWA deck.</li>
-          <li><strong style="color:var(--text-primary);">2. Local Network Relay (Bridge Mode):</strong> Leave the rooted phone plugged in behind the target machine as a dedicated hardware dongle. Connect your everyday laptop, tablet, or unrooted phone to the same local Wi-Fi, open the web deck in your browser (<code style="color:var(--gold);font-family:var(--font-mono);">http://&lt;phone-ip&gt;:5000</code>), and type directly from your daily driver's password manager or clipboard. Keystrokes stream over the local LAN and inject into the USB cable.</li>
+          <li><strong style="color:var(--text-primary);">2. Local Network Relay (Bridge Mode):</strong> Leave the rooted phone plugged in behind the host machine as a dedicated hardware dongle. Connect your everyday laptop, tablet, or unrooted phone to the same local Wi-Fi, open the web deck in your browser (<code style="color:var(--gold);font-family:var(--font-mono);">http://&lt;phone-ip&gt;:5000</code>), and type directly from your daily driver's password manager or clipboard. Keystrokes stream over the local LAN and transmit directly through the physical USB cable.</li>
         </ul>
       </section>
 
@@ -244,29 +244,29 @@
         <div class="use-cases-grid">
           <div class="use-case-card">
             <div class="use-case-icon-box"><span class="material-symbols-outlined">lock</span></div>
-            <h3 class="use-case-title">Bypass enterprise restrictions without breaking rules.</h3>
-            <p class="use-case-text">Corporate laptops disable USB mass storage, block personal webmail, and restrict the clipboard. But no IT policy bans a standard keyboard.</p>
-            <div class="use-case-solution"><strong>How Emittr helps:</strong> paste text or scripts from your phone, and they arrive as genuine hardware keystrokes. No software installed, no network connection needed.</div>
+            <h3 class="use-case-title">Operate smoothly on restricted enterprise systems.</h3>
+            <p class="use-case-text">Corporate laptops often disable USB storage, block webmail, or restrict clipboard access. But standard USB input devices are universally supported.</p>
+            <div class="use-case-solution"><strong>How Emittr helps:</strong> type credentials, scripts, or text directly from your phone as authentic hardware keystrokes. Zero host software required and zero network exposure.</div>
           </div>
 
           <div class="use-case-card">
             <div class="use-case-icon-box"><span class="material-symbols-outlined">devices</span></div>
             <h3 class="use-case-title">Leave it plugged in, drive from your personal phone.</h3>
-            <p class="use-case-text">Leave your rooted lab phone tethered to the target PC as a hardware bridge. Access the web deck from your everyday personal phone (iPhone or Android) over the secure local network.</p>
-            <div class="use-case-solution"><strong>How Emittr helps:</strong> copy passwords or snippets from your personal vault (Bitwarden, 1Password) and type them straight across the physical USB cable into the target machine.</div>
+            <p class="use-case-text">Leave your rooted lab phone connected to the host PC as a hardware bridge. Access the web deck from your everyday personal phone (iPhone or Android) over the secure local network.</p>
+            <div class="use-case-solution"><strong>How Emittr helps:</strong> copy passwords or snippets from your personal vault (Bitwarden, 1Password) and type them straight across the physical USB cable into the host machine.</div>
           </div>
 
           <div class="use-case-card">
             <div class="use-case-icon-box"><span class="material-symbols-outlined">shield</span></div>
-            <h3 class="use-case-title">Diagnose quarantined, air-gapped systems safely.</h3>
-            <p class="use-case-text">Incident responders and forensics analysts working on offline or infected machines cannot risk plugging in USB storage drives or installing inspection software.</p>
-            <div class="use-case-solution"><strong>How Emittr helps:</strong> feeds triage scripts, memory collection commands, and system queries strictly through keystrokes, leaving a clean audit trail and zero software footprint on offline devices.</div>
+            <h3 class="use-case-title">Safely diagnose air-gapped and offline systems.</h3>
+            <p class="use-case-text">Systems administrators and engineers working on isolated or air-gapped equipment cannot risk connecting external storage drives or installing unverified software.</p>
+            <div class="use-case-solution"><strong>How Emittr helps:</strong> feeds diagnostic commands and system queries strictly through keystrokes, leaving a clean audit trail and zero software footprint on offline equipment.</div>
           </div>
 
           <div class="use-case-card">
             <div class="use-case-icon-box"><span class="material-symbols-outlined">key</span></div>
-            <h3 class="use-case-title">Keep master passwords off untrusted clipboards.</h3>
-            <p class="use-case-text">Entering 64-character master credentials, PGP keys, or recovery secrets on a client machine risks exposing them to browser extensions, clipboard monitors, or keyloggers.</p>
+            <h3 class="use-case-title">Keep master credentials off untrusted clipboards.</h3>
+            <p class="use-case-text">Entering 64-character master credentials, PGP keys, or recovery secrets on a shared workstation risks exposing them to clipboard monitors or browser extensions.</p>
             <div class="use-case-solution"><strong>How Emittr helps:</strong> your secret stays in your mobile vault and streams straight into the password field as scancodes. The host clipboard is never touched.</div>
           </div>
 
@@ -279,9 +279,9 @@
 
           <div class="use-case-card">
             <div class="use-case-icon-box"><span class="material-symbols-outlined">construction</span></div>
-            <h3 class="use-case-title">Maintain sealed kiosks, ATMs, and digital signage.</h3>
-            <p class="use-case-text">Digital billboards mounted 10 feet up or interactive kiosks sealed behind tamper-proof glass often expose only an external USB extension cable.</p>
-            <div class="use-case-solution"><strong>How Emittr helps:</strong> plug your phone in and use the virtual trackpad, keyboard, and joysticks on the spot, leaving heavy peripheral gear behind.</div>
+            <h3 class="use-case-title">Maintain sealed kiosks, terminals, and digital signage.</h3>
+            <p class="use-case-text">Digital displays mounted high up or interactive kiosks sealed in protective casings often expose only a USB maintenance cable.</p>
+            <div class="use-case-solution"><strong>How Emittr helps:</strong> plug your phone in and use the virtual trackpad, keyboard, and joysticks on the spot, leaving bulky physical peripherals behind.</div>
           </div>
         </div>
       </section>
@@ -293,7 +293,7 @@
         <div class="faq-accordion">
           <div class="faq-item">
             <button class="faq-question">
-              <span>Do I need to install anything on the target computer?</span>
+              <span>Do I need to install anything on the host computer?</span>
               <span class="material-symbols-outlined faq-chevron">expand_more</span>
             </button>
             <div class="faq-answer"><p>No. The computer sees a standard USB keyboard and mouse: nothing to install, nothing to trust, and it works on air-gapped machines and even at the BIOS.</p></div>
@@ -303,7 +303,7 @@
               <span>Does horizontal scrolling work in normal apps?</span>
               <span class="material-symbols-outlined faq-chevron">expand_more</span>
             </button>
-            <div class="faq-answer"><p>Yes. Emittr sends the official USB HID horizontal-scroll signal, so Windows, Excel, VS Code, and Chrome all respond to it natively, with no modifier-key tricks required.</p></div>
+            <div class="faq-answer"><p>Yes. Emittr sends the official USB HID horizontal-scroll signal, so Windows, Excel, VS Code, and Chrome all respond to it natively, with no modifier-key workarounds required.</p></div>
           </div>
           <div class="faq-item">
             <button class="faq-question">
@@ -317,7 +317,7 @@
               <span>Which phones are supported?</span>
               <span class="material-symbols-outlined faq-chevron">expand_more</span>
             </button>
-            <div class="faq-answer"><p>Any rooted Android phone with kernel USB Gadget ConfigFS support: the vast majority of modern Android kernels have this built in, including popular NetHunter-compatible devices.</p></div>
+            <div class="faq-answer"><p>Any rooted Android phone with kernel USB Gadget ConfigFS support: the vast majority of modern Android kernels have this built in, including devices running custom or stock kernels.</p></div>
           </div>
         </div>
       </section>

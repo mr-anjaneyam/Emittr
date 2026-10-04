@@ -586,16 +586,16 @@
 
     if (!cards.length || !termLiveText || !termLiveLog) return;
 
-    const payloads = [
+    const snippets = [
       {
-        text: 'vault.get("master_key")',
+        text: 'vault.get("db_credential")',
         tag: '[AUTH OK]',
-        msg: 'Master key injected via USB HID'
+        msg: 'Credentials transmitted via USB HID'
       },
       {
         text: 'totp_token: 849 201',
         tag: '[VERIFIED]',
-        msg: '2FA payload confirmed (0 software on host)'
+        msg: '2FA credential verified (0 software on host)'
       },
       {
         text: 'ssh admin@airgap-node',
@@ -616,8 +616,8 @@
 
       const devIndex = currentIdx;
       const card = cards[devIndex];
-      const payloadObj = payloads[devIndex];
-      if (!card || !payloadObj) return;
+      const snippetObj = snippets[devIndex];
+      if (!card || !snippetObj) return;
 
       // 1. Highlight active device card
       cards.forEach((c, idx) => {
@@ -652,8 +652,8 @@
 
         termLiveLog.innerHTML = '<span class="term-status-tag" style="color:#60a5fa">[STREAMING]</span> <span class="term-status-msg">Transmitting keystrokes...</span>';
 
-        // 4. Type character-by-character into Target PC terminal
-        const str = payloadObj.text;
+        // 4. Type character-by-character into Host PC terminal
+        const str = snippetObj.text;
         let charIdx = 0;
         typingInterval = setInterval(() => {
           if (charIdx < str.length) {
@@ -668,7 +668,7 @@
             if (wirePulse) wirePulse.classList.remove('firing');
 
             if (targetMonitor) targetMonitor.classList.add('received');
-            termLiveLog.innerHTML = `<span class="term-status-tag" style="color:#4ade80">${payloadObj.tag}</span> <span class="term-status-msg">${payloadObj.msg}</span>`;
+            termLiveLog.innerHTML = `<span class="term-status-tag" style="color:#4ade80">${snippetObj.tag}</span> <span class="term-status-msg">${snippetObj.msg}</span>`;
 
             // 6. Hold for 1.6s, then advance to next device in loop
             loopTimeout = setTimeout(() => {

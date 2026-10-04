@@ -582,7 +582,7 @@ function sendSingleKey(keyName) { triggerHaptic(12); sendLiveChar(keyName); }
 
 async function sendCombo(combo) {
   triggerHaptic(15);
-  showToast(`Injected ${combo}`);
+  showToast(`Sent ${combo}`);
   try {
     await fetch('/api/key', {
       method: 'POST',
