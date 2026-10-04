@@ -786,7 +786,7 @@ html.theme-transitioning .docs-topbar {
 .docs-toc a.active { color: var(--text-primary); background: var(--surface); font-weight: 600; }
 .docs-toc a:hover { color: var(--text-primary); }
 
-.docs-content { flex: 1; min-width: 0; max-width: 760px; }
+.docs-content { flex: 1; min-width: 0; max-width: 860px; }
 .docs-section { padding-bottom: 64px; margin-bottom: 64px; border-bottom: 1px solid var(--border); scroll-margin-top: 100px; }
 .docs-section:last-child { border-bottom: none; margin-bottom: 0; }
 .docs-section h2 { font-size: clamp(24px, 3vw, 32px); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 18px; }
@@ -847,36 +847,204 @@ html.theme-transitioning .docs-topbar {
 }
 
 /* -------------------------------------------------------------------------
-   Quickstart (docs page)
+   Installation (docs page)
+   Clean horizontal 3-step flow (not cards, neatly formatted terminals)
    ------------------------------------------------------------------------- */
-.quickstart-steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 8px; }
-.step-card { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 26px; }
-.step-indicator { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: 0.04em; margin-bottom: 12px; }
-.step-card-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
-.step-card-desc { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.55; }
+.install-steps-flow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 24px;
+}
 
-.code-terminal-box {
-  background: var(--bg-subtle);
+.install-step-item {
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  border: none;
+  padding: 0;
+  min-width: 0;
+}
+
+.install-step-head {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.install-step-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.install-step-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 2px 6px;
+  border-radius: 5px;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.install-step-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin: 0 !important;
+}
+
+.install-step-desc {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+  margin: 0 !important;
+}
+
+.install-terminal {
+  background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 14px 16px;
-  position: relative;
+  overflow: hidden;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  flex: 1;
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
-.code-terminal-box code { font-family: var(--font-mono); font-size: 12.5px; line-height: 1.7; color: var(--text-primary); white-space: pre-wrap; word-break: break-word; }
-.copy-btn { flex-shrink: 0; width: 28px; height: 28px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); transition: all 0.2s var(--ease); }
-.copy-btn:hover { background: var(--surface-hover); color: var(--text-primary); }
-.copy-btn .material-symbols-outlined { font-size: 16px; }
 
-.url-card-box { display: flex; flex-direction: column; gap: 4px; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; }
-.url-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; }
-.url-link { font-family: var(--font-mono); font-size: 14px; color: var(--accent); font-weight: 600; }
-.url-hint { font-size: 12px; color: var(--text-tertiary); }
+.install-terminal:hover {
+  border-color: var(--border-strong);
+}
 
-@media (max-width: 860px) { .quickstart-steps-grid { grid-template-columns: 1fr; } }
+.install-term-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.install-term-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.install-term-dots i {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  opacity: 0.55;
+}
+
+.install-term-dots i:nth-child(1) { background: #ff5f56; opacity: 0.85; }
+.install-term-dots i:nth-child(2) { background: #ffbd2e; opacity: 0.85; }
+.install-term-dots i:nth-child(3) { background: #27c93f; opacity: 0.85; }
+
+.install-term-tag {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+}
+
+.install-terminal .copy-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  padding: 0;
+  transition: all 0.15s var(--ease);
+}
+
+.install-terminal .copy-btn:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover);
+}
+
+.install-terminal .copy-btn .material-symbols-outlined {
+  font-size: 13px;
+}
+
+.install-term-code {
+  margin: 0;
+  padding: 10px 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: -0.015em;
+  line-height: 1.6;
+  color: var(--text-primary);
+  overflow-x: auto;
+  white-space: pre;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.install-term-code::-webkit-scrollbar {
+  height: 3px;
+}
+
+.install-term-code::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.install-term-code::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+
+.install-term-code code {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: inherit;
+}
+
+.cmd-prompt {
+  color: var(--accent);
+  font-weight: 700;
+  user-select: none;
+  margin-right: 4px;
+}
+
+.cmd-sub {
+  color: var(--text-tertiary);
+  font-size: 10.5px;
+}
+
+.term-url {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s var(--ease);
+}
+
+.term-url:hover {
+  text-decoration: underline;
+  color: var(--accent-hover);
+}
+
+@media (max-width: 760px) {
+  .install-steps-flow {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+}
 
 /* -------------------------------------------------------------------------
    FAQ (docs page)

@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-  <link rel="stylesheet" href="style.css?v=4.0.0" />
+  <link rel="stylesheet" href="style.css?v=4.1.2" />
 </head>
 <body>
 
@@ -164,42 +164,73 @@
         <h2>Installation</h2>
         <p>Up and running in three steps, on a rooted Android phone, in under two minutes.</p>
 
-        <div class="quickstart-steps-grid">
-          <div class="step-card">
-            <div class="step-indicator">STEP 1</div>
-            <h3 class="step-card-title">Clone &amp; install</h3>
-            <p class="step-card-desc">Run the installer from your phone's terminal, as root:</p>
-            <div class="code-terminal-box">
-              <code>git clone https://github.com/mr-anjaneyam/Emittr.git
-cd Emittr
-bash install.sh</code>
-              <button class="copy-btn" data-copy="git clone https://github.com/mr-anjaneyam/Emittr.git && cd Emittr && bash install.sh" title="Copy command">
-                <span class="material-symbols-outlined">content_copy</span>
-              </button>
+        <div class="install-steps-flow">
+          <!-- Step 1 -->
+          <div class="install-step-item">
+            <div class="install-step-head">
+              <div class="install-step-top">
+                <span class="install-step-badge">01</span>
+                <h3 class="install-step-title">Clone &amp; install</h3>
+              </div>
+              <p class="install-step-desc">Run in phone terminal as root:</p>
+            </div>
+            <div class="install-terminal">
+              <div class="install-term-header">
+                <div class="install-term-dots"><i></i><i></i><i></i></div>
+                <span class="install-term-tag">phone root</span>
+                <button class="copy-btn" data-copy="git clone https://github.com/mr-anjaneyam/Emittr.git &amp;&amp; cd Emittr &amp;&amp; bash install.sh" title="Copy command">
+                  <span class="material-symbols-outlined">content_copy</span>
+                </button>
+              </div>
+              <pre class="install-term-code"><code><span class="cmd-prompt">$</span> git clone \
+  https://github.com/mr-anjaneyam/Emittr.git
+<span class="cmd-prompt">$</span> cd Emittr &amp;&amp; bash install.sh</code></pre>
             </div>
           </div>
 
-          <div class="step-card">
-            <div class="step-indicator">STEP 2</div>
-            <h3 class="step-card-title">Make it stick</h3>
-            <p class="step-card-desc">Keep it active across phone reboots with Magisk:</p>
-            <div class="code-terminal-box">
-              <code>cp /opt/usb_hid_deck/02-usb-deck.sh /data/adb/service.d/
-chmod +x /data/adb/service.d/02-usb-deck.sh</code>
-              <button class="copy-btn" data-copy="cp /opt/usb_hid_deck/02-usb-deck.sh /data/adb/service.d/ && chmod +x /data/adb/service.d/02-usb-deck.sh" title="Copy command">
-                <span class="material-symbols-outlined">content_copy</span>
-              </button>
+          <!-- Step 2 -->
+          <div class="install-step-item">
+            <div class="install-step-head">
+              <div class="install-step-top">
+                <span class="install-step-badge">02</span>
+                <h3 class="install-step-title">Make it stick</h3>
+              </div>
+              <p class="install-step-desc">Persist across reboots with Magisk:</p>
+            </div>
+            <div class="install-terminal">
+              <div class="install-term-header">
+                <div class="install-term-dots"><i></i><i></i><i></i></div>
+                <span class="install-term-tag">service.d</span>
+                <button class="copy-btn" data-copy="cp /opt/usb_hid_deck/02-usb-deck.sh /data/adb/service.d/ &amp;&amp; chmod +x /data/adb/service.d/02-usb-deck.sh" title="Copy command">
+                  <span class="material-symbols-outlined">content_copy</span>
+                </button>
+              </div>
+              <pre class="install-term-code"><code><span class="cmd-prompt">$</span> cp /opt/usb_hid_deck/02-usb-deck.sh \
+  /data/adb/service.d/
+<span class="cmd-prompt">$</span> chmod +x \
+  /data/adb/service.d/02-usb-deck.sh</code></pre>
             </div>
           </div>
 
-          <div class="step-card">
-            <div class="step-indicator">STEP 3</div>
-            <h3 class="step-card-title">Plug in &amp; open the deck</h3>
-            <p class="step-card-desc">Connect with an OTG cable, then open in the browser:</p>
-            <div class="url-card-box">
-              <span class="url-label">Direct URL</span>
-              <a href="http://localhost:8088" target="_blank" class="url-link">http://localhost:8088</a>
-              <span class="url-hint">or http://hid.keyboard</span>
+          <!-- Step 3 -->
+          <div class="install-step-item">
+            <div class="install-step-head">
+              <div class="install-step-top">
+                <span class="install-step-badge">03</span>
+                <h3 class="install-step-title">Plug in &amp; open</h3>
+              </div>
+              <p class="install-step-desc">Connect OTG cable, open in browser:</p>
+            </div>
+            <div class="install-terminal">
+              <div class="install-term-header">
+                <div class="install-term-dots"><i></i><i></i><i></i></div>
+                <span class="install-term-tag">web deck</span>
+                <button class="copy-btn" data-copy="http://localhost:8088" title="Copy URL">
+                  <span class="material-symbols-outlined">content_copy</span>
+                </button>
+              </div>
+              <pre class="install-term-code"><code><span class="cmd-prompt">→</span> <a href="http://localhost:8088" target="_blank" class="term-url">http://localhost:8088</a>
+<span class="cmd-sub"># or http://hid.keyboard</span></code></pre>
             </div>
           </div>
         </div>
