@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-usbtype — Standalone CLI USB Keystroke Injector
+usbtype - Standalone CLI USB Keystroke Injector
 ==============================================
 Usage:
   usbtype "Text to type directly into PC"

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   EMITTR — Launch Experience
+   EMITTR: Launch Experience
    Concept: "The Cable". The logo is one continuous gold line; the page is
    that line threading through a sequence of scroll-driven scenes.
    Pure black, warm gold, oversized type, one serif accent.
@@ -37,7 +37,7 @@ html {
   -ms-overflow-style: none;
 }
 
-/* The page has its own wavy "thread" scrollbar — never show the native one. */
+/* The page has its own wavy "thread" scrollbar: never show the native one. */
 *,
 html,
 body {
@@ -765,7 +765,7 @@ body.ready .scroll-cue {
   filter: brightness(1.15);
 }
 
-/* ── Hero Phone Screen — Styled to blend with the Emittr theme ─────────── */
+/* ── Hero Phone Screen: Styled to blend with the Emittr theme ─────────── */
 .hero-device .phone-screen {
   background: #040406;
   padding: calc(var(--u) * 4.4) calc(var(--u) * 2) 0;

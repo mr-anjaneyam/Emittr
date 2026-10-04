@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Emittr — Tactical USB HID Controller Deployment Script  v1.3.0
+# Emittr - Tactical USB HID Controller Deployment Script  v1.3.0
 # ==============================================================================
 
 INSTALL_DIR="/opt/usb_hid_deck"

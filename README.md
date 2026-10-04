@@ -59,7 +59,7 @@ Paste long shell scripts, base64 blobs, license keys, or multi-paragraph texts f
 * **Progress Bar & Abort Button**: Visual progress with an instant kill switch.
 
 ### 2. 📱 Live Keyboard Mirror (Brain-to-Wire)
-Type using whatever virtual keyboard you love on your phone — **SwiftKey, Gboard, Samsung Keyboard, or Voice-to-Text**.
+Type using whatever virtual keyboard you love on your phone: **SwiftKey, Gboard, Samsung Keyboard, or Voice-to-Text**.
 * Keystrokes are diffed and streamed over a sub-5ms WebSocket connection straight into the USB HID pipe.
 * Dedicated **Hardware Helper Buttons** for keys mobile keyboards never give you: <kbd>Tab ⇥</kbd>, <kbd>Esc</kbd>, <kbd>Backspace ⌫</kbd>, and a 4-way physical arrow pad (<kbd>▲</kbd> <kbd>◀</kbd> <kbd>▼</kbd> <kbd>▶</kbd>) to navigate BIOS menus, grub bootloaders, and terminal CLI menus.
 * **Collapsible Strokes Feed**: A sleek telemetry feed showing keystroke history that tucks neatly out of sight when you want zero distractions.

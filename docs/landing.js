@@ -1,5 +1,5 @@
 /**
- * EMITTR — Launch Experience engine
+ * EMITTR: Launch Experience engine
  * No dependencies. Native scroll + damped progress values per pinned scene.
  *
  *  hero      parallax phone, headline exit
@@ -225,7 +225,7 @@
           typeEl.send.classList.add('done');
           typeEl.send.textContent = 'Sent ✓';
         }
-        if (typeEl.status) typeEl.status.textContent = 'Access granted — vault-01 unlocked';
+        if (typeEl.status) typeEl.status.textContent = 'Access granted: vault-01 unlocked';
       }
     }, interval);
   }
@@ -254,7 +254,7 @@
         typeEl.send.classList.add('done');
         typeEl.send.textContent = 'Sent ✓';
       }
-      if (typeEl.status) typeEl.status.textContent = 'Access granted — vault-01 unlocked';
+      if (typeEl.status) typeEl.status.textContent = 'Access granted: vault-01 unlocked';
       return;
     }
 

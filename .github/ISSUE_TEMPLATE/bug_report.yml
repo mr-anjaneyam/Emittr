@@ -62,7 +62,7 @@ body:
     attributes:
       label: Phone Model & Android ROM
       description: Phone hardware and OS distribution.
-      placeholder: "e.g., OnePlus 7 Pro — OxygenOS 11 / NetHunter 2024.3 (Kernel 4.14.180)"
+      placeholder: "e.g., OnePlus 7 Pro - OxygenOS 11 / NetHunter 2024.3 (Kernel 4.14.180)"
     validations:
       required: true
 

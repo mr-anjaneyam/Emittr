@@ -32,9 +32,9 @@ body:
       label: Overall Compatibility
       description: How well does Emittr work on this setup?
       options:
-        - "🟢 Flawless — Everything works out of the box"
-        - "🟡 Partial — Works with specific tweaks or workarounds"
-        - "🔴 Incompatible — Kernel missing ConfigFS HID or UDC unsupported"
+        - "🟢 Flawless - Everything works out of the box"
+        - "🟡 Partial - Works with specific tweaks or workarounds"
+        - "🔴 Incompatible - Kernel missing ConfigFS HID or UDC unsupported"
     validations:
       required: true
 

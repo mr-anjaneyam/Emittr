@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-server.py  —  Emittr Backend & HID Controller  v1.3.0
+server.py  -  Emittr Backend & HID Controller  v1.3.0
 =====================================================
 FastAPI server running on Android NetHunter (port 8088).
 Provides:
@@ -215,7 +215,7 @@ class HIDDevice:
                 pass
 
     def release_keys(self):
-        """Send keyboard null report (all keys released) — Report ID 1."""
+        """Send keyboard null report (all keys released): Report ID 1."""
         fd = self._open_nonblock(self.hid_path)
         if fd is None:
             return
@@ -232,7 +232,7 @@ class HIDDevice:
                 pass
 
     def release_mouse(self):
-        """Send mouse null report (all buttons & deltas zeroed) — Report ID 2 (6 bytes)."""
+        """Send mouse null report (all buttons & deltas zeroed): Report ID 2 (6 bytes)."""
         fd = self._open_nonblock(self.hid_path)
         if fd is None:
             return

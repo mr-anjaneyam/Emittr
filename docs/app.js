@@ -1,5 +1,5 @@
 /**
- * Emittr — Product Page Interactions
+ * Emittr: Product Page Interactions
  * Zero external framework dependencies. Shared by index.html and docs.html;
  * every init function no-ops if its target elements aren't on the page.
  */
@@ -25,7 +25,7 @@
   }
 
   // ==========================================================================
-  // 3. Theme Controller — dark by default, remembered per visitor,
+  // 3. Theme Controller: dark by default, remembered per visitor,
   //    with a circular ripple sweep transition on toggle (faded edge).
   // ==========================================================================
   function initTheme() {
@@ -212,7 +212,7 @@
   }
 
   // ==========================================================================
-  // 7. Hero Section — pins in place and slowly fades out on scroll,
+  // 7. Hero Section: pins in place and slowly fades out on scroll,
   //    handing off to the story section's first line
   // ==========================================================================
   function initHeroFade() {
@@ -241,7 +241,7 @@
   }
 
   // ==========================================================================
-  // 8. Story Section — pinned scroll reveal, one line at a time
+  // 8. Story Section: pinned scroll reveal, one line at a time
   // ==========================================================================
   function initStoryReveal() {
     const track = document.querySelector('.story-track');
@@ -300,7 +300,7 @@
   }
 
   // ==========================================================================
-  // 11. Docs Page — Table of Contents scroll-spy
+  // 11. Docs Page: Table of Contents scroll-spy
   // ==========================================================================
   function initDocsToc() {
     const toc = document.querySelector('.docs-toc');
@@ -335,7 +335,7 @@
 
 This is where the distinction between software and hardware becomes meaningful. Software asks for permission; hardware simply exists. When a computer starts up, long before any network stack or security agent initializes, it looks for a keyboard and a mouse.
 
-By using the phone you already carry as a genuine physical input device, typing stops depending on the network entirely. A five-hundred-word document doesn't arrive as a pasted block that might be filtered — it arrives as the steady, natural rhythm of real keystrokes.`;
+By using the phone you already carry as a genuine physical input device, typing stops depending on the network entirely. A five-hundred-word document doesn't arrive as a pasted block that might be filtered - it arrives as the steady, natural rhythm of real keystrokes.`;
 
   const passwordPreset = `Th1s-Is-An-Ex4mple-Of-A-Very-L0ng-Complex-Passphrase-2026!Emittr#Secure*9247`;
   const notePreset = `Reminder: the quarterly review moves to Thursday at 2pm. Please bring the updated forecast and the two open action items from last week.`;

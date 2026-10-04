@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#06070B" />
-  <meta name="description" content="Full documentation for Emittr — architecture, tech stack, installation, use cases, and FAQ." />
-  <title>Documentation — Emittr</title>
+  <meta name="description" content="Full documentation for Emittr: architecture, tech stack, installation, use cases, and FAQ." />
+  <title>Documentation - Emittr</title>
   <link rel="icon" type="image/svg+xml" href="emittr-logo.svg" />
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
   <link rel="apple-touch-icon" href="icon-192.png" />
@@ -53,8 +53,8 @@
       <section class="docs-section" id="overview">
         <h2>Overview</h2>
         <p class="docs-lead">
-          Emittr turns a rooted Android phone into a real, physical USB Human Interface Device — a keyboard, a five-button mouse,
-          and a two-axis scroll wheel — recognized natively by any computer it's plugged into, with no drivers and no software
+          Emittr turns a rooted Android phone into a real, physical USB Human Interface Device: a keyboard, a five-button mouse,
+          and a two-axis scroll wheel, recognized natively by any computer it's plugged into, with no drivers and no software
           installed on the host side.
         </p>
         <p>
@@ -110,7 +110,7 @@
           <div class="spec-card">
             <span class="spec-badge">REPORT 1 · 9 BYTES</span>
             <h4 class="spec-title">Standard 104-key boot keyboard</h4>
-            <p class="spec-desc">Full 6-key rollover with a modifier byte for Ctrl, Shift, Alt, and Win — compatible with BIOS, bootloaders, and every OS.</p>
+            <p class="spec-desc">Full 6-key rollover with a modifier byte for Ctrl, Shift, Alt, and Win, compatible with BIOS, bootloaders, and every OS.</p>
           </div>
           <div class="spec-card">
             <span class="spec-badge">REPORT 2 · 6 BYTES</span>
@@ -122,7 +122,7 @@
         <h3>Reliability</h3>
         <p>
           Emittr watches the USB connection continuously. The moment a cable is unplugged or replugged, every held key and mouse
-          button is force-released — so a dropped connection mid-keystroke never leaves a phantom Ctrl or Shift stuck on the host.
+          button is force-released, so a dropped connection mid-keystroke never leaves a phantom Ctrl or Shift stuck on the host.
           A manual "unstick" control is also always one tap away.
         </p>
       </section>
@@ -134,7 +134,7 @@
         <div class="tech-stack-grid">
           <div class="tech-stack-item">
             <span class="material-symbols-outlined">memory</span>
-            <span><span class="tsi-name">Linux USB Gadget ConfigFS</span><span class="tsi-desc">Composite HID gadget — keyboard + mouse descriptors</span></span>
+            <span><span class="tsi-name">Linux USB Gadget ConfigFS</span><span class="tsi-desc">Composite HID gadget: keyboard + mouse descriptors</span></span>
           </div>
           <div class="tech-stack-item">
             <span class="material-symbols-outlined">dns</span>
@@ -208,7 +208,7 @@ chmod +x /data/adb/service.d/02-usb-deck.sh</code>
       <!-- ============================================================ USE CASES -->
       <section class="docs-section" id="use-cases">
         <h2>Use Cases</h2>
-        <p>When a network is locked down, a driver is missing, or a keyboard has simply failed — real hardware still works.</p>
+        <p>When a network is locked down, a driver is missing, or a keyboard has simply failed, real hardware still works.</p>
 
         <div class="use-cases-grid">
           <div class="use-case-card">
@@ -250,7 +250,7 @@ chmod +x /data/adb/service.d/02-usb-deck.sh</code>
             <div class="use-case-icon-box"><span class="material-symbols-outlined">construction</span></div>
             <h3 class="use-case-title">Maintain sealed kiosks, ATMs, and digital signage.</h3>
             <p class="use-case-text">Digital billboards mounted 10 feet up or interactive kiosks sealed behind tamper-proof glass often expose only an external USB extension cable.</p>
-            <div class="use-case-solution"><strong>How Emittr helps:</strong> plug your phone in and use the virtual trackpad, keyboard, and joysticks on the spot — leaving heavy peripheral gear behind.</div>
+            <div class="use-case-solution"><strong>How Emittr helps:</strong> plug your phone in and use the virtual trackpad, keyboard, and joysticks on the spot, leaving heavy peripheral gear behind.</div>
           </div>
         </div>
       </section>
@@ -265,14 +265,14 @@ chmod +x /data/adb/service.d/02-usb-deck.sh</code>
               <span>Do I need to install anything on the target computer?</span>
               <span class="material-symbols-outlined faq-chevron">expand_more</span>
             </button>
-            <div class="faq-answer"><p>No. The computer sees a standard USB keyboard and mouse — nothing to install, nothing to trust, and it works on air-gapped machines and even at the BIOS.</p></div>
+            <div class="faq-answer"><p>No. The computer sees a standard USB keyboard and mouse: nothing to install, nothing to trust, and it works on air-gapped machines and even at the BIOS.</p></div>
           </div>
           <div class="faq-item">
             <button class="faq-question">
               <span>Does horizontal scrolling work in normal apps?</span>
               <span class="material-symbols-outlined faq-chevron">expand_more</span>
             </button>
-            <div class="faq-answer"><p>Yes. Emittr sends the official USB HID horizontal-scroll signal, so Windows, Excel, VS Code, and Chrome all respond to it natively — no modifier-key tricks required.</p></div>
+            <div class="faq-answer"><p>Yes. Emittr sends the official USB HID horizontal-scroll signal, so Windows, Excel, VS Code, and Chrome all respond to it natively, with no modifier-key tricks required.</p></div>
           </div>
           <div class="faq-item">
             <button class="faq-question">
@@ -286,7 +286,7 @@ chmod +x /data/adb/service.d/02-usb-deck.sh</code>
               <span>Which phones are supported?</span>
               <span class="material-symbols-outlined faq-chevron">expand_more</span>
             </button>
-            <div class="faq-answer"><p>Any rooted Android phone with kernel USB Gadget ConfigFS support — the vast majority of modern Android kernels have this built in, including popular NetHunter-compatible devices.</p></div>
+            <div class="faq-answer"><p>Any rooted Android phone with kernel USB Gadget ConfigFS support: the vast majority of modern Android kernels have this built in, including popular NetHunter-compatible devices.</p></div>
           </div>
         </div>
       </section>

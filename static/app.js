@@ -271,7 +271,7 @@ function updateConnectionUI(data) {
   if (data.attached) {
     if (btnStatus) {
       btnStatus.className = 'status-btn connected';
-      btnStatus.title = `Connected (${data.speed || 'HS'})${rttText} — Click for diagnostics`;
+      btnStatus.title = `Connected (${data.speed || 'HS'})${rttText} - Click for diagnostics`;
     }
     if (statusText) statusText.innerText = 'Connected';
     if (modalHeroTitle) modalHeroTitle.innerText = `Connected (${data.speed || 'High-Speed'})`;
@@ -281,7 +281,7 @@ function updateConnectionUI(data) {
   } else {
     if (btnStatus) {
       btnStatus.className = 'status-btn waiting';
-      btnStatus.title = `Waiting for USB Host${rttText} — Click for diagnostics`;
+      btnStatus.title = `Waiting for USB Host${rttText} - Click for diagnostics`;
     }
     if (statusText) statusText.innerText = 'Waiting...';
     if (modalHeroTitle) modalHeroTitle.innerText = 'Waiting for Connection';
@@ -477,7 +477,7 @@ function initLiveKeyboard() {
 
   input.addEventListener('focus', () => {
     zone.classList.add('focused');
-    hint.innerText = '🟢 Keyboard active — type now';
+    hint.innerText = '🟢 Keyboard active: type now';
     input.value = ''; lastValue = '';
   });
 
@@ -1075,7 +1075,7 @@ function applyLatency(rtt) {
       else metricHint.innerText = '⚠ Elevated Link · 10s auto-refresh';
     }
     if (btnStatus && State.connected) {
-      btnStatus.title = `Connected (${State.usbData?.speed || 'HS'}) · ${text} RTT — Click for diagnostics`;
+      btnStatus.title = `Connected (${State.usbData?.speed || 'HS'}) · ${text} RTT - Click for diagnostics`;
     }
   }
 }
