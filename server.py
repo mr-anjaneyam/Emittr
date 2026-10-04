@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import Body, FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 logging.basicConfig(
@@ -431,6 +431,21 @@ async def get_index():
     return HTMLResponse("<h1>Emittr static assets missing</h1>", status_code=404)
 
 
+@app.get("/sw.js")
+async def get_service_worker():
+    sw_file = STATIC_DIR / "sw.js"
+    if sw_file.exists():
+        return Response(
+            content=sw_file.read_text(encoding="utf-8"),
+            media_type="application/javascript",
+            headers={
+                "Service-Worker-Allowed": "/",
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
+        )
+    return Response("Not found", status_code=404)
+
+
 @app.get("/api/status")
 async def get_status():
     return hid.get_usb_status()
@@ -558,7 +573,10 @@ async def websocket_endpoint(ws: WebSocket):
             data   = json.loads(raw)
             action = data.get("action")
 
-            if action == "release_all":
+            if action == "ping":
+                await ws.send_text(json.dumps({"type": "pong", "t": data.get("t")}))
+
+            elif action == "release_all":
                 hid.release_all()
                 await ws.send_text(json.dumps({"type": "released", "ok": True}))
 
