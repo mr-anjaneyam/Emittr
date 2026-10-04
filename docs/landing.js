@@ -280,28 +280,80 @@
   // 05 · missions
   const mTrack = $('#missionsTrack'), mRail = $('#missionsRail');
   const panels = $$('.mission').map(el => ({
-    el, num: $('.m-num', el), paths: $$('.d', el), copy: $('.m-copy', el),
+    el,
+    num: $('.m-num', el),
+    paths: $$('.d', el),
+    copy: $('.m-copy', el),
+    lastOff: -1,
+    lastOp: -1,
   }));
   const mCount = $('#mCount'), mProg = $('#mProg');
   let mMax = 0;
+  let lastMCount = -1;
+  let lastRailX = '';
+  let lastMProg = -1;
+
   function sizeMissions() {
     mMax = Math.max(0, mRail.scrollWidth - innerWidth);
-    mTrack.style.height = (mMax * 1.15 + innerHeight) + 'px';
+    mTrack.style.height = (Math.round(mMax * 0.65) + innerHeight) + 'px';
   }
+
   function missions(p) {
-    mRail.style.transform = `translate3d(${-p * mMax}px,0,0)`;
+    const rx = (-p * mMax).toFixed(2);
+    if (rx !== lastRailX) {
+      lastRailX = rx;
+      mRail.style.transform = `translate3d(${rx}px,0,0)`;
+    }
+
     const idx = p * (panels.length - 1);
-    panels.forEach((pn, i) => {
+
+    for (let i = 0; i < panels.length; i++) {
+      const pn = panels[i];
       const d = idx - i;
-      const t = 1 - clamp(Math.abs(d) / 0.8);
-      const off = 1 - easeOut(t);
-      pn.paths.forEach(path => { path.style.strokeDashoffset = off; });
-      pn.num.style.transform = `translate3d(${d * 90}px,0,0)`;
-      pn.copy.style.opacity = lerp(0.18, 1, clamp(t * 1.4));
-    });
-    const cur = Math.round(idx) + 1;
-    mCount.textContent = String(cur).padStart(2, '0');
-    mProg.style.transform = `scaleX(${p})`;
+      const absD = Math.abs(d);
+
+      // Skip offscreen panels and clamp them once
+      if (absD > 1.25) {
+        if (pn.lastOff !== 1) {
+          pn.lastOff = 1;
+          for (let j = 0; j < pn.paths.length; j++) {
+            pn.paths[j].style.strokeDashoffset = 1;
+          }
+        }
+        if (pn.lastOp !== 0.18) {
+          pn.lastOp = 0.18;
+          pn.copy.style.opacity = 0.18;
+        }
+        continue;
+      }
+
+      const t = 1 - clamp(absD / 0.85);
+      const off = +(1 - easeOut(t)).toFixed(3);
+      if (off !== pn.lastOff) {
+        pn.lastOff = off;
+        for (let j = 0; j < pn.paths.length; j++) {
+          pn.paths[j].style.strokeDashoffset = off;
+        }
+      }
+
+      const op = +lerp(0.18, 1, clamp(t * 1.4)).toFixed(3);
+      if (op !== pn.lastOp) {
+        pn.lastOp = op;
+        pn.copy.style.opacity = op;
+      }
+    }
+
+    const cur = Math.min(panels.length, Math.max(1, Math.round(idx) + 1));
+    if (cur !== lastMCount) {
+      lastMCount = cur;
+      mCount.textContent = String(cur).padStart(2, '0');
+    }
+
+    const pFixed = +p.toFixed(4);
+    if (pFixed !== lastMProg) {
+      lastMProg = pFixed;
+      mProg.style.transform = `scaleX(${pFixed})`;
+    }
   }
 
   // 09 · finale
@@ -341,8 +393,9 @@
       const total = r.height - vh;
       s.p = total > 0 ? clamp(-r.top / total) : 0;
       if (!s.init) { s.sp = s.p; s.init = true; }
-      s.sp += (s.p - s.sp) * (reduced ? 1 : 0.13);
-      if (Math.abs(s.p - s.sp) < 0.0004) s.sp = s.p;
+      const factor = reduced ? 1 : (s.name === 'missions' ? 0.22 : 0.15);
+      s.sp += (s.p - s.sp) * factor;
+      if (Math.abs(s.p - s.sp) < 0.0003) s.sp = s.p;
       handlers[s.name](s.sp);
     }
 
