@@ -53,7 +53,7 @@
   // ── reveal on view ───────────────────────────────────────────────────────
   const io = new IntersectionObserver(es => es.forEach(e => {
     if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
-  }), { threshold: 0.18 });
+  }), { threshold: 0.12 });
   $$('.rv, .term').forEach(el => io.observe(el));
 
   // ── HID helpers ──────────────────────────────────────────────────────────
@@ -160,7 +160,7 @@
     becomeSub.style.transform = `translateY(${(1 - s) * 18}px)`;
   }
 
-  // 04 · proof (scroll-scrubbed typing)
+  // 04 · proof (automatic typing upon reaching the page, stays completed)
   const PASS = (() => {
     const set = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789-_';
     let s = 1337, out = '';
@@ -171,30 +171,110 @@
     stick: $('#typeStick'), screen: $('#typeScreen'), pass: $('#typedPass'), status: $('#loginStatus'),
     insp: $('#inspector'), field: $('#phoneField'), send: $('#phoneSend'), stat: $('#statChars'),
   };
-  let lastN = -1;
-  function typeScene(p) {
-    const t = clamp((p - 0.1) / 0.74);
-    const n = Math.round(t * PASS.length);
-    if (n === lastN) return;
-    lastN = n;
-    typeEl.pass.textContent = PASS.slice(0, n);
-    typeEl.field.innerHTML = `<span class="sent">${PASS.slice(0, n)}</span><span class="rest">${PASS.slice(n)}</span>`;
-    typeEl.stat.textContent = n;
-    const live = n > 0 && n < PASS.length;
-    typeEl.stick.classList.toggle('live', live);
-    const done = n === PASS.length;
-    typeEl.screen.classList.toggle('ok', done);
-    typeEl.send.classList.toggle('done', done);
-    typeEl.send.textContent = done ? 'Sent ✓' : live ? 'Typing…' : 'Type it';
-    typeEl.status.textContent = done
-      ? 'Access granted — vault-01 unlocked'
-      : live ? 'Receiving keystrokes from Dell USB Keyboard…' : 'USB storage blocked · Clipboard disabled · No agent installed';
+
+  const typeState = {
+    hasStarted: false,
+    isTyping: false,
+    isDone: false,
+    timer: null,
+  };
+
+  function renderTypingStep(n) {
+    if (typeEl.pass) typeEl.pass.textContent = PASS.slice(0, n);
+    if (typeEl.field) typeEl.field.innerHTML = `<span class="sent">${PASS.slice(0, n)}</span><span class="rest">${PASS.slice(n)}</span>`;
+    if (typeEl.stat) typeEl.stat.textContent = n;
     if (n > 0) {
       const [mod, key] = hidOf(PASS[n - 1]);
-      typeEl.insp.innerHTML = `<b>HID →</b> 01 ${hex(mod)} 00 ${hex(key)} 00 00 00 00 00`;
+      if (typeEl.insp) typeEl.insp.innerHTML = `<b>HID →</b> 01 ${hex(mod)} 00 ${hex(key)} 00 00 00 00 00`;
     } else {
-      typeEl.insp.innerHTML = '<b>HID →</b> 01 00 00 00 00 00 00 00 00';
+      if (typeEl.insp) typeEl.insp.innerHTML = '<b>HID →</b> 01 00 00 00 00 00 00 00 00';
     }
+  }
+
+  function startAutoType() {
+    if (typeof updateTypeCable === 'function') updateTypeCable();
+    if (typeState.timer) clearInterval(typeState.timer);
+    typeState.hasStarted = true;
+    typeState.isTyping = true;
+    typeState.isDone = false;
+
+    let n = 0;
+    renderTypingStep(0);
+    if (typeEl.stick) typeEl.stick.classList.add('live');
+    if (typeEl.screen) typeEl.screen.classList.remove('ok');
+    if (typeEl.send) {
+      typeEl.send.classList.remove('done');
+      typeEl.send.textContent = 'Typing…';
+    }
+    if (typeEl.status) typeEl.status.textContent = 'Receiving keystrokes from Standard USB keyboard…';
+
+    const interval = 28;
+    typeState.timer = setInterval(() => {
+      n++;
+      renderTypingStep(n);
+
+      if (n >= PASS.length) {
+        clearInterval(typeState.timer);
+        typeState.timer = null;
+        typeState.isTyping = false;
+        typeState.isDone = true;
+
+        if (typeEl.stick) typeEl.stick.classList.remove('live');
+        if (typeEl.screen) typeEl.screen.classList.add('ok');
+        if (typeEl.send) {
+          typeEl.send.classList.add('done');
+          typeEl.send.textContent = 'Sent ✓';
+        }
+        if (typeEl.status) typeEl.status.textContent = 'Access granted — vault-01 unlocked';
+      }
+    }, interval);
+  }
+
+  // Allow clicking "Type it" on the phone to replay on demand
+  if (typeEl.send) {
+    typeEl.send.style.cursor = 'pointer';
+    typeEl.send.addEventListener('click', () => {
+      startAutoType();
+    });
+  }
+
+  // Pre-fill phone field initially with the full secret ready to send
+  if (typeEl.field) {
+    typeEl.field.innerHTML = `<span class="rest">${PASS}</span>`;
+  }
+
+  function typeScene(p) {
+    if (reduced) {
+      typeState.hasStarted = true;
+      typeState.isDone = true;
+      renderTypingStep(PASS.length);
+      if (typeEl.stick) typeEl.stick.classList.remove('live');
+      if (typeEl.screen) typeEl.screen.classList.add('ok');
+      if (typeEl.send) {
+        typeEl.send.classList.add('done');
+        typeEl.send.textContent = 'Sent ✓';
+      }
+      if (typeEl.status) typeEl.status.textContent = 'Access granted — vault-01 unlocked';
+      return;
+    }
+
+    if (!typeState.hasStarted) {
+      if (p > 0.02 || (typeEl.stick && typeEl.stick.getBoundingClientRect().top < innerHeight * 0.75)) {
+        startAutoType();
+      }
+    }
+  }
+
+  // Also observe intersection as a rock-solid backup
+  if (typeof IntersectionObserver !== 'undefined' && typeEl.stick) {
+    const typeObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !typeState.hasStarted) {
+          startAutoType();
+        }
+      });
+    }, { threshold: 0.15 });
+    typeObserver.observe(typeEl.stick);
   }
 
   // 05 · missions
@@ -465,11 +545,11 @@
 
     const dx = x2 - x1;
     const floor = sR.height - 18;
-    const sag = Math.min(floor, Math.max(y1, y2) + 65);
+    const sag = Math.min(floor, Math.max(y1, y2) + 55);
     const cp1x = x1 + dx * 0.28;
     const cp1y = sag;
     const cp2x = x1 + dx * 0.72;
-    const cp2y = sag;
+    const cp2y = sag * 0.8 + y2 * 0.2;
     const d = `M ${x1.toFixed(1)} ${y1.toFixed(1)} C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${x2.toFixed(1)} ${y2.toFixed(1)}`;
     typeCableBase.setAttribute('d', d);
     typeCableFlow.setAttribute('d', d);
@@ -490,4 +570,150 @@
   } else {
     requestAnimationFrame(frame);
   }
+
+  // ── 04.5 · Local Network Relay Live Multi-Device Sequencer ──────────────
+  function initRelayDemo() {
+    const relaySection = $('#relay');
+    if (!relaySection) return;
+
+    const cards = [$('#driver0'), $('#driver1'), $('#driver2')].filter(Boolean);
+    const wifiPipe = $('#wifiPipe');
+    const bridgePhone = $('#bridgePhone');
+    const wirePulse = $('#wirePulse');
+    const targetMonitor = $('#targetMonitor');
+    const termLiveText = $('#termLiveText');
+    const termLiveLog = $('#termLiveLog');
+
+    if (!cards.length || !termLiveText || !termLiveLog) return;
+
+    const payloads = [
+      {
+        text: 'vault.get("master_key")',
+        tag: '[AUTH OK]',
+        msg: 'Master key injected via USB HID'
+      },
+      {
+        text: 'totp_token: 849 201',
+        tag: '[VERIFIED]',
+        msg: '2FA payload confirmed (0 software on host)'
+      },
+      {
+        text: 'ssh admin@airgap-node',
+        tag: '[CONNECTED]',
+        msg: 'Hardware console established via /dev/hidg0'
+      }
+    ];
+
+    let currentIdx = 0;
+    let isRunning = false;
+    let loopTimeout = null;
+    let typingInterval = null;
+
+    function step() {
+      isRunning = true;
+      clearTimeout(loopTimeout);
+      clearInterval(typingInterval);
+
+      const devIndex = currentIdx;
+      const card = cards[devIndex];
+      const payloadObj = payloads[devIndex];
+      if (!card || !payloadObj) return;
+
+      // 1. Highlight active device card
+      cards.forEach((c, idx) => {
+        if (idx === devIndex) c.classList.add('active');
+        else {
+          c.classList.remove('active');
+          const f = c.querySelector('.driver-fill');
+          if (f) f.style.width = '0%';
+        }
+      });
+
+      // Reset terminal line
+      termLiveText.textContent = '';
+      termLiveLog.innerHTML = '<span class="term-status-tag" style="color:var(--dim)">[AWAITING]</span> <span class="term-status-msg">Listening on USB port...</span>';
+      if (targetMonitor) targetMonitor.classList.remove('received');
+
+      // 2. Press send button after brief beat
+      loopTimeout = setTimeout(() => {
+        const btn = card.querySelector('.driver-send-btn');
+        if (btn) {
+          btn.classList.add('btn-pressed');
+          setTimeout(() => btn.classList.remove('btn-pressed'), 220);
+        }
+
+        // 3. Fill progress bar & start wireless/wire transmission indicators
+        const fill = card.querySelector('.driver-fill');
+        if (fill) fill.style.width = '100%';
+
+        if (wifiPipe) wifiPipe.classList.add('transmitting');
+        if (bridgePhone) bridgePhone.classList.add('relaying');
+        if (wirePulse) wirePulse.classList.add('firing');
+
+        termLiveLog.innerHTML = '<span class="term-status-tag" style="color:#60a5fa">[STREAMING]</span> <span class="term-status-msg">Transmitting keystrokes...</span>';
+
+        // 4. Type character-by-character into Target PC terminal
+        const str = payloadObj.text;
+        let charIdx = 0;
+        typingInterval = setInterval(() => {
+          if (charIdx < str.length) {
+            termLiveText.textContent += str[charIdx];
+            charIdx++;
+          } else {
+            clearInterval(typingInterval);
+
+            // 5. Finished typing: stop transmission pulses & flash success status
+            if (wifiPipe) wifiPipe.classList.remove('transmitting');
+            if (bridgePhone) bridgePhone.classList.remove('relaying');
+            if (wirePulse) wirePulse.classList.remove('firing');
+
+            if (targetMonitor) targetMonitor.classList.add('received');
+            termLiveLog.innerHTML = `<span class="term-status-tag" style="color:#4ade80">${payloadObj.tag}</span> <span class="term-status-msg">${payloadObj.msg}</span>`;
+
+            // 6. Hold for 1.6s, then advance to next device in loop
+            loopTimeout = setTimeout(() => {
+              currentIdx = (currentIdx + 1) % cards.length;
+              step();
+            }, 1600);
+          }
+        }, 36);
+      }, 350);
+    }
+
+    // Manual click listener on cards / send buttons
+    cards.forEach((card, idx) => {
+      card.addEventListener('click', () => {
+        currentIdx = idx;
+        step();
+      });
+    });
+
+    // Start initial step
+    setTimeout(() => {
+      step();
+    }, 400);
+  }
+
+  // ── Golden Click Ripple (Hardware cursor companion) ─────────────────────
+  function initClickRipple() {
+    window.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'touch') return;
+      const ripple = document.createElement('div');
+      ripple.className = 'emittr-click-ripple';
+      ripple.style.left = `${e.clientX}px`;
+      ripple.style.top = `${e.clientY}px`;
+      document.body.appendChild(ripple);
+
+      requestAnimationFrame(() => {
+        ripple.classList.add('expanding');
+      });
+
+      setTimeout(() => {
+        if (ripple.parentNode) ripple.remove();
+      }, 500);
+    }, { passive: true });
+  }
+
+  initRelayDemo();
+  initClickRipple();
 })();

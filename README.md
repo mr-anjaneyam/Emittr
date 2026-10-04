@@ -24,7 +24,7 @@
 
 <br/>
 
-[🔥 Features](#-why-emittr-the-reality-check) • [🕹️ Xbox Joysticks](#-dual-xbox-thumbsticks--native-ac-pan-scrolling) • [⚡ Quick Start](#-quick-start-zero-to-hero-in-2-minutes) • [🛡️ Hardware Safety](#-failsafe-modifier-guard--instant-unstick) • [🛠️ Architecture](#-the-engine-room-architecture--descriptor-anatomy) • [💻 CLI (`usbtype`)](#-the-cli-arsenal-usbtype)
+[🔥 Features](#-why-emittr-the-reality-check) • [🕹️ Xbox Joysticks](#-dual-xbox-thumbsticks--native-ac-pan-scrolling) • [⚡ Quick Start](#-quick-start-zero-to-hero-in-2-minutes) • [🛡️ Hardware Safety](#-failsafe-modifier-guard--instant-unstick) • [🛠️ Architecture](#-the-engine-room-architecture--descriptor-anatomy) • [💻 CLI (`usbtype`)](#-the-cli-arsenal-usbtype) • [🤝 Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -371,6 +371,19 @@ If a physical cable is disconnected mid-payload, target operating systems can re
 
 **Yes!** Emittr is built as a complete Progressive Web App (PWA). In mobile browsers such as Chrome or Brave on Android, open `http://localhost:8088`, tap the menu (`⋮`), and select **"Add to Home Screen"**. This launches Emittr as an edge-to-edge, standalone hardware control deck with zero browser navigation bars.
 </details>
+
+---
+
+## 🤝 Contributing & Community
+
+Emittr is an open-source project and thrives on community feedback, device testing, and pull requests!
+
+* 🐛 **Found a bug?** File a detailed report using the [Bug Report Form](https://github.com/mr-anjaneyam/Emittr/issues/new?template=bug_report.yml).
+* 💡 **Have a feature idea?** Suggest enhancements using the [Feature Request Form](https://github.com/mr-anjaneyam/Emittr/issues/new?template=feature_request.yml).
+* 📱 **Tested a phone or kernel?** Help build our hardware database via the [Hardware Compatibility Form](https://github.com/mr-anjaneyam/Emittr/issues/new?template=hardware_compatibility.yml).
+* 🛠️ **Want to submit code?** Read our [`CONTRIBUTING.md`](CONTRIBUTING.md) guide and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+* 💬 **Questions & Discussions:** Join fellow builders in [GitHub Discussions](https://github.com/mr-anjaneyam/Emittr/discussions).
+* 🔒 **Security:** Review [`SECURITY.md`](SECURITY.md) for responsible vulnerability disclosure.
 
 ---
 

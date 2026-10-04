@@ -332,7 +332,7 @@
   // ==========================================================================
   // 12. Interactive Simulator Logic (embedded demo)
   // ==========================================================================
-  const essayPreset = `In an era where technology promises frictionless collaboration, the simplest acts often remain the most stubborn. Consider the humble paragraph: five hundred words of structured thought, carefully composed, waiting on one screen to be transferred to another. In theory, modern networks should make this instantaneous. In practice, we encounter locked-down corporate networks, disabled clipboard sharing, guest network barriers, and workstations with USB ports restricted by security policy.
+  const essayPreset = `In an era where technology promises frictionless collaboration, the simplest acts often remain the most stubborn. Consider the humble paragraph: five hundred words of structured thought, carefully composed, waiting on one screen to be transferred to another. In theory, modern networks should make this instantaneous. In practice, you encounter locked-down corporate networks, disabled clipboard sharing, guest network barriers, and workstations with USB ports restricted by security policy.
 
 This is where the distinction between software and hardware becomes meaningful. Software asks for permission; hardware simply exists. When a computer starts up, long before any network stack or security agent initializes, it looks for a keyboard and a mouse.
 

@@ -6,7 +6,9 @@
   <meta name="theme-color" content="#06070B" />
   <meta name="description" content="Full documentation for Emittr — architecture, tech stack, installation, use cases, and FAQ." />
   <title>Documentation — Emittr</title>
-  <link rel="icon" type="image/png" href="icon.png" />
+  <link rel="icon" type="image/svg+xml" href="emittr-logo.svg" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -32,7 +34,7 @@
   </header>
 
   <section class="docs-hero">
-    <h1>Everything we left out of the pretty page.</h1>
+    <h1>Everything I left out of the pretty page.</h1>
     <p>The architecture, the tech stack, the install steps, the real-world stories, and the questions people actually ask. No jokes this time. Mostly.</p>
   </section>
 
@@ -61,6 +63,15 @@
           makes Emittr work in situations where every software-based alternative fails: locked-down corporate machines, air-gapped
           systems, and even the BIOS screen before an operating system has loaded at all.
         </p>
+
+        <h3>The Two Modes of Operation</h3>
+        <p>
+          Emittr is built around two complementary workflows:
+        </p>
+        <ul style="margin-top:10px;line-height:1.7;color:var(--text-secondary);padding-left:20px;">
+          <li><strong style="color:var(--text-primary);">1. Direct On-Device Mode:</strong> Hold the rooted phone in your hand and type or scroll directly on its touch display using the PWA deck.</li>
+          <li><strong style="color:var(--text-primary);">2. Local Network Relay (Bridge Mode):</strong> Leave the rooted phone plugged in behind the target machine as a dedicated hardware dongle. Connect your everyday laptop, tablet, or unrooted phone to the same local Wi-Fi, open the web deck in your browser (<code style="color:var(--gold);font-family:var(--font-mono);">http://&lt;phone-ip&gt;:5000</code>), and type directly from your daily driver's password manager or clipboard. Keystrokes stream over the local LAN and inject into the USB cable.</li>
+        </ul>
       </section>
 
       <!-- ============================================================ HOW IT WORKS -->
@@ -232,7 +243,7 @@ chmod +x /data/adb/service.d/02-usb-deck.sh</code>
             <div class="use-case-icon-box"><span class="material-symbols-outlined">terminal</span></div>
             <h3 class="use-case-title">Control machines before an OS or network boots.</h3>
             <p class="use-case-text">A headless home server, a Raspberry Pi, or a laptop with a dead keyboard stuck in the BIOS setup or GRUB menu.</p>
-            <div class="use-case-solution"><strong>How Emittr helps:</strong> your phone is recognized as a Dell USB keyboard at the BIOS hardware level, allowing full boot menu navigation with zero OS dependencies.</div>
+            <div class="use-case-solution"><strong>How Emittr helps:</strong> your phone is recognized as a Standard USB keyboard at the BIOS hardware level, allowing full boot menu navigation with zero OS dependencies.</div>
           </div>
 
           <div class="use-case-card">
