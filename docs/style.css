@@ -115,15 +115,13 @@ button, [role="button"], input, select, textarea, .copy-btn {
 ul { list-style: none; }
 img { max-width: 100%; display: block; }
 
-::view-transition-old(root),
-::view-transition-new(root) {
+::view-transition-old(root) {
   animation: none;
-  mix-blend-mode: normal;
+  z-index: 1;
 }
-::view-transition-old(root) { z-index: 1; }
 ::view-transition-new(root) {
   z-index: 2;
-  will-change: clip-path;
+  mix-blend-mode: normal;
 }
 
 /* blur/backdrop-filter are expensive to rasterize into the transition's full-page
@@ -755,11 +753,34 @@ html.theme-transitioning .docs-topbar {
 .docs-topbar-title { font-size: 14px; font-weight: 700; color: var(--text-tertiary); }
 .docs-topbar-actions { display: flex; align-items: center; gap: 10px; }
 .docs-icon-btn {
+  position: relative;
   width: 34px; height: 34px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary);
+  transition: transform 0.2s var(--ease), background 0.2s var(--ease), border-color 0.2s var(--ease), color 0.2s var(--ease);
 }
-.docs-icon-btn:hover { color: var(--text-primary); }
+.docs-icon-btn:hover { color: var(--text-primary); background: var(--surface-hover); }
+.docs-icon-btn:active { transform: scale(0.90); }
+.docs-icon-btn#themeToggle.theme-toggle-active::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  pointer-events: none;
+  animation: themePulseRing 0.6s var(--ease) forwards;
+}
+@keyframes themePulseRing {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+#themeIcon {
+  display: inline-block;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.docs-icon-btn#themeToggle.theme-toggle-active #themeIcon {
+  transform: rotate(360deg) scale(1.15);
+}
 
 .docs-hero { padding: 72px 24px 40px 24px; text-align: center; }
 .docs-hero h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 16px; }

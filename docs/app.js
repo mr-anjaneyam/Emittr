@@ -26,115 +26,114 @@
 
   // ==========================================================================
   // 3. Theme Controller — dark by default, remembered per visitor,
-  //    with a circular reveal ("ripple") transition on toggle.
+  //    with a circular ripple sweep transition on toggle (faded edge).
   // ==========================================================================
   function initTheme() {
     const html = document.documentElement;
     const themeToggle = document.getElementById('themeToggle');
     const themeIcon = document.getElementById('themeIcon');
+    let isTransitioning = false;
 
     const savedTheme = localStorage.getItem('emittr_theme') || 'dark';
     html.setAttribute('data-theme', savedTheme);
-    updateThemeIcon(savedTheme);
+    updateThemeUI(savedTheme);
 
     if (themeToggle) {
       themeToggle.addEventListener('click', (e) => applyThemeChange(e.currentTarget));
     }
 
-    // Builds a series of clip-path("path(...)") keyframes: a grid of square
-    // tiles that each grow from a pinpoint to full size, staggered by
-    // distance from the click point. Animated directly via the Web Animations
-    // API (the same mechanism the old circle-ripple used), since neither
-    // mask-image nor SMIL-driven SVG geometry actually render on the
-    // view-transition pseudo-elements in current Chromium — only genuine
-    // WAAPI/CSS-animated clip-path values do.
-    function buildMosaicKeyframes(originX, originY) {
-      const TILE = 90;
-      const HALF = TILE / 2;
-      const DURATION = 620;
-      const STEPS = 18;
-      const RAMP = 0.22; // fraction of total progress a single tile takes to grow in
-      const JITTER = 0.05;
-
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      const cols = Math.ceil(w / TILE);
-      const rows = Math.ceil(h / TILE);
-      const maxDist = Math.hypot(
-        Math.max(originX, w - originX),
-        Math.max(originY, h - originY)
-      ) || 1;
-
-      const tiles = [];
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          const cx = col * TILE + HALF;
-          const cy = row * TILE + HALF;
-          const dist = Math.hypot(cx - originX, cy - originY);
-          const trigger = (dist / maxDist) * (1 - RAMP) + Math.random() * JITTER;
-          tiles.push({ cx, cy, trigger });
-        }
+    function updateThemeUI(theme) {
+      if (themeIcon) {
+        themeIcon.textContent = theme === 'dark' ? 'light_mode' : 'dark_mode';
       }
-
-      const keyframes = [];
-      for (let s = 0; s <= STEPS; s++) {
-        const p = s / STEPS;
-        let d = '';
-        for (const tile of tiles) {
-          const local = Math.max(0, Math.min(1, (p - tile.trigger) / RAMP));
-          const half = Math.max(0.5, HALF * local);
-          const { cx, cy } = tile;
-          d += `M${(cx - half).toFixed(1)} ${(cy - half).toFixed(1)}L${(cx + half).toFixed(1)} ${(cy - half).toFixed(1)}L${(cx + half).toFixed(1)} ${(cy + half).toFixed(1)}L${(cx - half).toFixed(1)} ${(cy + half).toFixed(1)}Z`;
-        }
-        keyframes.push(`path('${d}')`);
+      if (themeToggle) {
+        const title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+        themeToggle.setAttribute('title', title);
+        themeToggle.setAttribute('aria-label', title);
       }
-
-      return { keyframes, duration: DURATION };
     }
 
     function applyThemeChange(originBtn) {
+      if (isTransitioning) return;
+
       const current = html.getAttribute('data-theme') || 'dark';
       const next = current === 'dark' ? 'light' : 'dark';
 
       const commit = () => {
         html.setAttribute('data-theme', next);
         localStorage.setItem('emittr_theme', next);
-        updateThemeIcon(next);
+        updateThemeUI(next);
       };
 
-      if (!document.startViewTransition || !originBtn) {
+      if (originBtn) {
+        originBtn.classList.add('theme-toggle-active');
+        setTimeout(() => originBtn.classList.remove('theme-toggle-active'), 650);
+      }
+
+      if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !originBtn) {
         commit();
         showToast(`Switched to ${next} mode`, next === 'dark' ? 'dark_mode' : 'light_mode');
         return;
       }
 
+      isTransitioning = true;
+
       const rect = originBtn.getBoundingClientRect();
       const x = rect.left + rect.width / 2;
       const y = rect.top + rect.height / 2;
-      const { keyframes, duration } = buildMosaicKeyframes(x, y);
 
-      // drop expensive blur filters for the ripple's duration so the full-page
-      // snapshot capture and mosaic reveal stay smooth
+      const maxDist = Math.hypot(
+        Math.max(x, window.innerWidth - x),
+        Math.max(y, window.innerHeight - y)
+      );
+      // Ensures the solid inner core of the mask reaches the furthest corner,
+      // with a generous 40% soft feathered outer band sweeping smoothly across.
+      const finalMaskSize = Math.ceil(maxDist * 3.4) + 120;
+      const duration = 750;
+
+      const styleId = 'emittr-theme-ripple-keyframes';
+      let styleEl = document.getElementById(styleId);
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = styleId;
+        document.head.appendChild(styleEl);
+      }
+
+      styleEl.textContent = `
+        ::view-transition-new(root) {
+          -webkit-mask-image: radial-gradient(circle closest-side, #000 0%, #000 60%, rgba(0, 0, 0, 0.35) 82%, transparent 100%);
+          mask-image: radial-gradient(circle closest-side, #000 0%, #000 60%, rgba(0, 0, 0, 0.35) 82%, transparent 100%);
+          -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+          animation: emittrMaskSweep ${duration}ms cubic-bezier(0.2, 0, 0, 1) forwards;
+          will-change: -webkit-mask-size, -webkit-mask-position, mask-size, mask-position;
+        }
+        @keyframes emittrMaskSweep {
+          0% {
+            -webkit-mask-size: 0px 0px;
+            mask-size: 0px 0px;
+            -webkit-mask-position: ${x}px ${y}px;
+            mask-position: ${x}px ${y}px;
+          }
+          100% {
+            -webkit-mask-size: ${finalMaskSize}px ${finalMaskSize}px;
+            mask-size: ${finalMaskSize}px ${finalMaskSize}px;
+            -webkit-mask-position: ${x - finalMaskSize / 2}px ${y - finalMaskSize / 2}px;
+            mask-position: ${x - finalMaskSize / 2}px ${y - finalMaskSize / 2}px;
+          }
+        }
+      `;
+
       html.classList.add('theme-transitioning');
 
       const transition = document.startViewTransition(commit);
 
-      transition.ready.then(() => {
-        document.documentElement.animate(
-          { clipPath: keyframes },
-          { duration, easing: 'linear', pseudoElement: '::view-transition-new(root)' }
-        );
-      });
-
-      transition.finished.then(() => {
+      transition.finished.finally(() => {
         html.classList.remove('theme-transitioning');
+        if (styleEl) styleEl.textContent = '';
+        isTransitioning = false;
         showToast(`Switched to ${next} mode`, next === 'dark' ? 'dark_mode' : 'light_mode');
       });
-    }
-
-    function updateThemeIcon(theme) {
-      if (!themeIcon) return;
-      themeIcon.textContent = theme === 'dark' ? 'light_mode' : 'dark_mode';
     }
   }
 
