@@ -1872,7 +1872,38 @@ body.ready .scroll-cue {
   align-items: flex-end;
   width: 100%;
   position: relative;
-  height: 180px;
+  min-height: 180px;
+  margin-bottom: 24px;
+}
+
+/* Hardware Bridge Phone Unit + Side-by Caption */
+.bridge-unit {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  flex-shrink: 0;
+  z-index: 4;
+}
+
+.bridge-side-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  max-width: 135px;
+  pointer-events: none;
+}
+
+.bridge-side-caption b {
+  font: 600 13px/1.25 var(--sans);
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.bridge-side-caption span {
+  font: 400 10px/1.35 var(--mono);
+  color: var(--dim);
 }
 
 /* STAGE 2: HARDWARE BRIDGE PHONE */
@@ -2003,7 +2034,7 @@ body.ready .scroll-cue {
   z-index: 5;
   margin: 0;
   padding: 10px 0 0;
-  height: 180px;
+  min-height: 180px;
 }
 
 .usb-physical-cable .pipe-label {
@@ -2016,42 +2047,45 @@ body.ready .scroll-cue {
   pointer-events: none;
 }
 
+/* Full-Cluster Dynamic Cable Overlay */
 .cable-assembly {
   position: absolute;
-  left: -48px;
-  top: 0px;
-  width: calc(100% + 48px);
-  height: 210px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 6;
+  overflow: visible;
 }
 
 .cable-svg-canvas {
   position: absolute;
-  left: 0;
-  top: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
   overflow: visible;
+  pointer-events: none;
 }
 
 .cable-wire-shadow {
   fill: none;
-  stroke: rgba(0, 0, 0, 0.6);
+  stroke: rgba(0, 0, 0, 0.65);
   stroke-width: 9;
   stroke-linecap: round;
+  filter: blur(2px);
+  transform: translateY(4px);
 }
 
 .cable-wire-jacket {
   fill: none;
-  stroke: #181b26;
+  stroke: #161822;
   stroke-width: 7;
   stroke-linecap: round;
 }
 
 .cable-wire-core {
   fill: none;
-  stroke: #2a3042;
+  stroke: #2e3549;
   stroke-width: 3.5;
   stroke-linecap: round;
 }
@@ -2074,107 +2108,6 @@ body.ready .scroll-cue {
 @keyframes pulse-stream {
   0% { opacity: 0.3; }
   100% { opacity: 1; filter: drop-shadow(0 0 10px var(--gold)); }
-}
-
-/* Plugs: Flush Physical Attachment */
-.usb-plug-housing {
-  position: absolute;
-  z-index: 6;
-}
-
-/* Left Plug: USB-C plugged into Phone Bottom Socket */
-.plug-left {
-  left: 0;
-  top: 172px;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.plug-left .usbc-pin {
-  width: 7px;
-  height: 4px;
-  background: #0c0e14;
-  border: 1px solid #282d3c;
-  border-bottom: none;
-  border-radius: 2px 2px 0 0;
-}
-
-.plug-left .plug-body {
-  width: 17px;
-  height: 18px;
-  background: linear-gradient(180deg, #242938 0%, #12141c 100%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.25);
-}
-
-.plug-left .usbc-boot {
-  width: 7px;
-  height: 5px;
-  background: #0f1118;
-  border-radius: 0 0 2px 2px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Right Plug: USB-A plugged into Monitor Left Socket */
-.plug-right {
-  right: -2px;
-  top: 150px;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-}
-
-.plug-right .usba-boot {
-  width: 5px;
-  height: 9px;
-  background: #0f1118;
-  border-radius: 2px 0 0 2px;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.plug-right .plug-body {
-  width: 20px;
-  height: 16px;
-  background: linear-gradient(135deg, #242938 0%, #12141c 100%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.25);
-}
-
-.plug-right .usba-shroud {
-  width: 6px;
-  height: 12px;
-  background: #0c0e14;
-  border: 1px solid #282d3c;
-  border-left: none;
-  border-radius: 0 2px 2px 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  align-items: center;
-  padding: 1px 0;
-}
-
-.shroud-hole {
-  width: 2.5px;
-  height: 1.5px;
-  background: #000;
-  border-radius: 0.5px;
-}
-
-.usb-trident-emboss {
-  color: var(--gold);
-  opacity: 0.95;
-  filter: drop-shadow(0 0 2px rgba(229, 215, 163, 0.6));
 }
 
 /* STAGE 3: TARGET MACHINE TERMINAL */
@@ -2326,16 +2259,10 @@ body.ready .scroll-cue {
 /* Captions Row */
 .cluster-captions-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: flex-start;
   width: 100%;
-  margin-top: 26px;
-}
-
-.cluster-captions-row .phone-caption {
-  width: 140px;
-  margin-left: -22px;
-  text-align: center;
+  margin-top: 10px;
 }
 
 .cluster-captions-row .monitor-caption {

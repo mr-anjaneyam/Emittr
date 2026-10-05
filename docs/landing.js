@@ -785,6 +785,257 @@
     }, 400);
   }
 
+  // ── 04.5 · Interactive Physics-Based Hanging Cable ────────────────────────
+  function initPhysicalCable() {
+    const clusterRow = document.getElementById('clusterDevicesRow') || document.querySelector('.cluster-devices-row');
+    const phoneSocket = document.getElementById('phoneUsbcSocket') || document.querySelector('.phone-usbc-socket');
+    const monitorSocket = document.getElementById('monitorUsbaSocket') || document.querySelector('.monitor-usba-socket');
+    const svg = document.getElementById('cableSvgCanvas');
+    const shadowPath = document.getElementById('cableWireShadow');
+    const jacketPath = document.getElementById('cableWireJacket');
+    const corePath = document.getElementById('cableWireCore');
+    const pulsePath = document.getElementById('wirePulse');
+
+    if (!clusterRow || !phoneSocket || !monitorSocket || !svg) return;
+
+    let p0 = { x: 48, y: 176 };
+    let p3 = { x: 260, y: 162 };
+    let restBelly = { x: 120, y: 215 };
+
+    let posX = 0, posY = 0;
+    let velX = 0, velY = 0;
+    let isPointerNear = false;
+    let isSleeping = false;
+    let animId = null;
+    let lastScrollY = window.scrollY;
+
+    const mouse = { x: -9999, y: -9999, lastX: -9999, lastY: -9999, vx: 0, vy: 0 };
+
+    function updateAnchors() {
+      const rowRect = clusterRow.getBoundingClientRect();
+      if (rowRect.width === 0 || rowRect.height === 0) return;
+
+      svg.setAttribute('viewBox', `0 0 ${rowRect.width} ${rowRect.height}`);
+
+      const pRect = phoneSocket.getBoundingClientRect();
+      const mRect = monitorSocket.getBoundingClientRect();
+
+      p0.x = (pRect.left + pRect.width / 2) - rowRect.left;
+      p0.y = pRect.bottom - rowRect.top;
+
+      p3.x = mRect.left - rowRect.left;
+      p3.y = (mRect.top + mRect.height / 2) - rowRect.top;
+
+      const dx = p3.x - p0.x;
+      const sag = Math.max(34, Math.min(62, dx * 0.17));
+      restBelly.x = p0.x + dx * 0.36;
+      restBelly.y = Math.max(p0.y, p3.y) + sag;
+
+      render();
+    }
+
+    function computePath(bx, by) {
+      const dy1 = by - p0.y;
+      const dx1 = bx - p0.x;
+      const cp1x = p0.x;
+      const cp1y = p0.y + dy1 * 0.65;
+      const cp2x = bx - dx1 * 0.45;
+      const cp2y = by;
+
+      const dx2 = p3.x - bx;
+      const cp3x = bx + dx2 * 0.42;
+      const cp3y = by;
+      const cp4x = p3.x - Math.max(16, dx2 * 0.32);
+      const cp4y = p3.y;
+
+      return `M ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${bx.toFixed(1)} ${by.toFixed(1)} C ${cp3x.toFixed(1)} ${cp3y.toFixed(1)}, ${cp4x.toFixed(1)} ${cp4y.toFixed(1)}, ${p3.x.toFixed(1)} ${p3.y.toFixed(1)}`;
+    }
+
+    function render() {
+      const curBx = restBelly.x + posX;
+      const curBy = restBelly.y + posY;
+      const d = computePath(curBx, curBy);
+
+      if (shadowPath) shadowPath.setAttribute('d', d);
+      if (jacketPath) jacketPath.setAttribute('d', d);
+      if (corePath) corePath.setAttribute('d', d);
+      if (pulsePath) pulsePath.setAttribute('d', d);
+    }
+
+    const stiffness = 0.048;
+    const damping = 0.88;
+    const touchRadius = 60;
+
+    function wakeUp() {
+      if (isSleeping) {
+        isSleeping = false;
+        animId = requestAnimationFrame(physicsLoop);
+      }
+    }
+
+    function physicsLoop() {
+      const forceX = -stiffness * posX;
+      const forceY = -stiffness * posY;
+
+      velX += forceX;
+      velY += forceY;
+
+      if (isPointerNear) {
+        const curBx = restBelly.x + posX;
+        const curBy = restBelly.y + posY;
+        const distInfo = getMinDistanceToCable(mouse.x, mouse.y, curBx, curBy);
+
+        if (distInfo.dist < touchRadius) {
+          const factor = Math.pow(1 - distInfo.dist / touchRadius, 1.6);
+          const angle = Math.atan2(distInfo.closestY - mouse.y, distInfo.closestX - mouse.x);
+
+          const repelMag = factor * 4.8;
+          velX += Math.cos(angle) * repelMag;
+          velY += Math.sin(angle) * repelMag;
+
+          velX += mouse.vx * 0.14 * factor;
+          velY += mouse.vy * 0.14 * factor;
+        }
+      }
+
+      velX *= damping;
+      velY *= damping;
+
+      velX = Math.max(-26, Math.min(26, velX));
+      velY = Math.max(-26, Math.min(26, velY));
+
+      posX += velX;
+      posY += velY;
+
+      render();
+
+      const energy = Math.abs(posX) + Math.abs(posY) + Math.abs(velX) + Math.abs(velY);
+      if (energy < 0.05 && !isPointerNear) {
+        posX = 0;
+        posY = 0;
+        velX = 0;
+        velY = 0;
+        render();
+        isSleeping = true;
+        return;
+      }
+
+      animId = requestAnimationFrame(physicsLoop);
+    }
+
+    function getMinDistanceToCable(mx, my, curBx, curBy) {
+      let minDist = Infinity;
+      let closestX = curBx;
+      let closestY = curBy;
+
+      const dy1 = curBy - p0.y;
+      const dx1 = curBx - p0.x;
+      const cp1x = p0.x;
+      const cp1y = p0.y + dy1 * 0.65;
+      const cp2x = curBx - dx1 * 0.45;
+      const cp2y = curBy;
+
+      for (let i = 0; i <= 6; i++) {
+        const t = i / 6;
+        const mt = 1 - t;
+        const px = mt * mt * mt * p0.x + 3 * mt * mt * t * cp1x + 3 * mt * t * t * cp2x + t * t * t * curBx;
+        const py = mt * mt * mt * p0.y + 3 * mt * mt * t * cp1y + 3 * mt * t * t * cp2y + t * t * t * curBy;
+        const d = Math.hypot(mx - px, my - py);
+        if (d < minDist) {
+          minDist = d;
+          closestX = px;
+          closestY = py;
+        }
+      }
+
+      const dx2 = p3.x - curBx;
+      const cp3x = curBx + dx2 * 0.42;
+      const cp3y = curBy;
+      const cp4x = p3.x - Math.max(16, dx2 * 0.32);
+      const cp4y = p3.y;
+
+      for (let i = 1; i <= 6; i++) {
+        const t = i / 6;
+        const mt = 1 - t;
+        const px = mt * mt * mt * curBx + 3 * mt * mt * t * cp3x + 3 * mt * t * t * cp4x + t * t * t * p3.x;
+        const py = mt * mt * mt * curBy + 3 * mt * mt * t * cp3y + 3 * mt * t * t * cp4y + t * t * t * p3.y;
+        const d = Math.hypot(mx - px, my - py);
+        if (d < minDist) {
+          minDist = d;
+          closestX = px;
+          closestY = py;
+        }
+      }
+
+      return { dist: minDist, closestX, closestY };
+    }
+
+    function onPointerMove(e) {
+      const rowRect = clusterRow.getBoundingClientRect();
+      const margin = 80;
+      if (
+        e.clientX < rowRect.left - margin ||
+        e.clientX > rowRect.right + margin ||
+        e.clientY < rowRect.top - margin ||
+        e.clientY > rowRect.bottom + margin
+      ) {
+        isPointerNear = false;
+        return;
+      }
+
+      isPointerNear = true;
+      const curX = e.clientX - rowRect.left;
+      const curY = e.clientY - rowRect.top;
+
+      if (mouse.lastX > -1000) {
+        mouse.vx = curX - mouse.lastX;
+        mouse.vy = curY - mouse.lastY;
+      }
+      mouse.lastX = curX;
+      mouse.lastY = curY;
+      mouse.x = curX;
+      mouse.y = curY;
+
+      wakeUp();
+    }
+
+    function onPointerLeave() {
+      isPointerNear = false;
+      mouse.x = -9999;
+      mouse.y = -9999;
+      mouse.lastX = -9999;
+      mouse.lastY = -9999;
+      mouse.vx = 0;
+      mouse.vy = 0;
+    }
+
+    function onScroll() {
+      const curScrollY = window.scrollY;
+      const deltaY = curScrollY - lastScrollY;
+      lastScrollY = curScrollY;
+
+      const rowRect = clusterRow.getBoundingClientRect();
+      if (rowRect.bottom > -100 && rowRect.top < window.innerHeight + 100) {
+        const scrollImpulse = Math.max(-14, Math.min(14, deltaY * 0.18));
+        velY += scrollImpulse;
+        velX += (scrollImpulse * 0.25) * (Math.random() > 0.5 ? 0.6 : -0.6);
+        wakeUp();
+      }
+    }
+
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    document.addEventListener('pointerleave', onPointerLeave, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', updateAnchors, { passive: true });
+
+    updateAnchors();
+    setTimeout(updateAnchors, 250);
+    setTimeout(() => {
+      velY = 4.2;
+      wakeUp();
+    }, 500);
+  }
+
   // ── Golden Click Ripple (Hardware cursor companion) ─────────────────────
   function initClickRipple() {
     window.addEventListener('pointerdown', e => {
@@ -805,6 +1056,7 @@
     }, { passive: true });
   }
 
+  initPhysicalCable();
   initRelayDemo();
   initClickRipple();
 })();
