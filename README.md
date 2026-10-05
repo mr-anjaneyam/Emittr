@@ -9,7 +9,9 @@
 ╚══════╝╚═╝     ╚═╝╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝
 ```
 
-### *Tactical USB HID Deck • Ghost Keyboard • Dual Xbox Joysticks*
+# Your phone just clocked in as a keyboard.
+
+### *Hardware USB HID Deck • Ghost Keystrokes • Local Network Air-Gap Relay*
 **Turn any rooted Android or NetHunter phone into an unapologetic hardware-grade USB keyboard, precision trackpad, and continuous scrolling deck.**
 
 [![Release](https://img.shields.io/badge/Release-v1.3.0-00E5FF.svg?style=for-the-badge&logo=github)](https://github.com/mr-anjaneyam/Emittr/releases)
@@ -20,13 +22,40 @@
 
 <br/>
 
-> *"Because typing a 64-character Wi-Fi password onto a locked-down workstation using your sweaty thumbs in 2026 is an insult to your dignity."*
+> **Plug your rooted phone into anything with a USB port.** Then type directly from its screen, or open Emittr in your browser on any laptop or phone on your local Wi-Fi. Keystrokes stream over the air and strike the host as real hardware signals: **no drivers, no host software, completely air-gap safe.**
 
 <br/>
 
-[🎬 Video Demos](#-field-demos-in-action) • [⚡ Operating Modes](#-two-ways-to-drive-emittr) • [🎯 Missions](#-missions--real-world-use-cases) • [🔥 Features](#-the-feature-arsenal) • [🕹️ Joysticks & AC Pan](#4-🕹️-dual-xbox-thumbsticks--native-ac-pan-scrolling) • [🚀 Quick Start](#-quick-start-zero-to-hero-in-2-minutes) • [📱 Device Compatibility](#-hardware-compatibility-roster) • [🛠️ Architecture](#-the-engine-room-architecture--descriptor-anatomy) • [💻 CLI (`usbtype`)](#-the-cli-arsenal-usbtype) • [🤝 Contributing](CONTRIBUTING.md)
+| ⚡ 0 Host Software / Agents | 🛡️ 0 Host Clipboard Writes | 🚀 Sub-5ms Hardware Delivery | 🖥️ Pre-Boot BIOS & UEFI Ready |
+|:---:|:---:|:---:|:---:|
+
+<br/>
+
+[🎬 Video Demos](#-field-demos-in-action) • [🧱 The Wall (Why Emittr)](#-the-wall-locked-down-means-locked-down) • [⚡ The Two Superpowers](#-the-two-superpowers-how-emittr-operates) • [🎯 Missions](#-missions--real-world-use-cases) • [🔥 Features](#-the-feature-arsenal) • [🕹️ Joysticks & AC Pan](#4-🕹️-dual-xbox-thumbsticks--native-ac-pan-scrolling) • [🚀 Quick Start](#-quick-start-zero-to-hero-in-2-minutes) • [📱 Device Compatibility](#-hardware-compatibility-roster) • [🤝 Contributing](CONTRIBUTING.md)
 
 </div>
+
+---
+
+## 🧱 The Wall: Locked Down Means Locked Down
+
+When you are standing in front of a restricted workstation, a hardened server, or an air-gapped machine, traditional software tools hit a brick wall:
+
+| Access Vector | The Locked-Down Enterprise State | The Emittr Reality |
+|---|---|---|
+| 💾 **USB Storage** | ❌ Blocked by endpoint policy / GPO | **No storage device mounted.** Leaves a spotless forensic audit trail. |
+| 📋 **The Clipboard** | ❌ Disabled, monitored, or scraped by DLP / EDR | **0 clipboard writes.** Secret never touches host clipboard memory. |
+| 🌐 **Remote Software** | ❌ Blocked by firewalls, proxies, or missing OS | **0 host software.** Requires zero background `.exe` or agent on the target. |
+| 🔌 **The Network** | ❌ Air-gapped, isolated, or dead NIC | **Pure physical USB cable.** Completely air-gap compliant. |
+| ⌨️ **A Physical Keyboard** | 🟢 **Allowed. Always. Nobody blocks a keyboard.** | **Speaks standard USB-IF HID scancodes natively.** |
+
+```
+                       "Nobody blocks a keyboard."
+                                    ↓
+                 So we taught a phone to become one:
+         A real USB keyboard • A five-button precision mouse
+      Two Xbox thumbsticks • And a local network air-gap bridge
+```
 
 ---
 
@@ -57,9 +86,9 @@
 
 ---
 
-## ⚡ Two Ways to Drive Emittr
+## ⚡ The Two Superpowers: How Emittr Operates
 
-Emittr adapts to your physical environment with two distinct operating modes:
+Emittr adapts to your physical operating environment with two distinct superpowers:
 
 <p align="center">
   <img src="docs/operating-modes.svg" width="100%" alt="Emittr Operating Modes: Direct Tether vs Local Network Relay" />
@@ -69,8 +98,18 @@ Emittr adapts to your physical environment with two distinct operating modes:
   <sub><a href="docs/operating-modes.svg" target="_blank">🔍 Open standalone high-resolution vector diagram</a></sub>
 </p>
 
-* **Mode 1 (Direct Physical Tether):** Hold your rooted phone in your hand as a dedicated, tactile cyberdeck plugged straight into the target computer. Zero network connectivity involved.
-* **Mode 2 (Local Network Relay):** Leave your rooted phone connected to a server rack, TV box, or target machine via USB. Open `http://<phone-ip>:8088` from your daily iPhone, laptop, or tablet on the local Wi-Fi, and stream credentials straight from your mobile password vault into the physical wire!
+### 🔴 Superpower 01: Hardware USB HID (The Handheld Cyberdeck)
+*Paste ➔ Keystrokes. Master password. Zero clipboard.*
+* **How it works:** Hold your rooted phone in your hand as a standalone, tactile cyberdeck plugged directly into the target machine via a standard USB-OTG cable.
+* **Why it matters:** Zero network connectivity is involved. Because it speaks native USB Boot Protocol scancodes, it works before the operating system even boots - navigate motherboard BIOS/UEFI menus, select GRUB kernels, unlock LUKS disk encryption, or recover headless servers.
+* **The Keystroke Cannon:** Paste a 50-line PowerShell script, base64 payload, or complex credential and fire it into the machine at 1,000 WPM with sub-5ms latency.
+
+### 🔵 Superpower 02: The Local Network Relay (The Air-Gap Bridge)
+*Type from any machine. Anywhere on your Wi-Fi.*
+* **The Missing Link Problem:** Your master credentials, Bitwarden vault, and 2FA authenticator live on your personal daily driver (iPhone, Pixel, Mac) - **not** on the rooted lab phone plugged into the server rack or client workstation.
+* **How it works:** Leave your rooted phone connected to the target machine via USB as a silent hardware bridge. Open `http://<phone-ip>:8088` from your personal phone or laptop browser on the local Wi-Fi.
+* **The Magic:** Copy a password on your personal iPhone, tap **Stream to Wire**, and Emittr bridges the data across the local WebSocket and injects it straight into the target PC as physical electrical keystrokes.
+* **Air-Gap Safe:** The target machine never touches your Wi-Fi, never mounts a network drive, and its clipboard is never modified.
 
 ---
 
