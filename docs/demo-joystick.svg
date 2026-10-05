@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 380" width="100%" height="100%" style="background:#0e111a; border-radius:12px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18231d"/>
+      <stop offset="100%" stop-color="#0c0e17"/>
+    </linearGradient>
+    <radialGradient id="glow3" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(134,239,172,0.15)"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Card Frame -->
+  <rect width="598" height="378" x="1" y="1" rx="12" fill="url(#g3)" stroke="rgba(134,239,172,0.3)" stroke-width="1.5"/>
+  <rect width="598" height="378" x="1" y="1" rx="12" fill="url(#glow3)"/>
+
+  <!-- Top Badge -->
+  <rect x="24" y="24" width="160" height="26" rx="13" fill="#15261d" stroke="rgba(134,239,172,0.4)" stroke-width="1"/>
+  <circle cx="38" cy="37" r="4" fill="#86efac"/>
+  <text x="50" y="41" fill="#86efac" font-size="11" font-weight="700" letter-spacing="0.05em">FIELD DEMO 03</text>
+
+  <!-- Center Graphic: Dual Xbox Thumbsticks with Motion Arcs -->
+  <g transform="translate(140, 75)">
+    <!-- Left Stick: Vertical Scroll -->
+    <rect x="0" y="0" width="140" height="180" rx="14" fill="#0b0e16" stroke="#26342c" stroke-width="1.5"/>
+    <text x="70" y="26" fill="#86efac" font-size="10" font-weight="700" text-anchor="middle">VERTICAL STICK</text>
+    <path d="M 70 42 L 70 54 M 66 46 L 70 42 L 74 46" stroke="#86efac" stroke-width="2" stroke-linecap="round"/>
+    <path d="M 70 148 L 70 160 M 66 156 L 70 160 L 74 156" stroke="#86efac" stroke-width="2" stroke-linecap="round"/>
+    <!-- Outer Base -->
+    <circle cx="70" cy="100" r="38" fill="#131722" stroke="#2c3a32" stroke-width="2"/>
+    <!-- Thumb Cap -->
+    <circle cx="70" cy="94" r="22" fill="#20293a" stroke="#86efac" stroke-width="2.5"/>
+    <circle cx="70" cy="94" r="5" fill="#86efac"/>
+
+    <!-- Right Stick: Horizontal AC Pan -->
+    <rect x="180" y="0" width="140" height="180" rx="14" fill="#0b0e16" stroke="#26342c" stroke-width="1.5"/>
+    <text x="250" y="26" fill="#e5d7a3" font-size="10" font-weight="700" text-anchor="middle">AC PAN STICK</text>
+    <path d="M 194 100 L 206 100 M 198 96 L 194 100 L 198 104" stroke="#e5d7a3" stroke-width="2" stroke-linecap="round"/>
+    <path d="M 294 100 L 306 100 M 302 96 L 306 100 L 302 104" stroke="#e5d7a3" stroke-width="2" stroke-linecap="round"/>
+    <!-- Outer Base -->
+    <circle cx="250" cy="100" r="38" fill="#131722" stroke="#2c3a32" stroke-width="2"/>
+    <!-- Thumb Cap Pushed Right -->
+    <circle cx="266" cy="100" r="22" fill="#20293a" stroke="#e5d7a3" stroke-width="2.5"/>
+    <circle cx="266" cy="100" r="5" fill="#e5d7a3"/>
+    <text x="250" y="162" fill="#e5d7a3" font-size="8" font-family="monospace" text-anchor="middle">Usage 0x0238 (WM_MOUSEHWHEEL)</text>
+  </g>
+
+  <!-- Play Overlay Badge -->
+  <circle cx="300" cy="170" r="32" fill="rgba(134,239,172,0.92)" filter="drop-shadow(0 4px 12px rgba(0,0,0,0.6))"/>
+  <polygon points="292,154 316,170 292,186" fill="#0e111a"/>
+
+  <!-- Title & Subtitle at Bottom -->
+  <text x="300" y="322" fill="#ffffff" font-size="17" font-weight="700" text-anchor="middle">Dual Xbox Joysticks &amp; AC Pan Scroll</text>
+  <text x="300" y="344" fill="#8fa1bd" font-size="12" text-anchor="middle">Hardware continuous horizontal &amp; vertical panning &#8226; Drop demo-joystick.gif here</text>
+</svg>

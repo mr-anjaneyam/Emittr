@@ -161,7 +161,12 @@
   }
 
   // 04 · proof (automatic typing upon reaching the page, stays completed)
-  const PASS = 'WAR MACHINE ROX';
+  const PASS = (() => {
+    const set = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789-_';
+    let s = 1337, out = '';
+    for (let i = 0; i < 64; i++) { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; out += set[(s >>> 8) % set.length]; }
+    return out;
+  })();
   const typeEl = {
     stick: $('#typeStick'), screen: $('#typeScreen'), pass: $('#typedPass'), status: $('#loginStatus'),
     insp: $('#inspector'), field: $('#phoneField'), send: $('#phoneSend'), stat: $('#statChars'),
@@ -203,7 +208,7 @@
     }
     if (typeEl.status) typeEl.status.textContent = 'Receiving keystrokes from Standard USB keyboard…';
 
-    const interval = 48;
+    const interval = 28;
     typeState.timer = setInterval(() => {
       n++;
       renderTypingStep(n);

@@ -38,7 +38,7 @@
 
 | 1️⃣ BIOS & Pre-Boot Control | 2️⃣ 1,000 WPM Keystroke Cannon | 3️⃣ Dual Xbox Joysticks & AC Pan |
 |:---:|:---:|:---:|
-| <img src="docs/demo-bios.gif" width="280" alt="BIOS Navigation Demo" onerror="this.src='https://placehold.co/600x380/12131a/e5d7a3?text=🎬+Demo+1:+BIOS+Navigation+GIF';this.onerror=null;"/><br/><sub>*(Place demo-bios.gif in `docs/`)*</sub> | <img src="docs/demo-typing.gif" width="280" alt="1,000 WPM Typer Demo" onerror="this.src='https://placehold.co/600x380/12131a/e5d7a3?text=🎬+Demo+2:+1000+WPM+Typer+GIF';this.onerror=null;"/><br/><sub>*(Place demo-typing.gif in `docs/`)*</sub> | <img src="docs/demo-joystick.gif" width="280" alt="Xbox Joysticks Demo" onerror="this.src='https://placehold.co/600x380/12131a/e5d7a3?text=🎬+Demo+3:+Xbox+Joysticks+GIF';this.onerror=null;"/><br/><sub>*(Place demo-joystick.gif in `docs/`)*</sub> |
+| <a href="#-field-demos-in-action"><img src="docs/demo-bios.svg" width="280" alt="BIOS Navigation Demo"/></a><br/><sub>*(Drop `demo-bios.gif` into `docs/`)*</sub> | <a href="#-field-demos-in-action"><img src="docs/demo-typing.svg" width="280" alt="1,000 WPM Typer Demo"/></a><br/><sub>*(Drop `demo-typing.gif` into `docs/`)*</sub> | <a href="#-field-demos-in-action"><img src="docs/demo-joystick.svg" width="280" alt="Xbox Joysticks Demo"/></a><br/><sub>*(Drop `demo-joystick.gif` into `docs/`)*</sub> |
 | **Pre-Boot Hardware Proof** | **Lightning Script Injection** | **Hardware Horizontal Pan** |
 | Navigates motherboard BIOS & GRUB setup menus. Proves real physical USB HID before the OS or drivers boot. | Fires long shell commands, passwords, and multi-line scripts at 1,000 WPM with abort safety. | True hardware AC Pan (`Usage 0x0238`) gliding across wide codebases and Excel spreadsheets. |
 
@@ -61,11 +61,13 @@
 
 Emittr adapts to your physical environment with two distinct operating modes:
 
-<div align="center">
+<p align="center">
   <img src="docs/operating-modes.svg" width="100%" alt="Emittr Operating Modes: Direct Tether vs Local Network Relay" />
-</div>
+</p>
 
-<br/>
+<p align="center">
+  <sub><a href="docs/operating-modes.svg" target="_blank">🔍 Open standalone high-resolution vector diagram</a></sub>
+</p>
 
 * **Mode 1 (Direct Physical Tether):** Hold your rooted phone in your hand as a dedicated, tactile cyberdeck plugged straight into the target computer. Zero network connectivity involved.
 * **Mode 2 (Local Network Relay):** Leave your rooted phone connected to a server rack, TV box, or target machine via USB. Open `http://<phone-ip>:8088` from your daily iPhone, laptop, or tablet on the local Wi-Fi, and stream credentials straight from your mobile password vault into the physical wire!
@@ -74,12 +76,12 @@ Emittr adapts to your physical environment with two distinct operating modes:
 
 ## 🎯 Missions & Real-World Use Cases
 
-*When a network is locked down, a driver is missing, or a keyboard has failed — real hardware still works. Here are the six places software gives up:*
+*When a network is locked down, a driver is missing, or a keyboard has failed - real hardware still works. Here are the six places software gives up:*
 
 | Mission / Scenario | The Field Challenge | How Emittr Solves It |
 |---|---|---|
 | 🏢 **1. The Restricted Workstation** | Corporate laptops lock down USB mass storage, restrict clipboard sync, and block personal webmail. | **Bypasses restrictions without violating policy.** Standard USB keyboards are universally allowed. Type scripts or text from your phone as genuine Dell USB keystrokes with zero software footprint. |
-| 📲 **2. The Daily-Driver Relay** | Your master credentials and 2FA tokens live in your personal phone's vault (Bitwarden, 1Password) — not on the rooted lab phone plugged into the PC. | **Hardware bridge over local Wi-Fi.** Leave the rooted phone plugged in as an air-gap bridge. Open Emittr's web deck from your personal phone over Wi-Fi, copy from your mobile vault, and stream it across the physical cable. |
+| 📲 **2. The Daily-Driver Relay** | Your master credentials and 2FA tokens live in your personal phone's vault (Bitwarden, 1Password) - not on the rooted lab phone plugged into the PC. | **Hardware bridge over local Wi-Fi.** Leave the rooted phone plugged in as an air-gap bridge. Open Emittr's web deck from your personal phone over Wi-Fi, copy from your mobile vault, and stream it across the physical cable. |
 | 🔬 **3. Clean-Room Diagnostics** | Working on quarantined, isolated, or air-gapped systems under strict forensic audit rules where mounting USB drives or installing tools is forbidden. | **Zero forensic footprint.** Feeds triage scripts, memory collection commands, and system queries strictly through keystrokes. No storage device is mounted, leaving a spotless audit trail. |
 | 🔑 **4. Zero-Trace Credentials** | Typing a 64-character master password, BitLocker key, or PGP secret on a client workstation risks exposure to clipboard scrapers, EDR monitors, or browser extensions. | **Host clipboard is never touched.** Your secret stays safe inside your mobile device and streams straight into the target password field as raw USB scancodes. Clipboard monitors see nothing. |
 | 🖥️ **5. The BIOS Navigator** | A headless home server, a Raspberry Pi, or a laptop with a dead keyboard stuck in the BIOS setup, UEFI boot menu, or GRUB prompt before the OS or network stack loads. | **Firmware speaks Boot Protocol.** Emittr emulates standard USB Boot Protocol scancodes that motherboard firmware listens to natively. Navigate boot menus and recovery prompts with full arrow-pad controls. |
