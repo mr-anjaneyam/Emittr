@@ -1028,10 +1028,27 @@
       }
     }
 
+    function onPointerDown(e) {
+      const rowRect = clusterRow.getBoundingClientRect();
+      const curX = e.clientX - rowRect.left;
+      const curY = e.clientY - rowRect.top;
+      mouse.lastX = curX;
+      mouse.lastY = curY;
+      mouse.x = curX;
+      mouse.y = curY;
+      isPointerNear = true;
+
+      velY += (curY < restBelly.y ? 6.5 : -6.5);
+      velX += (curX < restBelly.x ? 3.5 : -3.5);
+      wakeUp();
+    }
+
+    clusterRow.addEventListener('pointerdown', onPointerDown, { passive: true });
     window.addEventListener('pointermove', onPointerMove, { passive: true });
     document.addEventListener('pointerleave', onPointerLeave, { passive: true });
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', updateAnchors, { passive: true });
+    window.addEventListener('orientationchange', () => setTimeout(updateAnchors, 200), { passive: true });
 
     updateAnchors();
     setTimeout(updateAnchors, 250);

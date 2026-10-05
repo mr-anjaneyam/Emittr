@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove|deconfigure|upgrade)
+        # Cleanly stop emittr and release any stuck keys
+        if command -v emittr >/dev/null 2>&1; then
+            emittr stop >/dev/null 2>&1 || true
+        elif [ -x "/opt/usb_hid_deck/emittr" ]; then
+            /opt/usb_hid_deck/emittr stop >/dev/null 2>&1 || true
+        else
+            pkill -f "usb_hid_deck/server.py" 2>/dev/null || true
+        fi
+    ;;
+esac
+
+exit 0

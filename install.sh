@@ -19,55 +19,74 @@ chmod +x "${INSTALL_DIR}/server.py"
 chmod +x "${INSTALL_DIR}/setup_gadget.py"
 chmod +x "${INSTALL_DIR}/02-usb-deck.sh"
 chmod +x "${INSTALL_DIR}/usbtype"
+chmod +x "${INSTALL_DIR}/emittr"
 
-# Link CLI tool to PATH
+# Link CLI commands globally to PATH (works from anywhere in the terminal)
+ln -sf "${INSTALL_DIR}/emittr" /usr/local/bin/emittr
+ln -sf "${INSTALL_DIR}/emittr" /usr/bin/emittr
 ln -sf "${INSTALL_DIR}/usbtype" /usr/local/bin/usbtype
+ln -sf "${INSTALL_DIR}/usbtype" /usr/bin/usbtype
+
+# Expose to Termux bin if present
+if [ -d "/data/data/com.termux/files/usr/bin" ]; then
+    ln -sf "${INSTALL_DIR}/emittr" /data/data/com.termux/files/usr/bin/emittr 2>/dev/null || true
+    ln -sf "${INSTALL_DIR}/usbtype" /data/data/com.termux/files/usr/bin/usbtype 2>/dev/null || true
+fi
+
+# Expose wrapper to Android host /system/bin if writable
+if [ -w /proc/1/root/system/bin ]; then
+    cat << 'EOF' > /proc/1/root/system/bin/emittr
+#!/system/bin/sh
+if [ -f /data/local/nhsystem/bin/bootkali ]; then
+    exec /data/local/nhsystem/bin/bootkali /opt/usb_hid_deck/emittr "$@"
+else
+    exec /opt/usb_hid_deck/emittr "$@"
+fi
+EOF
+    chmod +x /proc/1/root/system/bin/emittr 2>/dev/null || true
+fi
 
 # Prevent Android framework from reverting USB to mass_storage
 /system/bin/setprop persist.sys.usb.config none 2>/dev/null || true
 /system/bin/setprop sys.usb.config none 2>/dev/null || true
 
-# Initialize composite HID gadget
-if [ -x "/opt/tactical_venv/bin/python3" ]; then
-    PY_BIN="/opt/tactical_venv/bin/python3"
-elif [ -x "/usr/bin/python3" ]; then
-    PY_BIN="/usr/bin/python3"
-else
-    PY_BIN="python3"
-fi
-
-"${PY_BIN}" "${INSTALL_DIR}/setup_gadget.py" || true
-chmod 666 /dev/hidg* 2>/dev/null || true
-
-# Add hid.keyboard hostname to chroot /etc/hosts
-if ! grep -q "hid.keyboard" /etc/hosts 2>/dev/null; then
-    echo "127.0.0.1 hid.keyboard" >> /etc/hosts
-    echo "[+] Added hid.keyboard to chroot /etc/hosts"
-fi
-
-# Attempt to add to Android system hosts
-if [ -f /proc/1/root/system/etc/hosts ]; then
-    if ! grep -q "hid.keyboard" /proc/1/root/system/etc/hosts 2>/dev/null; then
-        echo "127.0.0.1 hid.keyboard" >> /proc/1/root/system/etc/hosts 2>/dev/null || true
+# Add emittr hostname to chroot /etc/hosts
+for HOST_NAME in "emittr" "emittr.local" "hid.keyboard"; do
+    if ! grep -qw "${HOST_NAME}" /etc/hosts 2>/dev/null; then
+        echo "127.0.0.1 ${HOST_NAME}" >> /etc/hosts
+        echo "[+] Added ${HOST_NAME} to chroot /etc/hosts"
     fi
+done
+
+# Attempt to add emittr to Android system hosts (accessible across all Android browsers/apps)
+if [ -f /proc/1/root/system/etc/hosts ]; then
+    for HOST_NAME in "emittr" "emittr.local" "hid.keyboard"; do
+        if ! grep -qw "${HOST_NAME}" /proc/1/root/system/etc/hosts 2>/dev/null; then
+            echo "127.0.0.1 ${HOST_NAME}" >> /proc/1/root/system/etc/hosts 2>/dev/null || true
+            echo "[+] Added ${HOST_NAME} to Android /system/etc/hosts"
+        fi
+    done
 fi
 
-# Kill any existing instance
+# Setup iptables loopback port 80 -> 8088 redirection (failsafe for instant emittr/ typing)
+iptables -t nat -A PREROUTING -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port ${PORT} 2>/dev/null || true
+iptables -t nat -A OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-port ${PORT} 2>/dev/null || true
+
+# Stop any older manual instances
 pkill -f "usb_hid_deck/server.py" 2>/dev/null || true
 sleep 1
 
-# Launch daemon
-echo "[*] Starting Emittr service on port ${PORT} using ${PY_BIN}..."
-nohup "${PY_BIN}" "${INSTALL_DIR}/server.py" > /var/log/usb_deck.log 2>&1 &
+# Launch daemon using the standard emittr CLI tool
+echo "[*] Launching Emittr service via standard CLI..."
+"${INSTALL_DIR}/emittr" start
 
-sleep 2
-
-# Health check
-if curl -s "http://127.0.0.1:${PORT}/api/status" | grep -qE '"hid_node"|"version"'; then
-    echo "[+] Emittr v1.3.0 is ONLINE and HEALTHY!"
-    echo "    Local URL:   http://localhost:${PORT} or http://hid.keyboard"
-    echo "    Network URL: http://$(hostname -I 2>/dev/null | awk '{print $1}'):${PORT}"
-    echo "    CLI Tool:    usbtype --help"
-else
-    echo "[-] Warning: Server started but health check inconclusive. Check /var/log/usb_deck.log"
-fi
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  [+] Global CLI installed! You can now run from anywhere:"
+echo "      • emittr start     - Start daemon & port 80 redirect"
+echo "      • emittr stop      - Stop daemon & flush keys"
+echo "      • emittr status    - Show service & active IP addresses"
+echo "      • emittr ip        - Print all device IPs & URLs"
+echo "      • emittr logs      - Stream or view logs"
+echo "      • usbtype          - Inject text directly via CLI"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

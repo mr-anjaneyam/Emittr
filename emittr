@@ -1,0 +1,433 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Emittr - Universal CLI Controller  v1.3.0
+# ==============================================================================
+# Usage:
+#   emittr start     - Start the Emittr HID daemon & port 80 redirector
+#   emittr stop      - Stop the service & release any stuck hardware keys
+#   emittr status    - Show service state, USB attachment, and IP addresses
+#   emittr restart   - Restart the Emittr daemon
+#   emittr ip        - Show all active IP addresses and Web Deck URLs
+#   emittr logs [-f] - View server logs (use -f to follow)
+#   emittr unstick   - Send emergency USB key/mouse release report
+# ==============================================================================
+
+set -e
+
+VERSION="1.3.0"
+PORT="8088"
+LOG_FILE="/var/log/usb_deck.log"
+
+# Detect installation directory
+if [ -d "/opt/usb_hid_deck" ]; then
+    INSTALL_DIR="/opt/usb_hid_deck"
+elif [ -f "$(dirname "$0")/server.py" ]; then
+    INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
+else
+    INSTALL_DIR="/opt/usb_hid_deck"
+fi
+
+# Detect Python interpreter
+find_python() {
+    if [ -x "/opt/tactical_venv/bin/python3" ]; then
+        echo "/opt/tactical_venv/bin/python3"
+    elif [ -x "/usr/bin/python3" ]; then
+        echo "/usr/bin/python3"
+    elif command -v python3 >/dev/null 2>&1; then
+        echo "$(command -v python3)"
+    else
+        echo "python3"
+    fi
+}
+PY_BIN="$(find_python)"
+
+# Color formatting (strip if not terminal)
+if [ -t 1 ]; then
+    CLR_GREEN="\033[1;32m"
+    CLR_CYAN="\033[1;36m"
+    CLR_GOLD="\033[38;5;222m"
+    CLR_RED="\033[1;31m"
+    CLR_DIM="\033[0;90m"
+    CLR_BOLD="\033[1m"
+    CLR_RESET="\033[0m"
+else
+    CLR_GREEN=""
+    CLR_CYAN=""
+    CLR_GOLD=""
+    CLR_RED=""
+    CLR_DIM=""
+    CLR_BOLD=""
+    CLR_RESET=""
+fi
+
+# ── Helper: Get Process PID ──────────────────────────────────────────────────
+get_pid() {
+    pgrep -f "server\.py" 2>/dev/null | head -n 1 || true
+}
+
+# ── Helper: Discover Device IP Addresses ─────────────────────────────────────
+get_device_ips() {
+    local found=0
+
+    # 1. Try ip -4 -o addr show
+    if command -v ip >/dev/null 2>&1; then
+        while read -r line; do
+            local iface
+            local ip_cidr
+            local ip
+            iface=$(echo "$line" | awk '{print $2}')
+            ip_cidr=$(echo "$line" | awk '{print $4}')
+            ip="${ip_cidr%%/*}"
+            if [ -n "$ip" ] && [ "$ip" != "127.0.0.1" ] && [ "$iface" != "lo" ]; then
+                echo "${iface}|${ip}"
+                found=1
+            fi
+        done < <(ip -4 -o addr show 2>/dev/null || true)
+    fi
+
+    # 2. Try ifconfig fallback
+    if [ "$found" -eq 0 ] && command -v ifconfig >/dev/null 2>&1; then
+        while read -r iface ip; do
+            if [ -n "$ip" ] && [ "$ip" != "127.0.0.1" ] && [ "$iface" != "lo" ]; then
+                echo "${iface}|${ip}"
+                found=1
+            fi
+        done < <(ifconfig 2>/dev/null | awk '
+            /^[a-zA-Z0-9]/ { iface=$1; sub(/:$/, "", iface) }
+            /inet / {
+                ip=$2; sub(/addr:/, "", ip);
+                if (iface != "lo" && ip != "127.0.0.1" && ip != "") {
+                    print iface " " ip;
+                }
+            }
+        ' || true)
+    fi
+
+    # 3. Try hostname -I fallback
+    if [ "$found" -eq 0 ] && command -v hostname >/dev/null 2>&1; then
+        for ip in $(hostname -I 2>/dev/null || true); do
+            if [ -n "$ip" ] && [ "$ip" != "127.0.0.1" ]; then
+                echo "net|${ip}"
+                found=1
+            fi
+        done
+    fi
+}
+
+# ── Helper: Query Server API ─────────────────────────────────────────────────
+query_api() {
+    local endpoint="$1"
+    if command -v curl >/dev/null 2>&1; then
+        curl -s --connect-timeout 2 "http://127.0.0.1:${PORT}${endpoint}" 2>/dev/null || true
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q -T 2 -O - "http://127.0.0.1:${PORT}${endpoint}" 2>/dev/null || true
+    elif [ -x "$PY_BIN" ]; then
+        "$PY_BIN" -c "import urllib.request, sys; print(urllib.request.urlopen('http://127.0.0.1:${PORT}${endpoint}', timeout=2).read().decode('utf-8', errors='ignore'))" 2>/dev/null || true
+    fi
+}
+
+# ── Command: START ───────────────────────────────────────────────────────────
+cmd_start() {
+    local pid
+    pid=$(get_pid)
+    if [ -n "$pid" ]; then
+        echo -e "${CLR_GOLD}[!] Emittr is already running (PID: ${pid})${CLR_RESET}"
+        cmd_status
+        return 0
+    fi
+
+    echo -e "${CLR_CYAN}[*] Starting Emittr v${VERSION}...${CLR_RESET}"
+
+    # 1. Initialize composite USB gadget
+    if [ -f "${INSTALL_DIR}/setup_gadget.py" ]; then
+        echo -e "${CLR_DIM}[*] Initializing composite USB HID gadget...${CLR_RESET}"
+        "${PY_BIN}" "${INSTALL_DIR}/setup_gadget.py" >/dev/null 2>&1 || true
+        chmod 666 /dev/hidg* 2>/dev/null || true
+    fi
+
+    # 2. Ensure hosts entry
+    for host_name in "emittr" "emittr.local" "hid.keyboard"; do
+        if ! grep -qw "${host_name}" /etc/hosts 2>/dev/null; then
+            echo "127.0.0.1 ${host_name}" >> /etc/hosts 2>/dev/null || true
+        fi
+        if [ -f /proc/1/root/system/etc/hosts ]; then
+            if ! grep -qw "${host_name}" /proc/1/root/system/etc/hosts 2>/dev/null; then
+                echo "127.0.0.1 ${host_name}" >> /proc/1/root/system/etc/hosts 2>/dev/null || true
+            fi
+        fi
+    done
+
+    # 3. Setup iptables loopback port 80 -> 8088 redirect
+    iptables -t nat -A PREROUTING -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port "${PORT}" 2>/dev/null || true
+    iptables -t nat -A OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-port "${PORT}" 2>/dev/null || true
+
+    # 4. Spawn server daemon
+    mkdir -p "$(dirname "${LOG_FILE}")" 2>/dev/null || true
+    nohup "${PY_BIN}" "${INSTALL_DIR}/server.py" > "${LOG_FILE}" 2>&1 &
+    
+    # 5. Wait for online verification
+    local attempts=0
+    local is_up=0
+    while [ $attempts -lt 15 ]; do
+        sleep 0.3
+        attempts=$((attempts + 1))
+        local resp
+        resp=$(query_api "/api/status")
+        if echo "$resp" | grep -qE '"hid_node"|"version"|"attached"'; then
+            is_up=1
+            break
+        fi
+    done
+
+    pid=$(get_pid)
+    if [ "$is_up" -eq 1 ] && [ -n "$pid" ]; then
+        echo -e "${CLR_GREEN}[+] Emittr v${VERSION} is ONLINE and HEALTHY (PID: ${pid})!${CLR_RESET}"
+        echo ""
+        cmd_status
+    else
+        echo -e "${CLR_RED}[-] Warning: Emittr started (PID: ${pid:-unknown}), but health check was inconclusive.${CLR_RESET}"
+        echo -e "    Check logs with: ${CLR_BOLD}emittr logs${CLR_RESET}"
+    fi
+}
+
+# ── Command: STOP ────────────────────────────────────────────────────────────
+cmd_stop() {
+    local pid
+    pid=$(get_pid)
+    if [ -z "$pid" ]; then
+        echo -e "${CLR_DIM}[*] Emittr is not currently running.${CLR_RESET}"
+        return 0
+    fi
+
+    echo -e "${CLR_CYAN}[*] Stopping Emittr (PID: ${pid})...${CLR_RESET}"
+
+    # 1. Send emergency unstick before dying so no modifier keys stay stuck
+    query_api "/api/release" >/dev/null 2>&1 || true
+
+    # 2. Terminate server process
+    kill "$pid" 2>/dev/null || true
+    sleep 0.5
+    pkill -f "usb_hid_deck/server.py" 2>/dev/null || true
+
+    # 3. Confirm stopped
+    local attempts=0
+    while [ -n "$(get_pid)" ] && [ $attempts -lt 10 ]; do
+        sleep 0.2
+        attempts=$((attempts + 1))
+    done
+
+    pid=$(get_pid)
+    if [ -z "$pid" ]; then
+        echo -e "${CLR_GREEN}[+] Emittr service successfully stopped.${CLR_RESET}"
+    else
+        echo -e "${CLR_RED}[!] Force killing stuck process (PID: ${pid})...${CLR_RESET}"
+        kill -9 "$pid" 2>/dev/null || true
+        echo -e "${CLR_GREEN}[+] Process terminated.${CLR_RESET}"
+    fi
+}
+
+# ── Command: UNSTICK ─────────────────────────────────────────────────────────
+cmd_unstick() {
+    echo -e "${CLR_CYAN}[*] Sending hardware zero-report release flush...${CLR_RESET}"
+    local resp
+    resp=$(query_api "/api/release")
+    if echo "$resp" | grep -q '"ok":true'; then
+        echo -e "${CLR_GREEN}[+] All hardware keys and mouse buttons flushed and released!${CLR_RESET}"
+    else
+        # Direct device fallback
+        if [ -w /dev/hidg0 ]; then
+            printf "\x01\x00\x00\x00\x00\x00\x00\x00\x00" > /dev/hidg0 2>/dev/null || true
+            printf "\x02\x00\x00\x00\x00\x00" > /dev/hidg0 2>/dev/null || true
+            echo -e "${CLR_GREEN}[+] Direct hardware flush injected to /dev/hidg0.${CLR_RESET}"
+        else
+            echo -e "${CLR_RED}[-] Failed to reach server API or write to /dev/hidg0.${CLR_RESET}"
+        fi
+    fi
+}
+
+# ── Command: STATUS ──────────────────────────────────────────────────────────
+cmd_status() {
+    local pid
+    pid=$(get_pid)
+
+    echo -e "${CLR_BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${CLR_RESET}"
+    echo -e "  ${CLR_GOLD}${CLR_BOLD}EMITTR TACTICAL USB HID DECK  •  v${VERSION}${CLR_RESET}"
+    echo -e "${CLR_BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${CLR_RESET}"
+
+    if [ -n "$pid" ]; then
+        echo -e "  Status:           ${CLR_GREEN}● ONLINE${CLR_RESET} ${CLR_DIM}(PID: ${pid})${CLR_RESET}"
+
+        # Fetch live telemetry from API
+        local api_status
+        api_status=$(query_api "/api/status")
+
+        local attached="Unknown"
+        local udc_state="Unknown"
+        local kbd_node="/dev/hidg0"
+        local is_typing="Idle"
+
+        if [ -n "$api_status" ]; then
+            if echo "$api_status" | grep -q '"attached":true'; then
+                attached="${CLR_GREEN}Connected to Host PC (Active Wire)${CLR_RESET}"
+            elif echo "$api_status" | grep -q '"attached":false'; then
+                attached="${CLR_GOLD}Waiting for Host USB Cable...${CLR_RESET}"
+            fi
+
+            if echo "$api_status" | grep -q '"is_typing":true'; then
+                is_typing="${CLR_CYAN}Typing job in progress${CLR_RESET}"
+            else
+                is_typing="${CLR_DIM}Idle (Ready for scancodes)${CLR_RESET}"
+            fi
+
+            udc_state=$(echo "$api_status" | grep -o '"udc_state":"[^"]*"' | cut -d':' -f2 | tr -d '"')
+            [ -z "$udc_state" ] && udc_state="configured"
+        fi
+
+        echo -e "  USB Controller:   ${attached}"
+        echo -e "  UDC State:        ${CLR_DIM}${udc_state}${CLR_RESET}"
+        echo -e "  HID Nodes:        ${CLR_DIM}${kbd_node} (Report ID 1: Kbd, ID 2: Mouse)${CLR_RESET}"
+        echo -e "  Typing State:     ${is_typing}"
+    else
+        echo -e "  Status:           ${CLR_RED}○ STOPPED${CLR_RESET}"
+        echo -e "  Service:          ${CLR_DIM}Inactive (Run 'emittr start' to launch)${CLR_RESET}"
+    fi
+
+    echo ""
+    echo -e "  ${CLR_CYAN}${CLR_BOLD}🌐 Web Deck & Network Access:${CLR_RESET}"
+    echo -e "    • ${CLR_BOLD}On this phone:${CLR_RESET}    ${CLR_GREEN}emittr/${CLR_RESET}  ${CLR_DIM}or${CLR_RESET}  http://localhost:${PORT}"
+
+    # Print device IP addresses
+    local ip_count=0
+    while IFS="|" read -r iface ip; do
+        if [ -n "$ip" ]; then
+            ip_count=$((ip_count + 1))
+            local label="$iface"
+            case "$iface" in
+                wlan*|wl*) label="Wi-Fi (${iface})" ;;
+                ap*|softap*) label="Hotspot (${iface})" ;;
+                rndis*|usb*) label="USB Tether (${iface})" ;;
+                eth*) label="Ethernet (${iface})" ;;
+                *) label="Network (${iface})" ;;
+            esac
+            printf "    • %-17s ${CLR_GOLD}http://%s:%s${CLR_RESET}\n" "${label}:" "${ip}" "${PORT}"
+        fi
+    done < <(get_device_ips)
+
+    if [ "$ip_count" -eq 0 ]; then
+        echo -e "    ${CLR_DIM}(No active Wi-Fi / LAN interface detected)${CLR_RESET}"
+    fi
+
+    echo -e "${CLR_BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${CLR_RESET}"
+}
+
+# ── Command: IP ──────────────────────────────────────────────────────────────
+cmd_ip() {
+    echo -e "${CLR_BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${CLR_RESET}"
+    echo -e "  ${CLR_GOLD}${CLR_BOLD}EMITTR NETWORK ADDRESSES & URLS${CLR_RESET}"
+    echo -e "${CLR_BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${CLR_RESET}"
+    echo -e "  Local Phone:      ${CLR_GREEN}http://emittr/${CLR_RESET}  ${CLR_DIM}(type emittr/ in browser)${CLR_RESET}"
+    echo -e "  Loopback:         http://127.0.0.1:${PORT}"
+    echo ""
+    echo -e "  ${CLR_CYAN}Active Network Interfaces:${CLR_RESET}"
+
+    local ip_count=0
+    while IFS="|" read -r iface ip; do
+        if [ -n "$ip" ]; then
+            ip_count=$((ip_count + 1))
+            local label="$iface"
+            case "$iface" in
+                wlan*|wl*) label="Wi-Fi (${iface})" ;;
+                ap*|softap*) label="Hotspot (${iface})" ;;
+                rndis*|usb*) label="USB Tether (${iface})" ;;
+                eth*) label="Ethernet (${iface})" ;;
+                *) label="Network (${iface})" ;;
+            esac
+            printf "    %-18s IP: %-15s →  ${CLR_GOLD}http://%s:%s${CLR_RESET}\n" "${label}" "${ip}" "${ip}" "${PORT}"
+        fi
+    done < <(get_device_ips)
+
+    if [ "$ip_count" -eq 0 ]; then
+        echo -e "    ${CLR_DIM}No active network connection found.${CLR_RESET}"
+    fi
+    echo -e "${CLR_BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${CLR_RESET}"
+}
+
+# ── Command: LOGS ────────────────────────────────────────────────────────────
+cmd_logs() {
+    if [ ! -f "$LOG_FILE" ]; then
+        echo -e "${CLR_DIM}[*] No log file found at ${LOG_FILE}.${CLR_RESET}"
+        return 0
+    fi
+
+    if [ "$1" = "-f" ] || [ "$1" = "--follow" ]; then
+        tail -f "$LOG_FILE"
+    else
+        tail -n 35 "$LOG_FILE"
+        echo ""
+        echo -e "${CLR_DIM}(Use 'emittr logs -f' to stream live logs)${CLR_RESET}"
+    fi
+}
+
+# ── Usage / Help ─────────────────────────────────────────────────────────────
+cmd_help() {
+    echo -e "${CLR_BOLD}Emittr - Tactical USB HID & Air-Gap Relay v${VERSION}${CLR_RESET}"
+    echo ""
+    echo -e "${CLR_BOLD}USAGE:${CLR_RESET}"
+    echo -e "  emittr <command> [options]"
+    echo ""
+    echo -e "${CLR_BOLD}COMMANDS:${CLR_RESET}"
+    echo -e "  ${CLR_GREEN}start${CLR_RESET}       Start Emittr daemon & port 80 redirector"
+    echo -e "  ${CLR_RED}stop${CLR_RESET}        Stop the service & release hardware modifiers"
+    echo -e "  ${CLR_CYAN}restart${CLR_RESET}     Restart the service"
+    echo -e "  ${CLR_GOLD}status${CLR_RESET}      Show runtime status, USB link & active IP URLs"
+    echo -e "  ${CLR_GOLD}ip${CLR_RESET}          Display device IP addresses and browser URLs"
+    echo -e "  ${CLR_DIM}logs [-f]${CLR_RESET}   View server log output (optional -f to follow)"
+    echo -e "  ${CLR_DIM}unstick${CLR_RESET}     Send emergency hardware zero-report release"
+    echo -e "  ${CLR_DIM}help${CLR_RESET}        Show this help screen"
+    echo ""
+    echo -e "${CLR_BOLD}EXAMPLES:${CLR_RESET}"
+    echo -e "  emittr start"
+    echo -e "  emittr status"
+    echo -e "  emittr ip"
+    echo -e "  emittr stop"
+}
+
+# ── Main Dispatcher ──────────────────────────────────────────────────────────
+case "${1:-}" in
+    start)
+        cmd_start
+        ;;
+    stop)
+        cmd_stop
+        ;;
+    restart)
+        cmd_stop
+        sleep 1
+        cmd_start
+        ;;
+    status)
+        cmd_status
+        ;;
+    ip|ips|url|urls)
+        cmd_ip
+        ;;
+    log|logs)
+        shift
+        cmd_logs "$@"
+        ;;
+    unstick|release|flush)
+        cmd_unstick
+        ;;
+    -v|--version|version)
+        echo "Emittr v${VERSION}"
+        ;;
+    -h|--help|help|"")
+        cmd_help
+        ;;
+    *)
+        echo -e "${CLR_RED}Unknown command: $1${CLR_RESET}"
+        echo ""
+        cmd_help
+        exit 1
+        ;;
+esac

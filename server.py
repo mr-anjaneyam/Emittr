@@ -666,15 +666,24 @@ async def start_http_port80_redirector():
     """Userland HTTP 302 redirect on port 80 -> port 8088."""
     async def handle_port80(reader, writer):
         try:
-            req_data = await asyncio.wait_for(reader.read(1024), timeout=2.0)
-            host_header = "192.168.1.10"
-            for line in req_data.decode("utf-8", errors="ignore").split("\r\n"):
+            req_data = await asyncio.wait_for(reader.read(2048), timeout=2.0)
+            text = req_data.decode("utf-8", errors="ignore")
+            lines = text.split("\r\n")
+            path = "/"
+            if lines and lines[0]:
+                parts = lines[0].split(" ")
+                if len(parts) >= 2 and parts[1].startswith("/"):
+                    path = parts[1]
+            host_header = "emittr"
+            for line in lines:
                 if line.lower().startswith("host:"):
-                    host_header = line.split(":", 1)[1].strip().split(":")[0]
+                    raw_host = line.split(":", 1)[1].strip()
+                    # Strip any port number
+                    host_header = raw_host.split(":")[0] if raw_host else "emittr"
                     break
             redirect_response = (
                 "HTTP/1.1 302 Found\r\n"
-                f"Location: http://{host_header}:8088/\r\n"
+                f"Location: http://{host_header}:8088{path}\r\n"
                 "Connection: close\r\n"
                 "Content-Length: 0\r\n\r\n"
             )

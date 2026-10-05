@@ -1,0 +1,25 @@
+Source: emittr
+Section: utils
+Priority: optional
+Maintainer: Anjaneyam <mr.anjaneyam@gmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Homepage: https://github.com/mr-anjaneyam/Emittr
+Vcs-Git: https://github.com/mr-anjaneyam/Emittr.git
+Vcs-Browser: https://github.com/mr-anjaneyam/Emittr
+
+Package: emittr
+Architecture: all
+Depends: ${misc:Depends}, python3 (>= 3.7), python3-pip, iptables, curl | wget
+Recommends: magisk | kali-nethunter
+Description: Tactical USB HID Deck and Local Network Air-Gap Relay
+ Emittr turns any rooted Android or NetHunter phone into a hardware-grade
+ USB composite keyboard, precision trackpad, and continuous scrolling deck.
+ .
+ Features:
+  - Zero host drivers: speaks native USB Boot Protocol (works in BIOS/UEFI)
+  - 1,000 WPM bulk text and script injection
+  - Dual virtual Xbox thumbsticks with native hardware AC Pan horizontal scroll
+  - Local Network Relay: stream credentials from mobile vaults over local Wi-Fi
+  - Accessible locally at http://emittr/ on port 80
+  - Global CLI management via 'emittr start', 'stop', and 'status'

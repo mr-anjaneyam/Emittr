@@ -1,0 +1,59 @@
+#!/bin/sh
+set -e
+
+INSTALL_DIR="/opt/usb_hid_deck"
+
+case "$1" in
+    configure)
+        # Ensure correct executable permissions
+        chmod +x "${INSTALL_DIR}/server.py" 2>/dev/null || true
+        chmod +x "${INSTALL_DIR}/setup_gadget.py" 2>/dev/null || true
+        chmod +x "${INSTALL_DIR}/emittr" 2>/dev/null || true
+        chmod +x "${INSTALL_DIR}/usbtype" 2>/dev/null || true
+        chmod +x "${INSTALL_DIR}/02-usb-deck.sh" 2>/dev/null || true
+
+        # Link global binaries into /usr/bin
+        ln -sf "${INSTALL_DIR}/emittr" /usr/bin/emittr
+        ln -sf "${INSTALL_DIR}/usbtype" /usr/bin/usbtype
+        ln -sf "${INSTALL_DIR}/emittr" /usr/local/bin/emittr 2>/dev/null || true
+        ln -sf "${INSTALL_DIR}/usbtype" /usr/local/bin/usbtype 2>/dev/null || true
+
+        # Register emittr hostname into /etc/hosts
+        for host in "emittr" "emittr.local" "hid.keyboard"; do
+            if ! grep -qw "$host" /etc/hosts 2>/dev/null; then
+                echo "127.0.0.1 $host" >> /etc/hosts
+            fi
+            if [ -f /proc/1/root/system/etc/hosts ]; then
+                if ! grep -qw "$host" /proc/1/root/system/etc/hosts 2>/dev/null; then
+                    echo "127.0.0.1 $host" >> /proc/1/root/system/etc/hosts 2>/dev/null || true
+                fi
+            fi
+        done
+
+        # Setup port 80 loopback redirection
+        iptables -t nat -A PREROUTING -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port 8088 2>/dev/null || true
+        iptables -t nat -A OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-port 8088 2>/dev/null || true
+
+        # Setup Magisk boot persistence if /data/adb/service.d exists
+        if [ -d "/data/adb/service.d" ]; then
+            cp "${INSTALL_DIR}/02-usb-deck.sh" /data/adb/service.d/02-usb-deck.sh 2>/dev/null || true
+            chmod +x /data/adb/service.d/02-usb-deck.sh 2>/dev/null || true
+        fi
+
+        # If systemd is active on this host, reload daemon
+        if [ -d /run/systemd/system ]; then
+            systemctl daemon-reload 2>/dev/null || true
+        fi
+
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "  [+] Emittr v1.3.0 installed successfully!"
+        echo "      • Run 'emittr start'  to launch the service"
+        echo "      • Run 'emittr status' to check connection & IP address"
+        echo "      • Open http://emittr/ (emittr/) in your mobile browser"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+    ;;
+esac
+
+exit 0

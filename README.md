@@ -31,7 +31,7 @@
 
 <br/>
 
-[🎬 Video Demos](#-field-demos-in-action) • [🧱 The Wall (Why Emittr)](#-the-wall-locked-down-means-locked-down) • [⚡ The Two Superpowers](#-the-two-superpowers-how-emittr-operates) • [🎯 Missions](#-missions--real-world-use-cases) • [🔥 Features](#-the-feature-arsenal) • [🕹️ Joysticks & AC Pan](#4-🕹️-dual-xbox-thumbsticks--native-ac-pan-scrolling) • [🚀 Quick Start](#-quick-start-zero-to-hero-in-2-minutes) • [📱 Device Compatibility](#-hardware-compatibility-roster) • [🤝 Contributing](CONTRIBUTING.md)
+[🎬 Video Demos](#-field-demos-in-action) • [🧱 The Wall (Why Emittr)](#-the-wall-locked-down-means-locked-down) • [⚡ The Two Superpowers](#-the-two-superpowers-how-emittr-operates) • [🎯 Missions](#-missions--real-world-use-cases) • [🔥 Features](#-the-feature-arsenal) • [🕹️ Joysticks & AC Pan](#4-🕹️-dual-xbox-thumbsticks--native-ac-pan-scrolling) • [🚀 Quick Start](#-quick-start-zero-to-hero-in-2-minutes) • [💻 CLI Commands (`emittr`)](#-command-line-control-emittr--usbtype) • [📱 Device Compatibility](#-hardware-compatibility-roster) • [🤝 Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -91,12 +91,9 @@ When you are standing in front of a restricted workstation, a hardened server, o
 Emittr adapts to your physical operating environment with two distinct superpowers:
 
 <p align="center">
-  <img src="docs/operating-modes.svg" width="100%" alt="Emittr Operating Modes: Direct Tether vs Local Network Relay" />
+  <img src="docs/architecture.png" width="100%" alt="Emittr Operating Modes: Direct Tether vs Local Network Relay" />
 </p>
 
-<p align="center">
-  <sub><a href="docs/operating-modes.svg" target="_blank">🔍 Open standalone high-resolution vector diagram</a></sub>
-</p>
 
 ### 🔴 Superpower 01: Hardware USB HID (The Handheld Cyberdeck)
 *Paste ➔ Keystrokes. Master password. Zero clipboard.*
@@ -219,15 +216,24 @@ Hardware-level protection ensuring target host modifier states (<kbd>Ctrl</kbd>,
 
 ---
 
-### Step 1: Clone & Deploy
+### Method 1: APT / Debian Package (Recommended for Kali / Debian)
+Install directly using `apt`—which automatically resolves and installs all system dependencies:
+```bash
+# Download latest .deb release
+wget https://github.com/mr-anjaneyam/Emittr/releases/latest/download/emittr_1.3.0_all.deb
+
+# Install via APT
+sudo apt install ./emittr_1.3.0_all.deb
+```
+> 📦 Want to submit Emittr to official Kali NetHunter or Termux repositories? See our complete [Debian & APT Packaging Guide](PACKAGING.md).
+
+---
+
+### Method 2: Git Clone & Autonomous Installer
+From your rooted Android terminal or NetHunter chroot as `root`:
 ```bash
 git clone https://github.com/mr-anjaneyam/Emittr.git
 cd Emittr
-```
-
-### Step 2: Run the Autonomous Installer
-From your rooted Android terminal as `root`:
-```bash
 bash install.sh
 ```
 
@@ -237,7 +243,7 @@ bash install.sh
 3. Disables Android's `sys.usb.config` mass-storage auto-reset triggers.
 4. Builds `/config/usb_gadget/g1` with our composite Report ID 1 (Keyboard) and Report ID 2 (AC Pan Mouse) descriptor.
 5. Spawns the FastAPI server daemon on port `8088`.
-6. Sets up the port 80 loopback redirector so `http://hid.keyboard` works instantly.
+6. Sets up the port 80 loopback redirector so `http://emittr/` (or simply typing `emittr/` in Chrome) works instantly.
 
 ### Step 3: Make It Immortal Across Reboots (Magisk)
 Keep Emittr active across phone reboots by copying the boot service:
@@ -248,9 +254,80 @@ chmod +x /data/adb/service.d/02-usb-deck.sh
 
 ### Step 4: Plug In and Play!
 Connect the USB cable between your phone and the target computer.
-* **On your phone's browser**: Open `http://localhost:8088` or `http://hid.keyboard`.
+* **On your phone's browser**: Simply type **`emittr/`** (or `http://localhost:8088`).
 * **From your laptop/tablet on Wi-Fi**: Open `http://<phone-ip>:8088`.
 * **PWA Install**: In Chrome/Brave on Android, tap `⋮` -> **"Add to Home Screen"** to launch Emittr as an edge-to-edge standalone cyberdeck!
+
+---
+
+## 💻 Command Line Control (`emittr` & `usbtype`)
+
+Once installed, standard global commands are linked to your PATH—meaning you can control the entire daemon and inject keystrokes from **anywhere in your terminal or NetHunter chroot**:
+
+### 🎮 The `emittr` Daemon Controller
+
+Manage the daemon, verify hardware connections, and inspect all device IP addresses instantly:
+
+```bash
+# Start the Emittr daemon, ConfigFS gadget, & port 80 redirector
+emittr start
+
+# Check runtime state, USB controller connection, and device IP addresses
+emittr status
+
+# View device IP addresses and browser URLs directly
+emittr ip
+
+# Stop the daemon and cleanly release any active hardware keys
+emittr stop
+
+# Restart the service
+emittr restart
+
+# Stream live server logs
+emittr logs -f
+
+# Emergency zero-report release flush across physical USB
+emittr unstick
+```
+
+#### Example Output: `emittr status`
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  EMITTR TACTICAL USB HID DECK  •  v1.3.0
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Status:           ● ONLINE (PID: 14209)
+  USB Controller:   Connected to Host PC (Active Wire)
+  UDC State:        configured
+  HID Nodes:        /dev/hidg0 (Report ID 1: Kbd, ID 2: Mouse)
+  Typing State:     Idle (Ready for scancodes)
+
+  🌐 Web Deck & Network Access:
+    • On this phone:    emittr/  or  http://localhost:8088
+    • Wi-Fi (wlan0):    http://192.168.1.108:8088
+    • Hotspot (ap0):    http://192.168.43.1:8088
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### ⚡ The `usbtype` Keystroke Injector
+
+Inject raw scancodes or script files directly from your terminal or shell scripts:
+
+```bash
+# Fire text directly into the PC at 1,000 WPM
+usbtype "sudo systemctl restart nginx"
+
+# Inject a multi-line script file
+usbtype -f /path/to/script.sh
+
+# Slow down typing speed (e.g. 30ms per character for legacy BIOS input)
+usbtype --delay 30 "Slow typing text"
+
+# Inject special key combinations
+usbtype -k win+r
+usbtype -k ctrl+alt+del
+usbtype -k enter
+```
 
 ---
 

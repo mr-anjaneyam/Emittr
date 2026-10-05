@@ -2303,33 +2303,7 @@ body.ready .scroll-cue {
   border-color: rgba(229, 215, 163, 0.3);
 }
 
-/* Responsive adjustments for mobile and tablets */
-@media (max-width: 960px) {
-  .relay-head {
-    margin-bottom: 20px;
-  }
 
-  .relay-flow {
-    grid-template-columns: 1fr;
-    gap: 24px;
-    padding: 20px 16px;
-  }
-
-  .hardware-cluster {
-    width: 100%;
-    overflow-x: auto;
-  }
-
-  .cluster-devices-row {
-    min-width: 440px;
-    justify-content: center;
-  }
-
-  .cluster-tags-row,
-  .cluster-captions-row {
-    min-width: 440px;
-  }
-}
 
 /* 3-Card Value Grid */
 .relay-grid {
@@ -2391,35 +2365,7 @@ body.ready .scroll-cue {
   color: var(--dim);
 }
 
-@media (max-width: 900px) {
-  .relay-flow {
-    grid-template-columns: 1fr;
-    gap: 20px;
-    padding: 24px 18px;
-  }
 
-  .stage-device.laptop-frame {
-    width: 80%;
-  }
-
-  .stage-device.phone-frame {
-    width: 45%;
-  }
-
-  .stage-device.monitor-frame {
-    width: 80%;
-  }
-
-  .flow-pipe {
-    width: 60%;
-    margin: 0 auto;
-  }
-
-  .relay-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-}
 
 /* ── 05 · Missions (horizontal) ───────────────────────────────────────── */
 .missions-track {
@@ -3154,41 +3100,83 @@ body.ready .scroll-cue {
   transform: translate(-50%, 0);
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
-@media (max-width: 960px) {
+/* ── Responsive Architecture (Mobile, Tablet, Desktop) ─────────────────── */
 
+@media (max-width: 960px) {
+  /* Global Hide Elements on Tablet/Mobile */
   .thread,
   .scene-label {
     display: none;
   }
 
-  .chrome nav a:nth-child(2) {
-    display: none;
+  .chrome {
+    padding: 14px clamp(16px, 3vw, 32px);
+  }
+
+  .brand img {
+    height: 42px;
+  }
+
+  .chrome nav {
+    gap: 16px;
+    font-size: 10px;
+  }
+
+  /* 01 · Arrival Hero */
+  .hero-track {
+    height: 200vh;
   }
 
   .hero-copy {
     width: auto;
+    left: var(--pad);
     right: var(--pad);
-    bottom: 38vh;
+    top: clamp(64px, 9vh, 90px);
+    bottom: auto;
+  }
+
+  .mega {
+    font-size: clamp(38px, 9vw, 68px);
+    line-height: 1.0;
   }
 
   .hero-device {
-    --u: min(0.62vh, 1vw);
-    right: 50%;
-    margin-right: calc(var(--u) * -20);
+    --u: clamp(3.4px, min(0.5vh, 0.8vw), 5.2px);
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
     top: auto;
-    bottom: 7vh;
-    margin-top: 0;
+    bottom: 5vh;
+    margin: 0;
   }
 
   .hero-cable {
     display: none;
   }
 
-  .mega {
-    font-size: clamp(40px, 11vw, 90px);
+  /* 02 · The Wall */
+  .wall-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 2vh;
   }
 
+  .wall-word {
+    font-size: clamp(30px, 7.5vw, 64px);
+  }
+
+  .wall-foot {
+    font-size: clamp(20px, 4vw, 32px);
+    bottom: 5vh;
+  }
+
+  /* 03 · The Idea */
+  .become-text {
+    font-size: clamp(32px, 7vw, 68px);
+  }
+
+  /* 04 · The Proof */
   .type-track {
     height: auto;
     min-height: 100vh;
@@ -3202,7 +3190,7 @@ body.ready .scroll-cue {
     transform: none;
     width: auto;
     right: auto;
-    padding-top: 12vh;
+    padding-top: 10vh;
   }
 
   .stats {
@@ -3210,7 +3198,7 @@ body.ready .scroll-cue {
   }
 
   .type-monitor {
-    --m: 0.9vw;
+    --m: clamp(3.4px, 0.85vw, 5.5px);
     position: relative;
     left: 50%;
     right: auto;
@@ -3220,21 +3208,70 @@ body.ready .scroll-cue {
     transform: none;
   }
 
+  .login h3 {
+    font-size: clamp(13px, 2.8vw, 17px);
+  }
+
+  .login .field {
+    min-height: 52px;
+    padding: 10px 14px;
+    font-size: clamp(11.5px, 2.4vw, 14px);
+  }
+
+  .login .status {
+    font-size: clamp(9.5px, 2vw, 12px);
+  }
+
+  .inspector {
+    font-size: clamp(9.5px, 2vw, 11px);
+  }
+
+  .screen-bar {
+    font-size: clamp(9.5px, 2vw, 11px);
+    padding: 8px 12px;
+  }
+
   .type-phone,
   .type-cable {
     display: none;
   }
 
   .login {
-    width: 84%;
+    width: 88%;
   }
 
+  /* 04.5 · Local Network Relay */
+  .relay-head {
+    margin-bottom: 20px;
+  }
+
+  .relay-flow {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 22px 18px;
+  }
+
+  .hardware-cluster {
+    width: 100%;
+  }
+
+  .cluster-devices-row {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .relay-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  /* 05 · Missions */
   .mission {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
     align-content: center;
     gap: 3vh;
-    padding-top: 16vh;
+    padding-top: 15vh;
   }
 
   .m-art {
@@ -3246,10 +3283,33 @@ body.ready .scroll-cue {
     max-height: 24vh;
   }
 
+  .m-title {
+    font-size: clamp(28px, 6.5vw, 56px);
+  }
+
+  /* 06 · Touchpad & Thumbsticks */
+  .touch {
+    height: 100vh;
+    min-height: 640px;
+  }
+
   .touch-copy {
     width: auto;
     right: var(--pad);
     top: 11vh;
+  }
+
+  .dock {
+    gap: clamp(20px, 4vw, 48px);
+  }
+
+  /* 07 · Nine Bytes HID */
+  .bytes-top {
+    grid-template-columns: 1fr;
+  }
+
+  .keycap {
+    text-align: left;
   }
 
   .report.k {
@@ -3261,20 +3321,757 @@ body.ready .scroll-cue {
     grid-template-columns: repeat(3, 1fr);
   }
 
+  /* 08 · Install */
+  .install {
+    grid-template-columns: 1fr;
+    gap: 4vh;
+  }
+
+  /* 09 · Finale */
+  .finale-h {
+    font-size: clamp(26px, 5.5vw, 56px);
+  }
+}
+
+/* ── Mobile Viewports (Phones <= 640px) ────────────────────────────────── */
+@media (max-width: 640px) {
+  :root {
+    --pad: 16px;
+  }
+
+  /* Compact Header */
+  .chrome {
+    padding: 10px 16px;
+  }
+
+  .brand img {
+    height: 34px;
+  }
+
+  .chrome nav {
+    gap: 10px;
+    font-size: 9.5px;
+    letter-spacing: 0.10em;
+  }
+
+  .chrome nav a {
+    padding: 5px 2px;
+  }
+
+  /* 01 · Hero */
+  .hero-track {
+    height: 180vh;
+  }
+
+  .hero-copy {
+    left: 16px;
+    right: 16px;
+    top: clamp(54px, 7.5vh, 74px);
+    bottom: auto;
+  }
+
+  .hero-copy .eyebrow {
+    font-size: 9.5px;
+    letter-spacing: 0.16em;
+    gap: 7px;
+    margin-bottom: 8px;
+  }
+
+  .hero-copy .eyebrow::before {
+    width: 16px;
+  }
+
+  .mega {
+    font-size: clamp(26px, 7.6vw, 38px);
+    line-height: 1.04;
+    letter-spacing: -0.04em;
+    margin: 0 0 10px -0.02em;
+  }
+
+  .hero-copy .lede {
+    font-size: 12.5px;
+    line-height: 1.45;
+    max-width: 100%;
+    color: var(--dim);
+  }
+
+  .hero-badges {
+    margin-top: 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .hero-badge {
+    font-size: 8.5px;
+    padding: 4px 8px;
+    gap: 5px;
+    letter-spacing: 0.04em;
+  }
+
+  .hero-badge-arrow {
+    font-size: 10px;
+  }
+
+  .hero-device {
+    --u: clamp(2.4px, min(0.35vh, 0.78vw), 3.1px);
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    top: auto;
+    bottom: clamp(10px, 2.5vh, 20px);
+    margin: 0;
+  }
+
+  .scroll-cue {
+    display: none;
+  }
+
+  /* 02 · The Wall */
+  .wall-stick {
+    padding: 0 16px;
+    justify-content: center;
+  }
+
+  .wall-head {
+    margin-bottom: 16px;
+  }
+
+  .wall-head p {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .wall-rows {
+    gap: 10px;
+  }
+
+  .wall-row {
+    padding: 6px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    border-bottom: 1px solid rgba(245, 242, 234, 0.05);
+  }
+
+  .wall-word {
+    font-size: clamp(21px, 6.2vw, 30px);
+    letter-spacing: -0.035em;
+  }
+
+  .wall-tag {
+    display: inline-block !important;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  .wall-row.last .wall-tag {
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  .wall-foot {
+    font-size: 16px;
+    bottom: 3.5vh;
+    right: 16px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  }
+
+  /* 03 · The Idea */
+  .become-stick {
+    padding: 0 16px;
+  }
+
+  .become-text {
+    font-size: clamp(26px, 7vw, 38px);
+    line-height: 1.08;
+    max-width: 100%;
+  }
+
+  .become-sub {
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 14px;
+  }
+
+  /* 04 · The Proof */
+  .type-copy {
+    padding-top: 7vh;
+  }
+
+  .h2 {
+    font-size: clamp(25px, 7.2vw, 38px);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+  }
+
+  .lede {
+    font-size: 13px;
+    line-height: 1.5;
+    margin-top: 12px;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 16px;
+  }
+
+  .stat {
+    padding: 10px 8px;
+    border-radius: 8px;
+  }
+
+  .stat b {
+    font-size: 22px;
+  }
+
+  .stat span {
+    font-size: 8.5px;
+    line-height: 1.2;
+  }
+
+  .type-monitor {
+    width: 100%;
+    max-width: 360px;
+    height: auto;
+    min-height: 175px;
+    margin: 18px auto 0;
+    left: 0;
+    right: 0;
+    transform: none;
+  }
+
+  .login {
+    width: 92%;
+    margin: 10px auto;
+  }
+
+  .login h3 {
+    font-size: 11.5px;
+    margin-bottom: 6px;
+  }
+
+  .login .field {
+    min-height: 44px;
+    padding: 8px 10px;
+    font-size: 10.5px;
+    line-height: 1.4;
+    border-radius: 6px;
+    word-break: break-all;
+  }
+
+  .login .status {
+    font-size: 8px;
+    margin-top: 6px;
+  }
+
+  .inspector {
+    position: static;
+    text-align: right;
+    padding: 5px 10px 7px;
+    font-size: 8px;
+  }
+
+  /* 04.5 · Local Network Relay */
+  .relay-head .relay-title {
+    font-size: clamp(21px, 5.8vw, 30px);
+  }
+
+  .relay-flow {
+    padding: 14px 10px;
+    border-radius: 14px;
+    gap: 14px;
+  }
+
+  .driver-card {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .driver-icon-col {
+    width: 24px;
+    height: 24px;
+  }
+
+  .driver-meta {
+    font-size: 10.5px;
+  }
+
+  .driver-ip {
+    font-size: 7.5px;
+  }
+
+  .driver-payload {
+    font-size: 9px;
+  }
+
+  .driver-send-btn {
+    padding: 5px 9px;
+    font-size: 9.5px;
+  }
+
+  .flow-pipe.wifi-broadcast {
+    padding: 8px 0;
+  }
+
+  .hardware-cluster {
+    width: 100%;
+    overflow: visible;
+  }
+
+  .cluster-tags-row {
+    font-size: 8.5px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .cluster-tags-row .stage-tag:first-child {
+    margin-left: 0;
+    text-align: left;
+  }
+
+  .cluster-tags-row .stage-tag:last-child {
+    text-align: right;
+  }
+
+  .cluster-devices-row {
+    height: 156px;
+    margin-bottom: 14px;
+    gap: 6px;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .bridge-unit {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .stage-device.phone-frame {
+    width: 72px;
+    height: 138px;
+    padding: 5px 4px;
+    border-radius: 14px;
+    flex-shrink: 0;
+  }
+
+  .mini-emittr-logo {
+    width: 46px;
+    height: 17px;
+  }
+
+  .mini-status {
+    font-size: 6.5px;
+    padding: 1px 4px;
+  }
+
+  .mini-bytes {
+    font-size: 6px;
+    padding: 1px 3.5px;
+  }
+
+  .bridge-side-caption {
+    max-width: 76px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .bridge-side-caption b {
+    font-size: 9.5px;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+
+  .bridge-side-caption span {
+    font-size: 7.5px;
+    line-height: 1.25;
+    color: var(--dim);
+  }
+
+  .stage-device.monitor-frame {
+    width: clamp(146px, 45vw, 190px);
+    height: 138px;
+    padding: 4px;
+    border-radius: 9px;
+    flex-shrink: 0;
+  }
+
+  .mini-host-bar {
+    padding: 3px 5px;
+    font-size: 7.5px;
+  }
+
+  .host-bar-title {
+    font-size: 7.5px;
+  }
+
+  .host-usb-badge {
+    font-size: 6px;
+    padding: 1px 3.5px;
+  }
+
+  .mini-terminal-body {
+    padding: 4px 5px;
+    font-size: 7.5px;
+  }
+
+  .term-prompt {
+    font-size: 7.5px;
+  }
+
+  .term-status-tag {
+    font-size: 7px;
+  }
+
+  .term-status-msg {
+    font-size: 7px;
+  }
+
+  .cluster-captions-row {
+    margin-top: 6px;
+  }
+
+  .cluster-captions-row .monitor-caption {
+    width: auto;
+    font-size: 8px;
+    text-align: right;
+  }
+
+  .pipe-label-main {
+    font-size: 8px;
+  }
+
+  .latency-pill {
+    font-size: 7px;
+    padding: 1.5px 4.5px;
+  }
+
+  .relay-insight-card {
+    padding: 12px 12px;
+    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 14px;
+    border-radius: 10px;
+  }
+
+  .insight-text {
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .relay-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .relay-card {
+    padding: 16px 14px;
+    border-radius: 12px;
+  }
+
+  .relay-card .card-num {
+    font-size: 10px;
+    margin-bottom: 6px;
+  }
+
+  .relay-card .card-title {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+
+  .relay-card .card-desc {
+    font-size: 12px;
+  }
+
+  /* 05 · Missions */
+  .mission {
+    padding: 0 16px;
+    padding-top: 10vh;
+    gap: 2vh;
+  }
+
+  .m-num {
+    font-size: clamp(120px, 32vw, 180px);
+    bottom: -1vh;
+    opacity: 0.45;
+  }
+
+  .missions-head {
+    top: 6vh;
+    left: 16px;
+    right: 16px;
+  }
+
+  .m-title {
+    font-size: clamp(21px, 5.8vw, 30px);
+    line-height: 1.05;
+  }
+
+  .m-scenario {
+    font-size: 12.5px;
+    line-height: 1.45;
+    margin-top: 10px;
+  }
+
+  .m-solve {
+    font-size: 11.5px;
+    margin-top: 12px;
+    padding-left: 10px;
+  }
+
+  .m-art {
+    max-height: 18vh;
+  }
+
+  .m-art svg {
+    max-height: 18vh;
+  }
+
+  /* 06 · Touchpad & Thumbsticks */
+  .touch {
+    height: 100vh;
+    min-height: 560px;
+  }
+
+  .touch-copy {
+    left: 16px;
+    right: 16px;
+    top: clamp(52px, 8vh, 72px);
+    width: auto;
+  }
+
+  .dock {
+    bottom: clamp(48px, 7vh, 64px);
+    gap: clamp(14px, 4vw, 24px);
+    width: 100%;
+    justify-content: center;
+  }
+
+  .well {
+    width: clamp(92px, 25vw, 116px);
+  }
+
+  .pod span {
+    font-size: 9px;
+  }
+
+  .touch-hint {
+    bottom: clamp(14px, 2vh, 20px);
+    font-size: 9px;
+  }
+
+  /* 07 · Nine Bytes HID */
+  .bytes {
+    padding: 7vh 16px 5vh;
+  }
+
   .bytes-top {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .keycap {
     text-align: left;
   }
 
-  .install {
-    grid-template-columns: 1fr;
+  .keycap .ch {
+    font-size: clamp(64px, 17vw, 100px);
+    min-height: auto;
   }
 
-  .wall-tag {
-    display: none;
+  .keycap .info {
+    margin-top: 6px;
+    font-size: 10px;
+  }
+
+  .report-label {
+    margin: 18px 0 8px;
+    font-size: 9px;
+  }
+
+  .report.k {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    width: 100%;
+  }
+
+  .report.m {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    width: 100%;
+  }
+
+  .byte {
+    padding: 7px 5px;
+    border-radius: 5px;
+  }
+
+  .byte .v {
+    font-size: 13.5px;
+  }
+
+  .byte .l {
+    font-size: 7px;
+    margin-top: 4px;
+  }
+
+  .bytes-note {
+    font-size: 11.5px;
+    margin-top: 12px;
+  }
+
+  /* 08 · Install */
+  .install {
+    padding: 7vh 16px;
+    gap: 18px;
+  }
+
+  .install .mega {
+    font-size: clamp(30px, 8vw, 44px);
+    margin-bottom: 12px;
+  }
+
+  .term {
+    border-radius: 8px;
+  }
+
+  .term-bar {
+    padding: 9px 12px;
+    font-size: 9px;
+  }
+
+  .term pre {
+    padding: 12px 14px;
+    font-size: 10px;
+    line-height: 1.55;
+  }
+
+  .req {
+    font-size: 10.5px;
+    margin-top: 12px;
+  }
+
+  /* 09 · Finale */
+  .finale-logo {
+    width: min(290px, 82vw);
+    max-height: 28vh;
+  }
+
+  .finale-h {
+    font-size: clamp(21px, 5.6vw, 30px);
+    margin-top: 16px;
+  }
+
+  .finale-links {
+    margin-top: 20px;
+    gap: 12px;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .big-link {
+    font-size: clamp(16px, 4.5vw, 20px);
+    padding-bottom: 4px;
+  }
+
+  .foot {
+    position: static;
+    margin-top: 32px;
+    padding: 0 16px 20px;
+    gap: 8px 14px;
+    font-size: 8px;
+    line-height: 1.4;
+  }
+}
+
+/* ── Compact Phones (<= 380px) ─────────────────────────────────────────── */
+@media (max-width: 380px) {
+  .mega {
+    font-size: 24px;
+  }
+
+  .h2 {
+    font-size: 22px;
+  }
+
+  .hero-device {
+    --u: 2.3px;
+  }
+
+  .stage-device.phone-frame {
+    width: 64px;
+    height: 126px;
+  }
+
+  .bridge-side-caption {
+    max-width: 68px;
+  }
+
+  .bridge-side-caption b {
+    font-size: 8.5px;
+  }
+
+  .bridge-side-caption span {
+    font-size: 7px;
+  }
+
+  .stage-device.monitor-frame {
+    width: 140px;
+    height: 126px;
+  }
+
+  .well {
+    width: 84px;
+  }
+}
+
+/* ── Touch Screen Optimizations ────────────────────────────────────────── */
+@media (hover: none) or (pointer: coarse) {
+  body,
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  .copy,
+  .big-link,
+  .brand,
+  .well {
+    cursor: auto !important;
+  }
+
+  a,
+  button,
+  [role="button"],
+  .copy,
+  .big-link {
+    cursor: pointer !important;
+  }
+
+  .emittr-click-ripple {
+    display: none !important;
+  }
+
+  /* Prevent persistent hover scale lock on touch taps */
+  .relay-card.rv.in:hover {
+    transform: translateY(0) scale(1);
+    border-color: rgba(245, 242, 234, 0.08);
+    background: rgba(10, 11, 15, 0.5);
+  }
+
+  .driver-card:hover {
+    transform: none;
   }
 }
 
@@ -3351,12 +4148,6 @@ html.rm .finale-logo .ffadeg {
 .emittr-click-ripple.expanding {
   transform: translate(-50%, -50%) scale(6.5);
   opacity: 0;
-}
-
-@media (hover: none) or (pointer: coarse) {
-  .emittr-click-ripple {
-    display: none !important;
-  }
 }
 
 html.rm .emittr-click-ripple {
