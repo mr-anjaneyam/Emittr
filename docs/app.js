@@ -337,7 +337,7 @@ This is where the distinction between software and hardware becomes meaningful. 
 
 By using the phone you already carry as a genuine physical input device, typing stops depending on the network entirely. A five-hundred-word document doesn't arrive as a pasted block that might be filtered - it arrives as the steady, natural rhythm of real keystrokes.`;
 
-  const passwordPreset = `Th1s-Is-An-Ex4mple-Of-A-Very-L0ng-Complex-Passphrase-2026!Emittr#Secure*9247`;
+  const passwordPreset = `WAR MACHINE ROX`;
   const notePreset = `Reminder: the quarterly review moves to Thursday at 2pm. Please bring the updated forecast and the two open action items from last week.`;
 
   let typingTimer = null;

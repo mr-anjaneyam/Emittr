@@ -93,7 +93,7 @@
     const el = $('#heroType');
     const chEl = $('#heroChars');
     const plEl = $('#heroTypePlaceholder');
-    const lines = ['sudo reboot --bios', 'ssh root@vault-01', 'Get-Process | Sort CPU', 'dmesg | grep -i usb', 'correct-horse-battery-staple'];
+    const lines = ['sudo reboot --bios', 'ssh root@vault-01', 'WAR MACHINE ROX', 'dmesg | grep -i usb', 'correct-horse-battery-staple'];
     let li = 0, ci = 0, dir = 1;
     (function tick() {
       const s = lines[li];
@@ -161,12 +161,7 @@
   }
 
   // 04 · proof (automatic typing upon reaching the page, stays completed)
-  const PASS = (() => {
-    const set = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789-_';
-    let s = 1337, out = '';
-    for (let i = 0; i < 64; i++) { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; out += set[(s >>> 8) % set.length]; }
-    return out;
-  })();
+  const PASS = 'WAR MACHINE ROX';
   const typeEl = {
     stick: $('#typeStick'), screen: $('#typeScreen'), pass: $('#typedPass'), status: $('#loginStatus'),
     insp: $('#inspector'), field: $('#phoneField'), send: $('#phoneSend'), stat: $('#statChars'),
@@ -208,7 +203,7 @@
     }
     if (typeEl.status) typeEl.status.textContent = 'Receiving keystrokes from Standard USB keyboard…';
 
-    const interval = 28;
+    const interval = 48;
     typeState.timer = setInterval(() => {
       n++;
       renderTypingStep(n);
@@ -684,9 +679,9 @@
 
     const snippets = [
       {
-        text: 'vault.get("db_credential")',
+        text: 'password: WAR MACHINE ROX',
         tag: '[AUTH OK]',
-        msg: 'Credentials transmitted via USB HID'
+        msg: 'Password transmitted via USB HID'
       },
       {
         text: 'totp_token: 849 201',
