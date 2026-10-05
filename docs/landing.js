@@ -113,6 +113,11 @@
   // 01 · hero
   const heroCopy = $('#heroCopy'), heroTilt = $('#heroTilt');
   function hero(p) {
+    if (narrow()) {
+      if (heroCopy) { heroCopy.style.transform = 'none'; heroCopy.style.opacity = '1'; }
+      if (heroTilt) { heroTilt.style.transform = 'none'; }
+      return;
+    }
     ptr.sx = lerp(ptr.sx, ptr.nx, 0.06);
     ptr.sy = lerp(ptr.sy, ptr.ny, 0.06);
     heroCopy.style.transform = `translate3d(0, ${-p * 90}px, 0)`;
@@ -127,6 +132,19 @@
   const wallRows = $$('.wall-row');
   const wallFoot = $('#wallFoot');
   function wall(p) {
+    if (narrow()) {
+      const n = wallRows.length - 1;
+      wallRows.forEach((row, i) => {
+        row.style.opacity = '1';
+        const strike = $('.strike', row);
+        if (strike) strike.style.transform = i < n ? 'scaleX(1)' : 'scaleX(0)';
+      });
+      if (wallFoot) {
+        wallFoot.style.opacity = '1';
+        wallFoot.style.transform = 'none';
+      }
+      return;
+    }
     const n = wallRows.length - 1;
     wallRows.forEach((row, i) => {
       if (i < n) {
@@ -149,6 +167,17 @@
   const words = $$('#becomeText .w');
   const becomeSub = $('#becomeSub');
   function become(p) {
+    if (narrow()) {
+      words.forEach(w => {
+        w.style.opacity = '1';
+        w.style.filter = 'none';
+      });
+      if (becomeSub) {
+        becomeSub.style.opacity = '1';
+        becomeSub.style.transform = 'none';
+      }
+      return;
+    }
     const N = words.length;
     words.forEach((w, i) => {
       const t = clamp((p * 1.15 * N - i) / 1.6);
@@ -294,11 +323,23 @@
   let lastMProg = -1;
 
   function sizeMissions() {
+    if (narrow()) {
+      if (mTrack) mTrack.style.height = 'auto';
+      return;
+    }
     mMax = Math.max(0, mRail.scrollWidth - innerWidth);
     mTrack.style.height = (Math.round(mMax * 0.65) + innerHeight) + 'px';
   }
 
   function missions(p) {
+    if (narrow()) {
+      panels.forEach(pn => {
+        pn.paths.forEach(pEl => pEl.style.strokeDashoffset = '0');
+        pn.copy.style.opacity = '1';
+      });
+      return;
+    }
+
     const rx = (-p * mMax).toFixed(2);
     if (rx !== lastRailX) {
       lastRailX = rx;
@@ -356,6 +397,20 @@
     }
   }
 
+  if (mRail) {
+    mRail.addEventListener('scroll', () => {
+      if (!narrow()) return;
+      const sL = mRail.scrollLeft;
+      const cW = (mRail.firstElementChild ? mRail.firstElementChild.offsetWidth : innerWidth) + 12;
+      const cur = Math.min(panels.length, Math.max(1, Math.round(sL / cW) + 1));
+      if (cur !== lastMCount) {
+        lastMCount = cur;
+        if (mCount) mCount.textContent = String(cur).padStart(2, '0');
+      }
+      if (mProg) mProg.style.transform = `scaleX(${cur / panels.length})`;
+    }, { passive: true });
+  }
+
   // 09 · finale
   const fLogo = $('#finaleLogo');
   const fAf = $('.faf', fLogo);
@@ -366,6 +421,17 @@
   const fH = $$('.finale-h span'), fLinks = $('#finaleLinks');
 
   function finale(p) {
+    if (narrow()) {
+      if (fAf) { fAf.style.opacity = '1'; fAf.style.strokeDashoffset = '0'; fAf.style.transform = 'scale(1)'; }
+      if (fWire) fWire.style.strokeDashoffset = '0';
+      fPlug.forEach(pEl => pEl.style.strokeDashoffset = '0');
+      if (fFade) fFade.style.opacity = '1';
+      fLetters.forEach(pEl => pEl.style.strokeDashoffset = '0');
+      fH.forEach(s => { s.style.opacity = '1'; s.style.transform = 'none'; });
+      if (fLinks) { fLinks.style.opacity = '1'; fLinks.style.transform = 'none'; }
+      return;
+    }
+
     // 1 · arrow plane (draws and scales into view)
     const kArrow = clamp(p / 0.08);
     if (fAf) {

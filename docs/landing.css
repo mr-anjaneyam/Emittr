@@ -3103,498 +3103,557 @@ body.ready .scroll-cue {
 /* ── Responsive Architecture (Mobile, Tablet, Desktop) ─────────────────── */
 
 @media (max-width: 960px) {
-  /* Global Hide Elements on Tablet/Mobile */
   .thread,
   .scene-label {
-    display: none;
+    display: none !important;
   }
 
   .chrome {
-    padding: 14px clamp(16px, 3vw, 32px);
+    padding: 12px clamp(16px, 3vw, 32px);
   }
 
   .brand img {
-    height: 42px;
+    height: 38px;
   }
 
   .chrome nav {
-    gap: 16px;
+    gap: 12px;
     font-size: 10px;
   }
 
-  /* 01 · Arrival Hero */
-  .hero-track {
-    height: 200vh;
-  }
-
-  .hero-copy {
-    width: auto;
-    left: var(--pad);
-    right: var(--pad);
-    top: clamp(64px, 9vh, 90px);
-    bottom: auto;
-  }
-
-  .mega {
-    font-size: clamp(38px, 9vw, 68px);
-    line-height: 1.0;
-  }
-
-  .hero-device {
-    --u: clamp(3.4px, min(0.5vh, 0.8vw), 5.2px);
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    top: auto;
-    bottom: 5vh;
-    margin: 0;
-  }
-
-  .hero-cable {
-    display: none;
-  }
-
-  /* 02 · The Wall */
-  .wall-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 2vh;
-  }
-
-  .wall-word {
-    font-size: clamp(30px, 7.5vw, 64px);
-  }
-
-  .wall-foot {
-    font-size: clamp(20px, 4vw, 32px);
-    bottom: 5vh;
-  }
-
-  /* 03 · The Idea */
-  .become-text {
-    font-size: clamp(32px, 7vw, 68px);
-  }
-
-  /* 04 · The Proof */
-  .type-track {
-    height: auto;
-    min-height: 100vh;
-    padding-bottom: 8vh;
-  }
-
-  .type-copy {
-    position: relative;
-    left: auto;
-    top: auto;
-    transform: none;
-    width: auto;
-    right: auto;
-    padding-top: 10vh;
-  }
-
-  .stats {
-    margin-top: 2.5vh;
-  }
-
-  .type-monitor {
-    --m: clamp(3.4px, 0.85vw, 5.5px);
-    position: relative;
-    left: 50%;
-    right: auto;
-    top: auto;
-    bottom: auto;
-    margin: 4vh 0 0 calc(var(--m) * -50);
-    transform: none;
-  }
-
-  .login h3 {
-    font-size: clamp(13px, 2.8vw, 17px);
-  }
-
-  .login .field {
-    min-height: 52px;
-    padding: 10px 14px;
-    font-size: clamp(11.5px, 2.4vw, 14px);
-  }
-
-  .login .status {
-    font-size: clamp(9.5px, 2vw, 12px);
-  }
-
-  .inspector {
-    font-size: clamp(9.5px, 2vw, 11px);
-  }
-
-  .screen-bar {
-    font-size: clamp(9.5px, 2vw, 11px);
-    padding: 8px 12px;
-  }
-
-  .type-phone,
-  .type-cable {
-    display: none;
-  }
-
-  .login {
-    width: 88%;
-  }
-
-  /* 04.5 · Local Network Relay */
-  .relay-head {
-    margin-bottom: 20px;
-  }
-
-  .relay-flow {
-    grid-template-columns: 1fr;
-    gap: 24px;
-    padding: 22px 18px;
-  }
-
-  .hardware-cluster {
-    width: 100%;
-  }
-
-  .cluster-devices-row {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .relay-grid {
-    grid-template-columns: 1fr;
-    gap: 18px;
-  }
-
-  /* 05 · Missions */
-  .mission {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
-    align-content: center;
-    gap: 3vh;
-    padding-top: 15vh;
-  }
-
-  .m-art {
-    order: -1;
-    max-height: 24vh;
-  }
-
-  .m-art svg {
-    max-height: 24vh;
-  }
-
-  .m-title {
-    font-size: clamp(28px, 6.5vw, 56px);
-  }
-
-  /* 06 · Touchpad & Thumbsticks */
-  .touch {
-    height: 100vh;
-    min-height: 640px;
-  }
-
-  .touch-copy {
-    width: auto;
-    right: var(--pad);
-    top: 11vh;
-  }
-
-  .dock {
-    gap: clamp(20px, 4vw, 48px);
-  }
-
-  /* 07 · Nine Bytes HID */
-  .bytes-top {
-    grid-template-columns: 1fr;
-  }
-
-  .keycap {
-    text-align: left;
-  }
-
-  .report.k {
-    grid-template-columns: repeat(5, 1fr);
-  }
-
-  .report.m {
-    width: 100%;
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  /* 08 · Install */
-  .install {
-    grid-template-columns: 1fr;
-    gap: 4vh;
-  }
-
-  /* 09 · Finale */
-  .finale-h {
-    font-size: clamp(26px, 5.5vw, 56px);
+  .chrome nav a {
+    padding: 6px 10px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 }
 
-/* ── Mobile Viewports (Phones <= 640px) ────────────────────────────────── */
-@media (max-width: 640px) {
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE REDESIGN (Smartphones <= 768px)
+   Eliminates all dead vertical voids, clipping, and frozen tracks.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
   :root {
     --pad: 16px;
   }
 
-  /* Compact Header */
+  /* ── 00 · Mobile Fixed Glass Header ───────────────────────────────────── */
   .chrome {
-    padding: 10px 16px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 52px;
+    padding: 0 16px;
+    background: rgba(8, 9, 12, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 100;
   }
 
   .brand img {
-    height: 34px;
+    height: 28px;
+    width: auto;
   }
 
   .chrome nav {
-    gap: 10px;
-    font-size: 9.5px;
-    letter-spacing: 0.10em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .chrome nav a {
-    padding: 5px 2px;
+    font-size: 9.5px;
+    font-weight: 600;
+    font-family: var(--mono);
+    letter-spacing: 0.06em;
+    padding: 5px 8px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--dim);
   }
 
-  /* 01 · Hero */
-  .hero-track {
-    height: 180vh;
+  .chrome nav a:last-child {
+    background: rgba(229, 215, 163, 0.12);
+    border-color: rgba(229, 215, 163, 0.35);
+    color: var(--gold);
+  }
+
+  /* ── Global Track Reset: No multi-vh frozen tracks on mobile ──────────── */
+  .track,
+  .hero-track,
+  .wall-track,
+  .become-track,
+  .type-track,
+  .missions-track,
+  .finale-track {
+    height: auto !important;
+  }
+
+  .stick,
+  .hero-stick,
+  .wall-stick,
+  .become-stick,
+  .type-stick,
+  .missions-stick,
+  .finale-stick {
+    position: relative !important;
+    height: auto !important;
+    min-height: auto !important;
+    top: auto !important;
+    overflow: visible !important;
+  }
+
+  /* ── 01 · Hero Arrival ────────────────────────────────────────────────── */
+  .hero-stick {
+    padding: 72px 16px 36px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    min-height: calc(100vh - 52px) !important;
+    justify-content: center !important;
   }
 
   .hero-copy {
-    left: 16px;
-    right: 16px;
-    top: clamp(54px, 7.5vh, 74px);
-    bottom: auto;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-width: 440px !important;
+    margin: 0 auto !important;
+    transform: none !important;
+    opacity: 1 !important;
   }
 
   .hero-copy .eyebrow {
     font-size: 9.5px;
-    letter-spacing: 0.16em;
-    gap: 7px;
-    margin-bottom: 8px;
+    letter-spacing: 0.18em;
+    color: var(--gold);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    font-family: var(--mono);
   }
 
   .hero-copy .eyebrow::before {
-    width: 16px;
+    display: none;
   }
 
   .mega {
-    font-size: clamp(26px, 7.6vw, 38px);
-    line-height: 1.04;
+    font-size: clamp(28px, 8vw, 40px);
+    line-height: 1.05;
     letter-spacing: -0.04em;
-    margin: 0 0 10px -0.02em;
+    margin: 0 0 12px 0;
   }
 
   .hero-copy .lede {
-    font-size: 12.5px;
-    line-height: 1.45;
-    max-width: 100%;
+    font-size: 13px;
+    line-height: 1.5;
     color: var(--dim);
+    max-width: 360px;
+    margin: 0 auto;
   }
 
   .hero-badges {
-    margin-top: 10px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
     gap: 6px;
-    flex-wrap: wrap;
+    margin: 14px auto 22px;
   }
 
   .hero-badge {
     font-size: 8.5px;
     padding: 4px 8px;
-    gap: 5px;
-    letter-spacing: 0.04em;
-  }
-
-  .hero-badge-arrow {
-    font-size: 10px;
+    border-radius: 99px;
   }
 
   .hero-device {
-    --u: clamp(2.4px, min(0.35vh, 0.78vw), 3.1px);
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    top: auto;
-    bottom: clamp(10px, 2.5vh, 20px);
-    margin: 0;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    margin: 0 auto !important;
+    --u: clamp(2.7px, min(0.40vh, 0.85vw), 3.4px);
+    width: calc(var(--u) * 44);
+    height: calc(var(--u) * 88);
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.9), 0 0 40px rgba(229, 215, 163, 0.08);
+    opacity: 1 !important;
+  }
+
+  .hero-device .phone-tilt {
+    transform: none !important;
+  }
+
+  .hero-cable {
+    display: none !important;
   }
 
   .scroll-cue {
-    display: none;
+    display: none !important;
   }
 
-  /* 02 · The Wall */
+  /* ── 02 · The Wall (Threat Matrix Cards - Screenshot 1 Fix) ───────────── */
   .wall-stick {
-    padding: 0 16px;
-    justify-content: center;
+    padding: 56px 16px 40px !important;
+    background: radial-gradient(circle at 50% 30%, rgba(20, 24, 32, 0.35) 0%, rgba(0, 0, 0, 0) 70%);
   }
 
   .wall-head {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+    text-align: left;
   }
 
-  .wall-head p {
-    font-size: 14px;
-    line-height: 1.35;
-  }
-
-  .wall-rows {
-    gap: 10px;
-  }
-
-  .wall-row {
-    padding: 6px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 3px;
-    border-bottom: 1px solid rgba(245, 242, 234, 0.05);
-  }
-
-  .wall-word {
-    font-size: clamp(21px, 6.2vw, 30px);
-    letter-spacing: -0.035em;
-  }
-
-  .wall-tag {
-    display: inline-block !important;
-    font-size: 9px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--dim);
-  }
-
-  .wall-row.last .wall-tag {
+  .wall-head .eyebrow {
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
     color: var(--gold);
-    font-weight: 600;
-  }
-
-  .wall-foot {
-    font-size: 16px;
-    bottom: 3.5vh;
-    right: 16px;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
-  }
-
-  /* 03 · The Idea */
-  .become-stick {
-    padding: 0 16px;
-  }
-
-  .become-text {
-    font-size: clamp(26px, 7vw, 38px);
-    line-height: 1.08;
-    max-width: 100%;
-  }
-
-  .become-sub {
-    font-size: 13px;
-    line-height: 1.5;
-    margin-top: 14px;
-  }
-
-  /* 04 · The Proof */
-  .type-copy {
-    padding-top: 7vh;
-  }
-
-  .h2 {
-    font-size: clamp(25px, 7.2vw, 38px);
-    line-height: 1.05;
-    letter-spacing: -0.035em;
-  }
-
-  .lede {
-    font-size: 13px;
-    line-height: 1.5;
-    margin-top: 12px;
-  }
-
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    margin-top: 16px;
-  }
-
-  .stat {
-    padding: 10px 8px;
-    border-radius: 8px;
-  }
-
-  .stat b {
-    font-size: 22px;
-  }
-
-  .stat span {
-    font-size: 8.5px;
-    line-height: 1.2;
-  }
-
-  .type-monitor {
-    width: 100%;
-    max-width: 360px;
-    height: auto;
-    min-height: 175px;
-    margin: 18px auto 0;
-    left: 0;
-    right: 0;
-    transform: none;
-  }
-
-  .login {
-    width: 92%;
-    margin: 10px auto;
-  }
-
-  .login h3 {
-    font-size: 11.5px;
+    text-transform: uppercase;
+    font-family: var(--mono);
     margin-bottom: 6px;
   }
 
+  .wall-head p {
+    font-size: 15px;
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--dim);
+    margin: 0;
+  }
+
+  .wall-rows {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .wall-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 12px 14px !important;
+    border-radius: 11px !important;
+    background: rgba(14, 16, 22, 0.65) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    backdrop-filter: blur(8px) !important;
+    box-sizing: border-box !important;
+    opacity: 1 !important;
+  }
+
+  .wall-word {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.02em !important;
+    color: rgba(255, 255, 255, 0.65) !important;
+    position: relative !important;
+  }
+
+  .wall-row .strike {
+    transform: scaleX(1) !important;
+  }
+
+  .wall-tag {
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 3.5px 7.5px !important;
+    border-radius: 5px !important;
+    font-size: 8.5px !important;
+    font-weight: 700 !important;
+    font-family: var(--mono) !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    background: rgba(248, 113, 113, 0.12) !important;
+    color: #fca5a5 !important;
+    border: 1px solid rgba(248, 113, 113, 0.25) !important;
+    white-space: nowrap !important;
+  }
+
+  .wall-row:nth-child(4) .wall-tag {
+    background: rgba(148, 163, 184, 0.12) !important;
+    color: #cbd5e1 !important;
+    border-color: rgba(148, 163, 184, 0.25) !important;
+  }
+
+  .wall-row.last {
+    background: rgba(229, 215, 163, 0.09) !important;
+    border: 1px solid rgba(229, 215, 163, 0.35) !important;
+    box-shadow: 0 0 24px rgba(229, 215, 163, 0.08) !important;
+    margin-top: 4px !important;
+  }
+
+  .wall-row.last .strike {
+    display: none !important;
+  }
+
+  .wall-row.last .wall-word {
+    color: var(--gold) !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+  }
+
+  .wall-row.last .wall-tag {
+    background: rgba(229, 215, 163, 0.2) !important;
+    color: var(--gold) !important;
+    border-color: rgba(229, 215, 163, 0.45) !important;
+  }
+
+  .wall-foot {
+    position: relative !important;
+    right: auto !important;
+    bottom: auto !important;
+    margin-top: 24px !important;
+    text-align: center !important;
+    font-size: 21px !important;
+    font-family: var(--serif) !important;
+    font-style: italic !important;
+    color: var(--ink) !important;
+    opacity: 1 !important;
+    transform: none !important;
+    text-shadow: 0 0 20px rgba(229, 215, 163, 0.22) !important;
+  }
+
+  /* ── 03 · The Idea ────────────────────────────────────────────────────── */
+  .become-stick {
+    padding: 50px 16px !important;
+    text-align: center !important;
+  }
+
+  .become-text {
+    font-size: clamp(26px, 7.5vw, 36px) !important;
+    line-height: 1.1 !important;
+    max-width: 100% !important;
+  }
+
+  .become-text .w {
+    opacity: 1 !important;
+    filter: none !important;
+  }
+
+  .become-sub {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    margin: 14px auto 0 !important;
+    max-width: 340px !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* ── 04 · The Proof (Full-Width Vault Screen - Screenshot 2 Fix) ───────── */
+  .type-stick {
+    padding: 50px 16px 40px !important;
+  }
+
+  .type-copy {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    width: 100% !important;
+    padding-top: 0 !important;
+  }
+
+  .type-copy .eyebrow {
+    font-size: 9.5px;
+    letter-spacing: 0.16em;
+    color: var(--gold);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    font-family: var(--mono);
+  }
+
+  .h2 {
+    font-size: clamp(24px, 7vw, 34px);
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+  }
+
+  .type-copy .lede {
+    font-size: 12.5px;
+    line-height: 1.48;
+    color: var(--dim);
+    margin-top: 10px;
+  }
+
+  /* 3 Telemetry Gauges */
+  .stats {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+    margin: 18px 0 20px !important;
+  }
+
+  .stat {
+    background: rgba(18, 20, 26, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    border-radius: 10px !important;
+    padding: 12px 6px !important;
+    text-align: center !important;
+    backdrop-filter: blur(8px) !important;
+  }
+
+  .stat b {
+    display: block !important;
+    font-size: 22px !important;
+    font-family: var(--mono) !important;
+    font-weight: 700 !important;
+    color: var(--ink) !important;
+  }
+
+  .stat.hl b {
+    color: var(--gold) !important;
+    text-shadow: 0 0 12px rgba(229, 215, 163, 0.35) !important;
+  }
+
+  .stat span {
+    display: block !important;
+    font-size: 7.5px !important;
+    font-family: var(--mono) !important;
+    letter-spacing: 0.07em !important;
+    text-transform: uppercase !important;
+    color: var(--dim) !important;
+    margin-top: 4px !important;
+    line-height: 1.25 !important;
+  }
+
+  /* Full-width Terminal Screen */
+  .type-monitor {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
+    border-radius: 12px !important;
+    background: #08090c !important;
+    border: 1px solid rgba(229, 215, 163, 0.22) !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85), 0 0 25px rgba(229, 215, 163, 0.06) !important;
+    overflow: hidden !important;
+  }
+
+  .screen-bar {
+    padding: 8px 12px !important;
+    font-size: 8.5px !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .login {
+    width: 100% !important;
+    padding: 14px 14px 10px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .login .k {
+    font-size: 8px !important;
+    letter-spacing: 0.12em !important;
+    color: var(--dim) !important;
+    margin-bottom: 4px !important;
+  }
+
+  .login h3 {
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    margin-bottom: 8px !important;
+    color: var(--ink) !important;
+  }
+
   .login .field {
-    min-height: 44px;
-    padding: 8px 10px;
-    font-size: 10.5px;
-    line-height: 1.4;
-    border-radius: 6px;
-    word-break: break-all;
+    min-height: 50px !important;
+    padding: 9px 11px !important;
+    font-size: 10.5px !important;
+    font-family: var(--mono) !important;
+    line-height: 1.45 !important;
+    border-radius: 7px !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(229, 215, 163, 0.28) !important;
+    color: var(--gold) !important;
+    word-break: break-all !important;
   }
 
   .login .status {
-    font-size: 8px;
-    margin-top: 6px;
+    font-size: 8.5px !important;
+    margin-top: 8px !important;
+    color: #4ade80 !important;
   }
 
   .inspector {
-    position: static;
-    text-align: right;
-    padding: 5px 10px 7px;
-    font-size: 8px;
+    position: static !important;
+    text-align: right !important;
+    padding: 6px 12px 8px !important;
+    font-size: 8px !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.04) !important;
+    color: var(--dim) !important;
   }
 
-  /* 04.5 · Local Network Relay */
+  .type-phone,
+  .type-cable {
+    display: none !important;
+  }
+
+  /* ── 04.5 · Local Network Relay (Screenshot 3 Fix) ────────────────────── */
+  .relay {
+    padding: 48px 16px 36px !important;
+  }
+
   .relay-head .relay-title {
-    font-size: clamp(21px, 5.8vw, 30px);
+    font-size: clamp(22px, 6vw, 30px);
+    line-height: 1.1;
   }
 
   .relay-flow {
-    padding: 14px 10px;
-    border-radius: 14px;
-    gap: 14px;
+    padding: 16px 12px !important;
+    border-radius: 16px !important;
+    gap: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Stage 1: Daily Drivers (Zero Button Clipping) */
+  .source-stage {
+    width: 100% !important;
   }
 
   .driver-card {
-    padding: 8px 10px;
-    gap: 8px;
+    padding: 10px 12px !important;
+    gap: 8px !important;
+    margin-bottom: 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .driver-icon-col {
     width: 24px;
     height: 24px;
+    flex-shrink: 0;
+  }
+
+  .driver-info {
+    flex: 1 !important;
+    min-width: 0 !important;
   }
 
   .driver-meta {
@@ -3607,431 +3666,622 @@ body.ready .scroll-cue {
 
   .driver-payload {
     font-size: 9px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .driver-send-btn {
-    padding: 5px 9px;
-    font-size: 9.5px;
+    padding: 5px 10px !important;
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+    min-width: 50px !important;
+    flex-shrink: 0 !important;
+    text-align: center !important;
   }
 
+  /* Connection 1-2: Wi-Fi Wave Pipe */
   .flow-pipe.wifi-broadcast {
-    padding: 8px 0;
+    padding: 6px 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
   }
 
-  .hardware-cluster {
-    width: 100%;
-    overflow: visible;
-  }
-
-  .cluster-tags-row {
-    font-size: 8.5px;
-    margin-bottom: 8px;
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-  }
-
-  .cluster-tags-row .stage-tag:first-child {
-    margin-left: 0;
-    text-align: left;
-  }
-
-  .cluster-tags-row .stage-tag:last-child {
-    text-align: right;
-  }
-
-  .cluster-devices-row {
-    height: 156px;
-    margin-bottom: 14px;
-    gap: 6px;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-
-  .bridge-unit {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-
-  .stage-device.phone-frame {
-    width: 72px;
-    height: 138px;
-    padding: 5px 4px;
-    border-radius: 14px;
-    flex-shrink: 0;
-  }
-
-  .mini-emittr-logo {
-    width: 46px;
-    height: 17px;
-  }
-
-  .mini-status {
-    font-size: 6.5px;
-    padding: 1px 4px;
-  }
-
-  .mini-bytes {
-    font-size: 6px;
-    padding: 1px 3.5px;
-  }
-
-  .bridge-side-caption {
-    max-width: 76px;
-    gap: 2px;
-    flex-shrink: 0;
-  }
-
-  .bridge-side-caption b {
-    font-size: 9.5px;
-    line-height: 1.2;
-    color: var(--ink);
-  }
-
-  .bridge-side-caption span {
-    font-size: 7.5px;
-    line-height: 1.25;
-    color: var(--dim);
-  }
-
-  .stage-device.monitor-frame {
-    width: clamp(146px, 45vw, 190px);
-    height: 138px;
-    padding: 4px;
-    border-radius: 9px;
-    flex-shrink: 0;
-  }
-
-  .mini-host-bar {
-    padding: 3px 5px;
-    font-size: 7.5px;
-  }
-
-  .host-bar-title {
-    font-size: 7.5px;
-  }
-
-  .host-usb-badge {
-    font-size: 6px;
-    padding: 1px 3.5px;
-  }
-
-  .mini-terminal-body {
-    padding: 4px 5px;
-    font-size: 7.5px;
-  }
-
-  .term-prompt {
-    font-size: 7.5px;
-  }
-
-  .term-status-tag {
-    font-size: 7px;
-  }
-
-  .term-status-msg {
-    font-size: 7px;
-  }
-
-  .cluster-captions-row {
-    margin-top: 6px;
-  }
-
-  .cluster-captions-row .monitor-caption {
-    width: auto;
-    font-size: 8px;
-    text-align: right;
+  .wifi-arcs-wrap {
+    transform: rotate(90deg);
+    margin: 4px 0;
   }
 
   .pipe-label-main {
-    font-size: 8px;
+    font-size: 8px !important;
   }
 
   .latency-pill {
-    font-size: 7px;
-    padding: 1.5px 4.5px;
+    font-size: 7.5px !important;
+    padding: 1.5px 6px !important;
+  }
+
+  /* Stages 2 & 3: Hardware Cluster (Unclipped Proportional Layout) */
+  .hardware-cluster {
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .cluster-tags-row {
+    font-size: 8.5px !important;
+    margin-bottom: 8px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .cluster-tags-row .stage-tag {
+    white-space: nowrap !important;
+    font-family: var(--mono) !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  .cluster-devices-row {
+    height: 154px !important;
+    margin-bottom: 10px !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    position: relative !important;
+    overflow: visible !important;
+  }
+
+  /* Left: Phone unit */
+  .bridge-unit {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 74px !important;
+    flex-shrink: 0 !important;
+    gap: 4px !important;
+  }
+
+  .stage-device.phone-frame {
+    width: 72px !important;
+    height: 132px !important;
+    padding: 5px 3.5px !important;
+    border-radius: 14px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .mini-emittr-logo {
+    width: 44px;
+    height: 16px;
+  }
+
+  .mini-status {
+    font-size: 6px;
+    padding: 1px 3.5px;
+  }
+
+  .mini-bytes {
+    font-size: 5.5px;
+    padding: 1px 3px;
+  }
+
+  .bridge-side-caption {
+    order: -1 !important;
+    width: 100% !important;
+    max-width: 80px !important;
+    text-align: center !important;
+    margin: 0 0 4px 0 !important;
+  }
+
+  .bridge-side-caption b {
+    font-size: 8.5px !important;
+    line-height: 1.2 !important;
+    color: var(--ink) !important;
+    display: block !important;
+    white-space: nowrap !important;
+  }
+
+  .bridge-side-caption span {
+    display: block !important;
+    font-size: 6.5px !important;
+    color: var(--dim) !important;
+    white-space: nowrap !important;
+    line-height: 1.1 !important;
+  }
+
+  /* Center: Float the cable badge above the cable curve */
+  .flow-pipe.usb-physical-cable {
+    position: absolute !important;
+    left: 48% !important;
+    top: -8px !important;
+    transform: translateX(-50%) !important;
+    z-index: 5 !important;
+    pointer-events: none !important;
+  }
+
+  .flow-pipe.usb-physical-cable .pipe-label {
+    background: rgba(10, 11, 15, 0.92) !important;
+    border: 1px solid rgba(229, 215, 163, 0.3) !important;
+    border-radius: 99px !important;
+    padding: 2px 7px !important;
+  }
+
+  .flow-pipe.usb-physical-cable .pipe-label-main {
+    display: none !important;
+  }
+
+  .flow-pipe.usb-physical-cable .latency-pill.gold {
+    font-size: 7px !important;
+    padding: 0 !important;
+    background: none !important;
+    border: none !important;
+  }
+
+  /* Right: Air-Gapped Monitor gets ALL remaining width */
+  .stage-device.monitor-frame {
+    flex: 1 !important;
+    min-width: 0 !important;
+    height: 132px !important;
+    margin-left: 12px !important;
+    border-radius: 9px !important;
+    padding: 4px !important;
+    flex-shrink: 1 !important;
+    box-sizing: border-box !important;
+  }
+
+  .mini-host-bar {
+    padding: 3px 5px !important;
+    font-size: 7.5px !important;
+  }
+
+  .host-bar-title {
+    font-size: 7.5px !important;
+  }
+
+  .host-usb-badge {
+    font-size: 6px !important;
+    padding: 1px 3px !important;
+  }
+
+  .mini-terminal-body {
+    padding: 5px 6px !important;
+    font-size: 8px !important;
+    line-height: 1.35 !important;
+    word-break: break-all !important;
+  }
+
+  .term-prompt {
+    font-size: 8px !important;
+  }
+
+  .term-status-tag {
+    font-size: 7px !important;
+  }
+
+  .term-status-msg {
+    font-size: 7px !important;
+  }
+
+  .cluster-captions-row {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    margin-top: 4px !important;
+  }
+
+  .cluster-captions-row .monitor-caption {
+    font-size: 8px !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+  }
+
+  .cluster-captions-row .monitor-caption b {
+    font-size: 8.5px !important;
+    color: var(--ink) !important;
+  }
+
+  .cluster-captions-row .monitor-caption span {
+    font-size: 7.5px !important;
+    color: var(--dim) !important;
   }
 
   .relay-insight-card {
-    padding: 12px 12px;
-    gap: 8px;
-    flex-direction: column;
-    align-items: flex-start;
-    margin-top: 14px;
-    border-radius: 10px;
+    padding: 12px 12px !important;
+    margin-top: 14px !important;
+    border-radius: 12px !important;
   }
 
   .insight-text {
-    font-size: 11px;
-    line-height: 1.45;
+    font-size: 11px !important;
+    line-height: 1.45 !important;
   }
 
   .relay-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    margin-top: 18px;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin-top: 18px !important;
   }
 
   .relay-card {
-    padding: 16px 14px;
-    border-radius: 12px;
-  }
-
-  .relay-card .card-num {
-    font-size: 10px;
-    margin-bottom: 6px;
+    padding: 16px 14px !important;
+    border-radius: 12px !important;
   }
 
   .relay-card .card-title {
-    font-size: 16px;
-    margin-bottom: 6px;
+    font-size: 16px !important;
+    margin-bottom: 6px !important;
   }
 
   .relay-card .card-desc {
-    font-size: 12px;
+    font-size: 12px !important;
   }
 
-  /* 05 · Missions */
-  .mission {
-    padding: 0 16px;
-    padding-top: 10vh;
-    gap: 2vh;
+  /* ── 05 · The Missions (Swipeable Native Carousel) ────────────────────── */
+  .missions-track {
+    height: auto !important;
   }
 
-  .m-num {
-    font-size: clamp(120px, 32vw, 180px);
-    bottom: -1vh;
-    opacity: 0.45;
+  .missions-stick {
+    position: relative !important;
+    height: auto !important;
+    min-height: auto !important;
+    padding: 50px 0 30px !important;
+    overflow: visible !important;
   }
 
   .missions-head {
-    top: 6vh;
-    left: 16px;
-    right: 16px;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    padding: 0 16px 14px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
   }
 
-  .m-title {
-    font-size: clamp(21px, 5.8vw, 30px);
-    line-height: 1.05;
+  .missions-head .eyebrow {
+    font-size: 9.5px;
+    letter-spacing: 0.16em;
+    color: var(--gold);
+    text-transform: uppercase;
+    font-family: var(--mono);
+    margin: 0;
   }
 
-  .m-scenario {
-    font-size: 12.5px;
-    line-height: 1.45;
-    margin-top: 10px;
+  .missions-rail {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 12px !important;
+    padding: 0 16px 14px !important;
+    transform: none !important;
+    scrollbar-width: none !important;
   }
 
-  .m-solve {
-    font-size: 11.5px;
-    margin-top: 12px;
-    padding-left: 10px;
+  .missions-rail::-webkit-scrollbar {
+    display: none !important;
   }
 
-  .m-art {
-    max-height: 18vh;
+  .mission {
+    flex: 0 0 calc(100vw - 44px) !important;
+    width: calc(100vw - 44px) !important;
+    scroll-snap-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 22px 18px !important;
+    border-radius: 16px !important;
+    background: rgba(14, 16, 22, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(12px) !important;
+    gap: 14px !important;
+    position: relative !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
 
-  .m-art svg {
-    max-height: 18vh;
+  .mission .m-num {
+    position: absolute !important;
+    right: 8px !important;
+    bottom: -15px !important;
+    left: auto !important;
+    font-size: 96px !important;
+    line-height: 1 !important;
+    opacity: 0.12 !important;
+    pointer-events: none !important;
   }
 
-  /* 06 · Touchpad & Thumbsticks */
+  .mission .m-art {
+    max-height: 150px !important;
+    order: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  .mission .m-art svg {
+    max-height: 140px !important;
+    width: auto !important;
+  }
+
+  .mission .m-copy {
+    opacity: 1 !important;
+  }
+
+  .mission .m-title {
+    font-size: 21px !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.03em !important;
+  }
+
+  .mission .m-scenario {
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+    color: var(--dim) !important;
+    margin-top: 6px !important;
+  }
+
+  .mission .m-solve {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+    margin-top: 10px !important;
+    border-left: 2px solid var(--gold) !important;
+    padding-left: 10px !important;
+  }
+
+  .missions-prog {
+    position: relative !important;
+    margin: 4px 16px 0 !important;
+    height: 3px !important;
+    border-radius: 99px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* ── 06 · Touchpad & Thumbsticks ──────────────────────────────────────── */
   .touch {
-    height: 100vh;
-    min-height: 560px;
+    height: auto !important;
+    min-height: 520px !important;
+    padding: 56px 16px 36px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    position: relative !important;
+    overflow: hidden !important;
   }
 
   .touch-copy {
-    left: 16px;
-    right: 16px;
-    top: clamp(52px, 8vh, 72px);
-    width: auto;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    text-align: center !important;
+    margin-bottom: 24px !important;
+  }
+
+  .touch-copy .eyebrow {
+    font-size: 9.5px;
+    letter-spacing: 0.16em;
+    color: var(--gold);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    font-family: var(--mono);
   }
 
   .dock {
-    bottom: clamp(48px, 7vh, 64px);
-    gap: clamp(14px, 4vw, 24px);
-    width: 100%;
-    justify-content: center;
+    position: relative !important;
+    left: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    display: flex !important;
+    justify-content: center !important;
+    gap: 20px !important;
+    width: 100% !important;
+    margin-bottom: 14px !important;
   }
 
   .well {
-    width: clamp(92px, 25vw, 116px);
-  }
-
-  .pod span {
-    font-size: 9px;
+    width: 104px !important;
+    height: 104px !important;
   }
 
   .touch-hint {
-    bottom: clamp(14px, 2vh, 20px);
-    font-size: 9px;
+    position: relative !important;
+    left: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    text-align: center !important;
+    font-size: 9px !important;
   }
 
-  /* 07 · Nine Bytes HID */
+  /* ── 07 · Nine Bytes HID ──────────────────────────────────────────────── */
   .bytes {
-    padding: 7vh 16px 5vh;
+    padding: 48px 16px 36px !important;
   }
 
   .bytes-top {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    text-align: left !important;
   }
 
   .keycap {
-    text-align: left;
+    text-align: left !important;
+    margin-top: 6px !important;
   }
 
   .keycap .ch {
-    font-size: clamp(64px, 17vw, 100px);
-    min-height: auto;
-  }
-
-  .keycap .info {
-    margin-top: 6px;
-    font-size: 10px;
+    font-size: 76px !important;
+    min-height: auto !important;
   }
 
   .report-label {
-    margin: 18px 0 8px;
-    font-size: 9px;
+    margin: 20px 0 10px !important;
+    font-size: 9px !important;
   }
 
   .report.k {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    width: 100%;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+    width: 100% !important;
   }
 
   .report.m {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    width: 100%;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+    width: 100% !important;
   }
 
   .byte {
-    padding: 7px 5px;
-    border-radius: 5px;
+    padding: 8px 6px !important;
+    border-radius: 6px !important;
+    background: rgba(18, 20, 26, 0.6) !important;
   }
 
   .byte .v {
-    font-size: 13.5px;
+    font-size: 14px !important;
   }
 
   .byte .l {
-    font-size: 7px;
-    margin-top: 4px;
+    font-size: 7.5px !important;
+    margin-top: 4px !important;
   }
 
-  .bytes-note {
-    font-size: 11.5px;
-    margin-top: 12px;
-  }
-
-  /* 08 · Install */
+  /* ── 08 · Install ─────────────────────────────────────────────────────── */
   .install {
-    padding: 7vh 16px;
-    gap: 18px;
+    padding: 48px 16px 36px !important;
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
   }
 
   .install .mega {
-    font-size: clamp(30px, 8vw, 44px);
-    margin-bottom: 12px;
+    font-size: 34px !important;
+    line-height: 1.05 !important;
+    margin-bottom: 10px !important;
   }
 
   .term {
-    border-radius: 8px;
+    border-radius: 10px !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8) !important;
   }
 
   .term-bar {
-    padding: 9px 12px;
-    font-size: 9px;
+    padding: 10px 14px !important;
+    font-size: 9.5px !important;
   }
 
   .term pre {
-    padding: 12px 14px;
-    font-size: 10px;
-    line-height: 1.55;
+    padding: 14px !important;
+    font-size: 10px !important;
+    line-height: 1.55 !important;
   }
 
-  .req {
-    font-size: 10.5px;
-    margin-top: 12px;
+  /* ── 09 · Finale ──────────────────────────────────────────────────────── */
+  .finale-track {
+    height: auto !important;
   }
 
-  /* 09 · Finale */
+  .finale-stick {
+    position: relative !important;
+    height: auto !important;
+    min-height: 75vh !important;
+    padding: 50px 16px 32px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
   .finale-logo {
-    width: min(290px, 82vw);
-    max-height: 28vh;
+    width: min(280px, 80vw) !important;
+    max-height: 25vh !important;
   }
 
   .finale-h {
-    font-size: clamp(21px, 5.6vw, 30px);
-    margin-top: 16px;
+    font-size: 24px !important;
+    margin-top: 16px !important;
+  }
+
+  .finale-h span {
+    opacity: 1 !important;
+    transform: none !important;
   }
 
   .finale-links {
-    margin-top: 20px;
-    gap: 12px;
-    flex-direction: column;
-    align-items: center;
+    margin-top: 20px !important;
+    gap: 12px !important;
+    opacity: 1 !important;
+    transform: none !important;
+    flex-direction: column !important;
   }
 
   .big-link {
-    font-size: clamp(16px, 4.5vw, 20px);
-    padding-bottom: 4px;
+    font-size: 18px !important;
+    padding-bottom: 4px !important;
   }
 
   .foot {
-    position: static;
-    margin-top: 32px;
-    padding: 0 16px 20px;
-    gap: 8px 14px;
-    font-size: 8px;
-    line-height: 1.4;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    margin-top: 36px !important;
+    padding: 0 !important;
+    font-size: 8px !important;
+    gap: 8px 14px !important;
   }
 }
 
 /* ── Compact Phones (<= 380px) ─────────────────────────────────────────── */
 @media (max-width: 380px) {
   .mega {
-    font-size: 24px;
+    font-size: 24px !important;
   }
 
   .h2 {
-    font-size: 22px;
+    font-size: 22px !important;
   }
 
   .hero-device {
-    --u: 2.3px;
+    --u: 2.3px !important;
   }
 
   .stage-device.phone-frame {
-    width: 64px;
-    height: 126px;
+    width: 64px !important;
+    height: 124px !important;
+  }
+
+  .bridge-unit {
+    width: 68px !important;
   }
 
   .bridge-side-caption {
-    max-width: 68px;
+    max-width: 72px !important;
   }
 
   .bridge-side-caption b {
-    font-size: 8.5px;
+    font-size: 8px !important;
   }
 
   .bridge-side-caption span {
-    font-size: 7px;
+    font-size: 6px !important;
   }
 
   .stage-device.monitor-frame {
-    width: 140px;
-    height: 126px;
+    height: 124px !important;
+    margin-left: 8px !important;
   }
 
   .well {
-    width: 84px;
+    width: 86px !important;
+    height: 86px !important;
   }
 }
 
@@ -4065,13 +4315,13 @@ body.ready .scroll-cue {
 
   /* Prevent persistent hover scale lock on touch taps */
   .relay-card.rv.in:hover {
-    transform: translateY(0) scale(1);
-    border-color: rgba(245, 242, 234, 0.08);
-    background: rgba(10, 11, 15, 0.5);
+    transform: translateY(0) scale(1) !important;
+    border-color: rgba(245, 242, 234, 0.08) !important;
+    background: rgba(10, 11, 15, 0.5) !important;
   }
 
   .driver-card:hover {
-    transform: none;
+    transform: none !important;
   }
 }
 
