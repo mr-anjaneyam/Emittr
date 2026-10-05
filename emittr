@@ -31,13 +31,15 @@ fi
 find_python() {
     if [ -x "/opt/tactical_venv/bin/python3" ]; then
         echo "/opt/tactical_venv/bin/python3"
-    elif [ -x "/usr/bin/python3" ]; then
-        echo "/usr/bin/python3"
-    elif command -v python3 >/dev/null 2>&1; then
-        echo "$(command -v python3)"
-    else
-        echo "python3"
+        return
     fi
+    for py in /usr/bin/python3 "${PREFIX}/bin/python3" "$(command -v python3 2>/dev/null)"; do
+        if [ -n "$py" ] && [ -x "$py" ]; then
+            echo "$py"
+            return
+        fi
+    done
+    echo "python3"
 }
 PY_BIN="$(find_python)"
 
@@ -150,16 +152,30 @@ cmd_start() {
         if ! grep -qw "${host_name}" /etc/hosts 2>/dev/null; then
             echo "127.0.0.1 ${host_name}" >> /etc/hosts 2>/dev/null || true
         fi
-        if [ -f /proc/1/root/system/etc/hosts ]; then
-            if ! grep -qw "${host_name}" /proc/1/root/system/etc/hosts 2>/dev/null; then
-                echo "127.0.0.1 ${host_name}" >> /proc/1/root/system/etc/hosts 2>/dev/null || true
-            fi
-        fi
     done
 
-    # 3. Setup iptables loopback port 80 -> 8088 redirect
-    iptables -t nat -A PREROUTING -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port "${PORT}" 2>/dev/null || true
-    iptables -t nat -A OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-port "${PORT}" 2>/dev/null || true
+    local android_hosts=""
+    if [ -f /proc/1/root/system/etc/hosts ]; then
+        android_hosts="/proc/1/root/system/etc/hosts"
+    elif [ -f /system/etc/hosts ]; then
+        android_hosts="/system/etc/hosts"
+    fi
+    if [ -n "$android_hosts" ] && ! grep -qw "emittr" "$android_hosts" 2>/dev/null; then
+        mkdir -p /data/local/tmp 2>/dev/null || true
+        cp "$android_hosts" /data/local/tmp/hosts 2>/dev/null || true
+        echo "127.0.0.1 emittr emittr.local hid.keyboard" >> /data/local/tmp/hosts 2>/dev/null || true
+        mount -o bind /data/local/tmp/hosts "$android_hosts" 2>/dev/null || \
+        echo "127.0.0.1 emittr emittr.local hid.keyboard" >> "$android_hosts" 2>/dev/null || true
+    fi
+
+    # 3. Setup iptables loopback port 80 -> 8088 redirect (idempotent)
+    if command -v iptables >/dev/null 2>&1; then
+        iptables -t nat -C PREROUTING -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port "${PORT}" 2>/dev/null || \
+        iptables -t nat -A PREROUTING -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port "${PORT}" 2>/dev/null || true
+
+        iptables -t nat -C OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-port "${PORT}" 2>/dev/null || \
+        iptables -t nat -A OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-port "${PORT}" 2>/dev/null || true
+    fi
 
     # 4. Spawn server daemon
     mkdir -p "$(dirname "${LOG_FILE}")" 2>/dev/null || true

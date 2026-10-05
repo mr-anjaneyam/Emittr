@@ -21,18 +21,26 @@ case "$1" in
         # Register emittr hostname into /etc/hosts
         for host in "emittr" "emittr.local" "hid.keyboard"; do
             if ! grep -qw "$host" /etc/hosts 2>/dev/null; then
-                echo "127.0.0.1 $host" >> /etc/hosts
-            fi
-            if [ -f /proc/1/root/system/etc/hosts ]; then
-                if ! grep -qw "$host" /proc/1/root/system/etc/hosts 2>/dev/null; then
-                    echo "127.0.0.1 $host" >> /proc/1/root/system/etc/hosts 2>/dev/null || true
-                fi
+                echo "127.0.0.1 $host" >> /etc/hosts 2>/dev/null || true
             fi
         done
 
-        # Setup port 80 loopback redirection
-        iptables -t nat -A PREROUTING -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port 8088 2>/dev/null || true
-        iptables -t nat -A OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-port 8088 2>/dev/null || true
+        if [ -f /proc/1/root/system/etc/hosts ] && ! grep -qw "emittr" /proc/1/root/system/etc/hosts 2>/dev/null; then
+            mkdir -p /data/local/tmp 2>/dev/null || true
+            cp /proc/1/root/system/etc/hosts /data/local/tmp/hosts 2>/dev/null || true
+            echo "127.0.0.1 emittr emittr.local hid.keyboard" >> /data/local/tmp/hosts 2>/dev/null || true
+            mount -o bind /data/local/tmp/hosts /proc/1/root/system/etc/hosts 2>/dev/null || \
+            echo "127.0.0.1 emittr emittr.local hid.keyboard" >> /proc/1/root/system/etc/hosts 2>/dev/null || true
+        fi
+
+        # Setup port 80 loopback redirection (idempotent)
+        if command -v iptables >/dev/null 2>&1; then
+            iptables -t nat -C PREROUTING -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port 8088 2>/dev/null || \
+            iptables -t nat -A PREROUTING -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port 8088 2>/dev/null || true
+
+            iptables -t nat -C OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-port 8088 2>/dev/null || \
+            iptables -t nat -A OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-port 8088 2>/dev/null || true
+        fi
 
         # Setup Magisk boot persistence if /data/adb/service.d exists
         if [ -d "/data/adb/service.d" ]; then

@@ -161,30 +161,58 @@ COMBOS: Dict[str, tuple] = {
     'alt+right':     (MOD_LALT, 0x4F),
 }
 
-HID_DEVICE_PATH = "/dev/hidg0"
+HID_DEVICE_PATH = os.environ.get("EMITTR_HID_PATH", "/dev/hidg0")
 
 
 class HIDDevice:
     def __init__(self, hid_path: str = HID_DEVICE_PATH):
-        self.hid_path = hid_path
+        self.hid_path = self._resolve_hid_path(hid_path)
         self.is_typing = False
         self.abort_requested = False
 
+    def _resolve_hid_path(self, default: str) -> str:
+        if os.path.exists(default):
+            return default
+        import glob
+        nodes = glob.glob("/dev/hidg*")
+        if nodes:
+            return sorted(nodes)[0]
+        return default
+
     def is_host_connected(self) -> bool:
-        """Return True if USB UDC is in 'configured' state."""
-        for p in Path("/sys/class/udc").glob("*"):
-            st = p / "state"
-            if st.exists():
-                try:
-                    return st.read_text().strip().lower() == "configured"
-                except Exception:
-                    pass
-        udc_hisi = Path("/sys/devices/hisi-usb-otg/udc/hisi-usb-otg/state")
-        if udc_hisi.exists():
+        """Return True if USB UDC is in 'configured' or 'addressed' state."""
+        # 1. Check all controllers under /sys/class/udc
+        try:
+            for p in Path("/sys/class/udc").glob("*"):
+                st = p / "state"
+                if st.exists():
+                    try:
+                        val = st.read_text().strip().lower()
+                        if val in ("configured", "addressed"):
+                            return True
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        # 2. Check Android system properties
+        try:
+            for cmd in ("/system/bin/getprop sys.usb.state", "getprop sys.usb.state"):
+                state = os.popen(f"{cmd} 2>/dev/null").read().strip().lower()
+                if any(x in state for x in ("hid", "configured", "connected")):
+                    return True
+        except Exception:
+            pass
+
+        # 3. Check legacy Android USB state
+        legacy_state = Path("/sys/class/android_usb/android0/state")
+        if legacy_state.exists():
             try:
-                return udc_hisi.read_text().strip().lower() == "configured"
+                if legacy_state.read_text().strip().lower() in ("configured", "addressed", "connected"):
+                    return True
             except Exception:
                 pass
+
         return False
 
     def _open_nonblock(self, path: str):
@@ -326,21 +354,22 @@ class HIDDevice:
             udc_name = p.name
             break
 
-        if state == "not attached":
-            udc_hisi = Path("/sys/devices/hisi-usb-otg/udc/hisi-usb-otg/state")
-            if udc_hisi.exists():
-                try:
-                    state = udc_hisi.read_text().strip()
-                    udc_name = "hisi-usb-otg"
-                except Exception:
-                    pass
+        is_attached = state.lower() in ("configured", "addressed")
+        if not is_attached:
+            if self.is_host_connected():
+                is_attached = True
+                if state == "not attached":
+                    state = "configured"
 
         return {
-            "attached":        state.lower() in ("configured", "addressed"),
+            "attached":        is_attached,
+            "connected":       is_attached,       # Backward-compat alias for usbtype
             "state":           state,
+            "udc_state":       state,             # Backward-compat alias for usbtype
             "speed":           speed,
             "udc":             udc_name,
             "hid_node_exists": os.path.exists(self.hid_path),
+            "kbd_node":        self.hid_path,     # Backward-compat alias for usbtype
             "is_typing":       self.is_typing,
             "version":         VERSION,
         }
@@ -355,16 +384,18 @@ STATIC_DIR = Path(__file__).parent / "static"
 
 
 def ensure_hid_gadget():
-    """Verify composite HID gadget is active. If Android reverted to mass_storage, restore it."""
+    """Verify composite HID gadget is active. If missing or Android reverted to mass_storage, restore it."""
     gadget_dir = "/config/usb_gadget/g1"
-    if not os.path.exists(gadget_dir):
-        return
+    if not os.path.exists("/config/usb_gadget") and os.path.exists("/sys/kernel/config/usb_gadget"):
+        gadget_dir = "/sys/kernel/config/usb_gadget/g1"
+
     cfg_f1 = f"{gadget_dir}/configs/b.1/f1"
-    if not os.path.exists(cfg_f1):
-        log.info("Detected USB configuration reversion. Restoring composite HID gadget...")
+    if not os.path.exists(cfg_f1) or not os.path.exists(hid.hid_path):
+        log.info("Detected missing or reverted HID endpoint. Initializing composite HID gadget...")
         try:
             import setup_gadget
             setup_gadget.init_gadget()
+            hid.hid_path = hid._resolve_hid_path(HID_DEVICE_PATH)
         except Exception as e:
             log.error(f"Failed to restore gadget: {e}")
 
@@ -477,6 +508,20 @@ async def type_text(data: dict = Body(...)):
 
 
 async def _type_worker(text: str, delay_s: float, initial_delay: float):
+    # Normalize Windows CRLF line endings to single newlines to avoid double-Enters
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+
+    # Map Unicode smart quotes, curly quotes, and dashes to standard ASCII equivalents
+    smart_map = {
+        '“': '"', '”': '"', '„': '"', '«': '"', '»': '"',
+        '‘': "'", '’': "'", '‚': "'", '`': "'",
+        '–': '-', '—': '-', '−': '-',
+        '…': '...',
+        '\u00a0': ' ',  # Non-breaking space
+    }
+    for smart_ch, ascii_ch in smart_map.items():
+        text = text.replace(smart_ch, ascii_ch)
+
     hid.is_typing = True
     stop_event.clear()
     total = len(text)

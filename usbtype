@@ -47,10 +47,16 @@ def main():
         try:
             with urllib.request.urlopen(f"{SERVER_URL}/api/status", timeout=3) as resp:
                 status = json.loads(resp.read().decode())
-                print(f"USB Host Connected: {status.get('connected')}")
-                print(f"UDC State:          {status.get('udc_state')}")
-                print(f"Speed:              {status.get('speed')}")
-                print(f"Keyboard Node:      {status.get('kbd_node')}")
+                is_conn = status.get('connected', status.get('attached', False))
+                udc_state = status.get('udc_state', status.get('state', 'Unknown'))
+                speed = status.get('speed', 'Unknown')
+                kbd_node = status.get('kbd_node', '/dev/hidg0')
+                is_typing = status.get('is_typing', False)
+                print(f"USB Host Connected: {'Yes (Active Host)' if is_conn else 'No (Waiting for host)'}")
+                print(f"UDC State:          {udc_state}")
+                print(f"Speed:              {speed}")
+                print(f"Keyboard Node:      {kbd_node}")
+                print(f"Typing Active:      {'Yes' if is_typing else 'No'}")
         except Exception as e:
             print(f"Error checking status: {e}")
         return

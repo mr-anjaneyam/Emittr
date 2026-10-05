@@ -10,7 +10,7 @@ Vcs-Browser: https://github.com/mr-anjaneyam/Emittr
 
 Package: emittr
 Architecture: all
-Depends: ${misc:Depends}, python3 (>= 3.7), python3-pip, iptables, curl | wget
+Depends: ${misc:Depends}, python3 (>= 3.7), python3-pip, python3-fastapi | python3-pip, python3-uvicorn | python3-pip, python3-websockets | python3-pip, iptables, curl | wget
 Recommends: magisk | kali-nethunter
 Description: Tactical USB HID Deck and Local Network Air-Gap Relay
  Emittr turns any rooted Android or NetHunter phone into a hardware-grade
