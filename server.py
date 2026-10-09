@@ -515,7 +515,7 @@ async def _type_worker(text: str, delay_s: float, initial_delay: float):
     smart_map = {
         '“': '"', '”': '"', '„': '"', '«': '"', '»': '"',
         '‘': "'", '’': "'", '‚': "'", '`': "'",
-        '–': '-', '—': '-', '−': '-',
+        '\u2013': '-', '\u2014': '-', '\u2212': '-',
         '…': '...',
         '\u00a0': ' ',  # Non-breaking space
     }
