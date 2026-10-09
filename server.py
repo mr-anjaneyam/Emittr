@@ -707,6 +707,20 @@ async def connection_monitor_loop():
             log.warning(f"Connection monitor exception: {e}")
 
 
+def get_ssl_config():
+    """Detect SSL certificates from environment variables or default ssl/ directory."""
+    ssl_cert = os.environ.get("EMITTR_SSL_CERT")
+    ssl_key = os.environ.get("EMITTR_SSL_KEY")
+    ssl_dir = Path(__file__).parent / "ssl"
+    if not ssl_cert and (ssl_dir / "cert.pem").is_file():
+        ssl_cert = str(ssl_dir / "cert.pem")
+    if not ssl_key and (ssl_dir / "key.pem").is_file():
+        ssl_key = str(ssl_dir / "key.pem")
+    if ssl_cert and ssl_key and os.path.exists(ssl_cert) and os.path.exists(ssl_key):
+        return ssl_cert, ssl_key
+    return None, None
+
+
 async def start_http_port80_redirector():
     """Userland HTTP 302 redirect on port 80 -> port 8088."""
     async def handle_port80(reader, writer):
@@ -726,9 +740,11 @@ async def start_http_port80_redirector():
                     # Strip any port number
                     host_header = raw_host.split(":")[0] if raw_host else "emittr"
                     break
+            ssl_cert, ssl_key = get_ssl_config()
+            scheme = "https" if (ssl_cert and ssl_key) else "http"
             redirect_response = (
                 "HTTP/1.1 302 Found\r\n"
-                f"Location: http://{host_header}:8088{path}\r\n"
+                f"Location: {scheme}://{host_header}:8088{path}\r\n"
                 "Connection: close\r\n"
                 "Content-Length: 0\r\n\r\n"
             )
@@ -745,7 +761,9 @@ async def start_http_port80_redirector():
 
     try:
         server = await asyncio.start_server(handle_port80, "0.0.0.0", 80)
-        log.info("Port 80 redirector listening (redirects to :8088)")
+        ssl_cert, ssl_key = get_ssl_config()
+        scheme = "https" if (ssl_cert and ssl_key) else "http"
+        log.info(f"Port 80 redirector listening (redirects to {scheme}://...:8088)")
         async with server:
             await server.serve_forever()
     except Exception as e:
@@ -755,14 +773,15 @@ async def start_http_port80_redirector():
 if __name__ == "__main__":
     import uvicorn
     bind_host = os.environ.get("EMITTR_HOST", "0.0.0.0")
-    ssl_cert = os.environ.get("EMITTR_SSL_CERT")
-    ssl_key = os.environ.get("EMITTR_SSL_KEY")
+    ssl_cert, ssl_key = get_ssl_config()
+    if ssl_cert and ssl_key:
+        log.info(f"HTTPS enabled with SSL certificate: {ssl_cert}")
     uvicorn.run(
         "server:app",
         host=bind_host,
         port=8088,
         reload=False,
         access_log=False,
-        ssl_certfile=ssl_cert if ssl_cert and ssl_key else None,
-        ssl_keyfile=ssl_key if ssl_cert and ssl_key else None,
+        ssl_certfile=ssl_cert,
+        ssl_keyfile=ssl_key,
     )
