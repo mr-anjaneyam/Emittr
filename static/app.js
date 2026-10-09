@@ -1,12 +1,12 @@
 /**
- * Emittr · Web App Controller v1.3.0
+ * Emittr: Web App Controller v2.0.0
  * Tactical USB HID Controller: Dual Xbox Joysticks, Universal Dashboard Mode,
  * Native AC Pan Horizontal Scroll, IME Keyboard Mirror, and Windows Shortcuts Deck.
  */
 
 'use strict';
 
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '2.0.0';
 
 const State = {
   ws: null,

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# build-deb.sh - Build standalone .deb package for Emittr v1.3.0
+# build-deb.sh - Build standalone .deb package for Emittr v2.0.0
 # ==============================================================================
 set -e
 
-VERSION="1.3.0"
+VERSION="2.0.0"
 PKG_NAME="emittr"
 DEB_FILE="${PKG_NAME}_${VERSION}_all.deb"
 BUILD_DIR="$(mktemp -d -t emittr-deb-XXXXXX)"

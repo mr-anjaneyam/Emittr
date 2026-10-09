@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-server.py  -  Emittr Backend & HID Controller  v1.3.0
+server.py  -  Emittr Backend & HID Controller  v2.0.0
 =====================================================
 FastAPI server running on Android NetHunter (port 8088).
 Provides:
@@ -34,7 +34,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("emittr")
 
-VERSION = "1.3.0"
+VERSION = "2.0.0"
 
 # ── HID Scancode Tables (Standard USB HID Boot Protocol) ───────────────────
 MOD_NONE   = 0x00

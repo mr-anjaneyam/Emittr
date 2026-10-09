@@ -55,7 +55,7 @@ case "$1" in
 
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "  [+] Emittr v1.3.0 installed successfully!"
+        echo "  [+] Emittr v2.0.0 installed successfully!"
         echo "      • Run 'emittr start'  to launch the service"
         echo "      • Run 'emittr status' to check connection & IP address"
         echo "      • Open http://emittr/ (emittr/) in your mobile browser"

@@ -6,9 +6,9 @@ We actively maintain and provide security patches for the latest release branch 
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 2.0.x   | :white_check_mark: |
 | 1.3.x   | :white_check_mark: |
-| 1.2.x   | :x:                |
-| < 1.2.0 | :x:                |
+| < 1.3.0 | :x:                |
 
 ---
 

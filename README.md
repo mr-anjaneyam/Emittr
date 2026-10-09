@@ -14,7 +14,7 @@
 ### *Hardware USB HID Deck • Ghost Keystrokes • Local Network Air-Gap Relay*
 **Turn any rooted Android or NetHunter phone into an unapologetic hardware-grade USB keyboard, precision trackpad, and continuous scrolling deck.**
 
-[![Release](https://img.shields.io/badge/Release-v1.3.0-00E5FF.svg?style=for-the-badge&logo=github)](https://github.com/mr-anjaneyam/Emittr/releases)
+[![Release](https://img.shields.io/badge/Release-v2.0.0-00E5FF.svg?style=for-the-badge&logo=github)](https://github.com/mr-anjaneyam/Emittr/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F50057.svg?style=for-the-badge)](LICENSE)
 [![Gadget](https://img.shields.io/badge/USB_Gadget-Composite_HID-7C4DFF.svg?style=for-the-badge&logo=linux)](https://docs.kernel.org/usb/gadget_configfs.html)
 [![Web Deck](https://img.shields.io/badge/Deck-Material_3_PWA-00E676.svg?style=for-the-badge&logo=pwa)](https://mr-anjaneyam.github.io/Emittr/)
@@ -133,7 +133,7 @@ Or maybe you tried a BadUSB rubber ducky, but it’s completely blind, fires onc
 
 **Emittr does things the right way:** it uses your phone's USB-OTG port and kernel `configfs` to disguise your phone as a **genuine, physical Standard USB Keyboard & Mouse**.
 
-| Feature | Software Wi-Fi / Bluetooth Apps | Blind USB Keystroke Sticks | Emittr v1.3.0 ⚡ |
+| Feature | Software Wi-Fi / Bluetooth Apps | Blind USB Keystroke Sticks | Emittr v2.0.0 ⚡ |
 |---|---|---|---|
 | **Host PC Setup** | Needs client `.exe` / drivers | None (blind flash drive) | **Zero host install.** Works on BIOS, Windows, Mac, Linux, PS5. |
 | **Network Dependency** | Needs shared Wi-Fi / pairing | None | **Pure physical USB cable.** Air-gapped workstations rejoice. |
@@ -217,13 +217,13 @@ Hardware-level protection ensuring target host modifier states (<kbd>Ctrl</kbd>,
 ---
 
 ### Method 1: APT / Debian Package (Recommended for Kali / Debian)
-Install directly using `apt`—which automatically resolves and installs all system dependencies:
+Install directly using `apt`, which automatically resolves and installs all system dependencies:
 ```bash
 # Download latest .deb release
-wget https://github.com/mr-anjaneyam/Emittr/releases/latest/download/emittr_1.3.0_all.deb
+wget https://github.com/mr-anjaneyam/Emittr/releases/latest/download/emittr_2.0.0_all.deb
 
 # Install via APT
-sudo apt install ./emittr_1.3.0_all.deb
+sudo apt install ./emittr_2.0.0_all.deb
 ```
 > 📦 Want to submit Emittr to official Kali NetHunter or Termux repositories? See our complete [Debian & APT Packaging Guide](PACKAGING.md).
 
@@ -262,7 +262,7 @@ Connect the USB cable between your phone and the target computer.
 
 ## 💻 Command Line Control (`emittr` & `usbtype`)
 
-Once installed, standard global commands are linked to your PATH—meaning you can control the entire daemon and inject keystrokes from **anywhere in your terminal or NetHunter chroot**:
+Once installed, standard global commands are linked to your PATH, meaning you can control the entire daemon and inject keystrokes from **anywhere in your terminal or NetHunter chroot**:
 
 ### 🎮 The `emittr` Daemon Controller
 
@@ -294,7 +294,7 @@ emittr unstick
 #### Example Output: `emittr status`
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  EMITTR TACTICAL USB HID DECK  •  v1.3.0
+  EMITTR TACTICAL USB HID DECK  •  v2.0.0
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Status:           ● ONLINE (PID: 14209)
   USB Controller:   Connected to Host PC (Active Wire)

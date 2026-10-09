@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Emittr - Universal CLI Controller  v1.3.0
+# Emittr - Universal CLI Controller  v2.0.0
 # ==============================================================================
 # Usage:
 #   emittr start     - Start the Emittr HID daemon & port 80 redirector
@@ -14,7 +14,7 @@
 
 set -e
 
-VERSION="1.3.0"
+VERSION="2.0.0"
 PORT="8088"
 LOG_FILE="/var/log/usb_deck.log"
 

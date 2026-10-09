@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Emittr - Universal USB HID Controller Deployment Script  v1.3.0
+# Emittr - Universal USB HID Controller Deployment Script  v2.0.0
 # ==============================================================================
 # Supports: Kali NetHunter chroot, Termux (with root), standalone Magisk/KernelSU,
 #           and standard Linux SBCs (Raspberry Pi, Orange Pi).
@@ -18,7 +18,7 @@ fi
 
 set -e
 
-VERSION="1.3.0"
+VERSION="2.0.0"
 PORT="8088"
 
 # ── 1. Target Directory Detection & Fallback ────────────────────────────────

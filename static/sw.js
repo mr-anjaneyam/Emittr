@@ -1,9 +1,9 @@
 /**
- * Emittr PWA Service Worker v1.3.0
+ * Emittr PWA Service Worker v2.0.0
  * Provides offline shell support and enables full Chrome PWA installability.
  */
 
-const CACHE_NAME = 'emittr-pwa-v1.3.1';
+const CACHE_NAME = 'emittr-pwa-v2.0.0';
 
 const ASSETS_TO_CACHE = [
   '/',
