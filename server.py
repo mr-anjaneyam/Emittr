@@ -381,6 +381,7 @@ current_typing_task: Optional[asyncio.Task] = None
 stop_event = asyncio.Event()
 
 STATIC_DIR = Path(__file__).parent / "static"
+DOCS_DIR = Path(__file__).parent / "docs"
 
 
 def ensure_hid_gadget():
@@ -678,6 +679,9 @@ async def websocket_endpoint(ws: WebSocket):
 # Mount static files AFTER all routes
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
+if DOCS_DIR.exists():
+    app.mount("/docs", StaticFiles(directory=str(DOCS_DIR), html=True), name="docs")
+
 
 # ── Background Tasks ───────────────────────────────────────────────────────
 
@@ -754,4 +758,15 @@ async def start_http_port80_redirector():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server:app", host="0.0.0.0", port=8088, reload=False, access_log=False)
+    bind_host = os.environ.get("EMITTR_HOST", "0.0.0.0")
+    ssl_cert = os.environ.get("EMITTR_SSL_CERT")
+    ssl_key = os.environ.get("EMITTR_SSL_KEY")
+    uvicorn.run(
+        "server:app",
+        host=bind_host,
+        port=8088,
+        reload=False,
+        access_log=False,
+        ssl_certfile=ssl_cert if ssl_cert and ssl_key else None,
+        ssl_keyfile=ssl_key if ssl_cert and ssl_key else None,
+    )
