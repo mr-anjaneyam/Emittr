@@ -1,32 +1,45 @@
 #!/system/bin/sh
-# Autostart daemon for Emittr USB HID Deck (v1.3.0)
-BOOT_LOG="/data/local/tmp/emittr_boot.log"
-echo "[$(date '+%Y-%m-%d %H:%M:%S')] 02-usb-deck.sh starting" >> "${BOOT_LOG}" 2>/dev/null
-
+# Autostart daemon for Emittr USB HID Deck (v2.0.0)
 until [ "$(getprop sys.boot_completed)" = "1" ]; do
     sleep 2
 done
 
-# HID mode is opt-in (Settings toggle inside the app), so USB function suppression
-# only happens via setup_gadget.py when actually enabling HID — not unconditionally
-# at every boot. This lets NetHunter's own USB-function choice stand by default.
+# Suppress Android framework from forcing mass_storage
+setprop persist.sys.usb.config none 2>/dev/null || true
+setprop sys.usb.config none 2>/dev/null || true
 
-# Setup hid.keyboard in /system/etc/hosts via safe bind mount
-if ! grep -q "hid.keyboard" /system/etc/hosts 2>/dev/null; then
-    cp /system/etc/hosts /data/local/tmp/hosts
-    echo "127.0.0.1 hid.keyboard" >> /data/local/tmp/hosts
-    if mount -o bind /data/local/tmp/hosts /system/etc/hosts 2>>"${BOOT_LOG}"; then
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] hosts bind-mount OK" >> "${BOOT_LOG}" 2>/dev/null
-    else
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] hosts bind-mount FAILED (non-fatal)" >> "${BOOT_LOG}" 2>/dev/null
-    fi
+# Ensure HID node permissions & SELinux context
+chmod 666 /dev/hidg* 2>/dev/null || true
+if command -v supolicy >/dev/null 2>&1; then
+    supolicy --live "allow untrusted_app hid_device chr_file { read write open ioctl }" 2>/dev/null || true
+elif command -v magiskpolicy >/dev/null 2>&1; then
+    magiskpolicy --live "allow * hid_device chr_file *" 2>/dev/null || true
+fi
+chcon u:object_r:hid_device:s0 /dev/hidg* 2>/dev/null || true
+
+# Setup emittr in /system/etc/hosts via safe bind mount (so 'emittr/' resolves in Chrome)
+if ! grep -qw "emittr" /system/etc/hosts 2>/dev/null; then
+    umount /system/etc/hosts 2>/dev/null || true
+    cp /system/etc/hosts /data/local/tmp/hosts 2>/dev/null || true
+    echo "127.0.0.1 emittr emittr.local hid.keyboard" >> /data/local/tmp/hosts
+    mount -o bind /data/local/tmp/hosts /system/etc/hosts 2>/dev/null || true
 fi
 
-# Launch Emittr server in Kali NetHunter chroot
+# Setup iptables loopback port 80 -> 8088 redirection (idempotent)
+if command -v iptables >/dev/null 2>&1; then
+    iptables -t nat -C PREROUTING -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port 8088 2>/dev/null || \
+    iptables -t nat -A PREROUTING -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port 8088 2>/dev/null || true
+
+    iptables -t nat -C OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-port 8088 2>/dev/null || \
+    iptables -t nat -A OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-port 8088 2>/dev/null || true
+fi
+
+# Launch Emittr service across NetHunter chroot or standalone root environment
 if [ -f /data/local/nhsystem/bin/bootkali ]; then
-    /data/local/nhsystem/bin/bootkali bash -c "mkdir -p /config && mount -t configfs none /config 2>/dev/null; if [ -x /opt/tactical_venv/bin/python3 ]; then PY=/opt/tactical_venv/bin/python3; else PY=python3; fi; if [ -f /opt/usb_hid_deck/.emittr_hid_mode ] && [ \"\$(cat /opt/usb_hid_deck/.emittr_hid_mode)\" = \"1\" ]; then \"\${PY}\" /opt/usb_hid_deck/setup_gadget.py 2>/dev/null; chmod 660 /dev/hidg* 2>/dev/null; fi; if [ -f /opt/usb_hid_deck/certs/emittr.crt ] && [ -f /opt/usb_hid_deck/certs/emittr.key ]; then export EMITTR_SSL_CERT=/opt/usb_hid_deck/certs/emittr.crt; export EMITTR_SSL_KEY=/opt/usb_hid_deck/certs/emittr.key; fi; nohup \"\${PY}\" /opt/usb_hid_deck/server.py > /dev/null 2>> /var/log/usb_deck.crash.log &" >> "${BOOT_LOG}" 2>&1 || echo "[$(date '+%Y-%m-%d %H:%M:%S')] bootkali launch FAILED (non-fatal)" >> "${BOOT_LOG}" 2>/dev/null
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] bootkali launch attempted" >> "${BOOT_LOG}" 2>/dev/null
-else
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] bootkali binary not found, skipping server launch" >> "${BOOT_LOG}" 2>/dev/null
+    /data/local/nhsystem/bin/bootkali /opt/usb_hid_deck/emittr start >/dev/null 2>&1 || true
+elif [ -x /opt/usb_hid_deck/emittr ]; then
+    /opt/usb_hid_deck/emittr start >/dev/null 2>&1 || true
+elif [ -x /data/local/usb_hid_deck/emittr ]; then
+    /data/local/usb_hid_deck/emittr start >/dev/null 2>&1 || true
 fi
 

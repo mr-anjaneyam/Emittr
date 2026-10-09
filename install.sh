@@ -1,296 +1,211 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ==============================================================================
-# Emittr — Tactical USB HID Controller Installer  v1.3.0
-# "Your phone. Their keyboard. Shh."
-#
-# Works on any rooted Android + NetHunter (or plain Linux) chroot with configfs
-# gadget support. No device-specific paths are hardcoded — everything that can
-# vary between phones (Python location, UDC name, IP, install dir, port) is
-# auto-detected or overridable via environment variables.
+# Emittr - Universal USB HID Controller Deployment Script  v2.0.0
+# ==============================================================================
+# Supports: Kali NetHunter chroot, Termux (with root), standalone Magisk/KernelSU,
+#           and standard Linux SBCs (Raspberry Pi, Orange Pi).
 # ==============================================================================
 
-VERSION="1.3.0"
-INSTALL_DIR="${EMITTR_INSTALL_DIR:-/opt/usb_hid_deck}"
-PORT="${EMITTR_PORT:-8088}"
-
-# ── Colors (disabled automatically when not attached to a terminal) ────────
-if [ -t 1 ]; then
-    C_RESET='\033[0m'; C_BOLD='\033[1m'
-    C_RED='\033[31m'; C_GREEN='\033[32m'; C_YELLOW='\033[33m'
-    C_CYAN='\033[36m'; C_MAGENTA='\033[35m'
-else
-    C_RESET=''; C_BOLD=''; C_RED=''; C_GREEN=''; C_YELLOW=''; C_CYAN=''; C_MAGENTA=''
+# If executed directly in Android host shell (/system/bin/sh without bash):
+if [ -z "$BASH_VERSION" ]; then
+    if [ -f /data/local/nhsystem/bin/bootkali ]; then
+        echo "[*] NetHunter detected. Forwarding deployment into Kali chroot..."
+        exec /data/local/nhsystem/bin/bootkali bash "$0" "$@"
+    elif command -v bash >/dev/null 2>&1; then
+        exec bash "$0" "$@"
+    fi
 fi
 
-log()  { echo -e "${C_CYAN}[*]${C_RESET} $*"; }
-ok()   { echo -e "${C_GREEN}[+]${C_RESET} $*"; }
-warn() { echo -e "${C_YELLOW}[!]${C_RESET} $*"; }
-info() { echo -e "${C_MAGENTA}[i]${C_RESET} $*"; }
-fail() { echo -e "${C_RED}[-]${C_RESET} $*"; exit 1; }
+set -e
 
-print_banner() {
-    echo -e "${C_CYAN}${C_BOLD}"
-    cat <<'BANNER'
-  _____           _  _   _
- |  ___|_ __ ___ (_)| |_| |_ _ __
- | |_  | '_ ` _ \| || __| __| '__|
- |  _| | | | | | | || |_| |_| |
- |_|   |_| |_| |_|_| \__|\__|_|
-BANNER
-    echo -e "${C_RESET}${C_MAGENTA}  Your phone. Their keyboard. Shh.${C_RESET}"
-    echo -e "${C_YELLOW}  Emittr v${VERSION} — Tactical USB HID Deployment${C_RESET}"
-    echo
-}
+VERSION="2.0.0"
+PORT="8088"
 
-require_root() {
-    if [ "$(id -u)" != "0" ]; then
-        fail "Root privileges required — sudo it, su it, or don't do it."
-    fi
-}
-
-# ── Environment detection (kept generic so this runs on any phone) ─────────
-detect_python() {
-    if [ -n "${EMITTR_PYTHON:-}" ] && [ -x "${EMITTR_PYTHON}" ]; then
-        echo "${EMITTR_PYTHON}"; return
-    fi
-    for candidate in /opt/tactical_venv/bin/python3 /usr/bin/python3 /usr/local/bin/python3; do
-        if [ -x "${candidate}" ]; then
-            echo "${candidate}"; return
-        fi
-    done
-    command -v python3 2>/dev/null || true
-}
-
-PY_BIN=""
-
-is_running() {
-    pgrep -f "${INSTALL_DIR}/server.py" >/dev/null 2>&1
-}
-
-stop_server() {
-    if is_running; then
-        log "Evicting the previous Emittr instance..."
-        pkill -f "${INSTALL_DIR}/server.py" 2>/dev/null || true
-        for _ in 1 2 3 4 5; do
-            is_running || break
-            sleep 1
-        done
-        is_running && pkill -9 -f "${INSTALL_DIR}/server.py" 2>/dev/null || true
-        ok "Previous instance stopped."
-    else
-        info "No running instance found — clean slate."
-    fi
-}
-
-start_server() {
-    local cert_dir="${INSTALL_DIR}/certs"
-    if [ -f "${cert_dir}/emittr.crt" ] && [ -f "${cert_dir}/emittr.key" ]; then
-        export EMITTR_SSL_CERT="${cert_dir}/emittr.crt"
-        export EMITTR_SSL_KEY="${cert_dir}/emittr.key"
-    fi
-    log "Starting Emittr on port ${PORT} using ${PY_BIN}..."
-    # server.py owns its own rotating log file (/var/log/usb_deck.log); stdout is
-    # discarded here to avoid a second, non-rotating writer targeting the same path.
-    nohup "${PY_BIN}" "${INSTALL_DIR}/server.py" > /dev/null 2>> /var/log/usb_deck.crash.log &
-}
-
-wait_healthy() {
-    local scheme="http"
-    [ -f "${INSTALL_DIR}/certs/emittr.crt" ] && scheme="https"
-    # Poll instead of a fixed sleep so slow-booting devices aren't falsely
-    # reported as failed, while fast devices don't wait unnecessarily.
-    for _ in $(seq 1 15); do
-        sleep 1
-        if curl -sk "${scheme}://127.0.0.1:${PORT}/api/status" 2>/dev/null | grep -q '"version"'; then
-            return 0
-        fi
-    done
-    return 1
-}
-
-setup_hosts() {
-    if ! grep -q "hid.keyboard" /etc/hosts 2>/dev/null; then
-        echo "127.0.0.1 hid.keyboard" >> /etc/hosts
-        ok "Added hid.keyboard to chroot /etc/hosts"
-    fi
-    # Best-effort: also add to the Android system hosts if reachable from this chroot.
-    if [ -f /proc/1/root/system/etc/hosts ]; then
-        if ! grep -q "hid.keyboard" /proc/1/root/system/etc/hosts 2>/dev/null; then
-            echo "127.0.0.1 hid.keyboard" >> /proc/1/root/system/etc/hosts 2>/dev/null || true
-        fi
-    fi
-}
-
-maybe_init_gadget() {
-    # HID mode is opt-in: only claim the USB gadget/UDC if the user has explicitly
-    # enabled it from Settings (mirrors NetHunter's own USB-function switch instead
-    # of overriding it on every install/boot).
-    local hid_flag="${INSTALL_DIR}/.emittr_hid_mode"
-    if [ -f "${hid_flag}" ] && [ "$(cat "${hid_flag}" 2>/dev/null)" = "1" ]; then
-        /system/bin/setprop persist.sys.usb.config none 2>/dev/null || true
-        /system/bin/setprop sys.usb.config none 2>/dev/null || true
-        "${PY_BIN}" "${INSTALL_DIR}/setup_gadget.py" || true
-        chmod 660 /dev/hidg* 2>/dev/null || true
-    else
-        info "HID mode is opt-in and currently off — enable it from Settings when you're ready."
-    fi
-}
-
-do_install() {
-    log "Deploying Emittr to ${INSTALL_DIR}..."
-    mkdir -p "${INSTALL_DIR}" || fail "Cannot create ${INSTALL_DIR}. Run as root."
-    stop_server
-
-    if [ "$(cd "$(dirname "$0")" && pwd)" != "${INSTALL_DIR}" ]; then
-        cp -r ./* "${INSTALL_DIR}/" || fail "File copy failed."
-    fi
-
-    chmod +x "${INSTALL_DIR}"/server.py "${INSTALL_DIR}"/setup_gadget.py \
-             "${INSTALL_DIR}"/02-usb-deck.sh "${INSTALL_DIR}"/usbtype \
-             "${INSTALL_DIR}"/start.sh 2>/dev/null || true
-
-    ln -sf "${INSTALL_DIR}/usbtype" /usr/local/bin/usbtype
-
-    maybe_init_gadget
-    setup_hosts
-    start_server
-
-    if wait_healthy; then
-        ok "Emittr v${VERSION} is ONLINE and HEALTHY!"
-        local scheme="http"
-        [ -f "${INSTALL_DIR}/certs/emittr.crt" ] && scheme="https"
-        echo "    Local URL:   ${scheme}://localhost:${PORT} or ${scheme}://hid.keyboard"
-        echo "    Network URL: ${scheme}://$(hostname -I 2>/dev/null | awk '{print $1}'):${PORT}"
-        echo "    CLI Tool:    usbtype --help"
-    else
-        warn "Server did not respond healthy within 15s. Check /var/log/usb_deck.log"
-    fi
-}
-
-enable_https() {
-    local cert_dir="${INSTALL_DIR}/certs"
-    mkdir -p "${cert_dir}"
-
-    if [ -f "${cert_dir}/emittr.crt" ] && [ -f "${cert_dir}/emittr.key" ]; then
-        warn "A certificate already exists at ${cert_dir}."
-        read -r -p "  Regenerate it? [y/N] " ans
-        case "${ans}" in
-            y|Y) ;;
-            *) info "Keeping the existing certificate."; return ;;
-        esac
-    fi
-
-    if ! command -v openssl >/dev/null 2>&1; then
-        fail "openssl not found; cannot generate a certificate."
-    fi
-
-    local ip
-    ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
-    [ -z "${ip}" ] && ip="127.0.0.1"
-
-    log "Generating a self-signed certificate for ${ip}..."
-    openssl req -x509 -newkey rsa:2048 -nodes \
-        -keyout "${cert_dir}/emittr.key" -out "${cert_dir}/emittr.crt" \
-        -days 3650 -subj "/CN=${ip}" \
-        -addext "subjectAltName=IP:${ip},IP:127.0.0.1,DNS:hid.keyboard,DNS:localhost" \
-        >/dev/null 2>&1 || fail "Certificate generation failed."
-    chmod 600 "${cert_dir}/emittr.key"
-    chmod 644 "${cert_dir}/emittr.crt"
-    ok "Certificate ready. Browsers will flag it as self-signed until you trust it manually."
-
-    read -r -p "  Restart Emittr now to serve over HTTPS/WSS? [Y/n] " ans
-    case "${ans}" in
-        n|N) info "Certificate saved. It takes effect next time Emittr restarts." ;;
-        *) stop_server; start_server; wait_healthy && ok "Emittr is back up over HTTPS." || warn "Didn't come back healthy in time; check /var/log/usb_deck.log" ;;
-    esac
-}
-
-regen_token() {
-    local token_file="${INSTALL_DIR}/.emittr_token"
-    warn "Regenerating the auth token invalidates every browser session currently connected."
-    read -r -p "  Continue? [y/N] " ans
-    case "${ans}" in
-        y|Y) ;;
-        *) info "Cancelled."; return ;;
-    esac
-    rm -f "${token_file}"
-    stop_server
-    start_server
-    wait_healthy && ok "New token generated and service restarted." || warn "Didn't come back healthy in time; check /var/log/usb_deck.log"
-}
-
-uninstall() {
-    warn "This stops Emittr and removes the 'usbtype' CLI symlink."
-    read -r -p "  Also erase the auth token, HID-mode flag, and TLS cert (wipe ${INSTALL_DIR})? [y/N] " purge
-    stop_server
-    rm -f /usr/local/bin/usbtype
-    case "${purge}" in
-        y|Y) rm -rf "${INSTALL_DIR}"; ok "Emittr and all its data have been wiped. No hard feelings." ;;
-        *) ok "Emittr stopped. Files kept at ${INSTALL_DIR} in case you change your mind." ;;
-    esac
-}
-
-status() {
-    local scheme="http"
-    [ -f "${INSTALL_DIR}/certs/emittr.crt" ] && scheme="https"
-    if is_running; then
-        ok "Emittr is running (pid $(pgrep -f "${INSTALL_DIR}/server.py" | head -1)) over ${scheme}."
-        curl -sk "${scheme}://127.0.0.1:${PORT}/api/status" 2>/dev/null && echo
-    else
-        warn "Emittr is not running."
-    fi
-}
-
-show_menu() {
-    echo -e "${C_CYAN}  ------------------------------------------------${C_RESET}"
-    echo "   [1] Install / Update      - deploy or refresh in place"
-    echo "   [2] Enable HTTPS          - self-signed cert for wss://"
-    echo "   [3] Restart service       - kill it with kindness, relaunch"
-    echo "   [4] Status check          - is anyone home?"
-    echo "   [5] Regenerate auth token - rotate the keys to the kingdom"
-    echo "   [6] Uninstall             - erase all evidence"
-    echo "   [7] Exit                  - leave no trace"
-    echo -e "${C_CYAN}  ------------------------------------------------${C_RESET}"
-}
-
-main_menu() {
-    while true; do
-        print_banner
-        show_menu
-        read -r -p "  Choose an option [1-7]: " choice
-        echo
-        case "${choice}" in
-            1) do_install ;;
-            2) enable_https ;;
-            3) stop_server; start_server; wait_healthy && ok "Restarted." || warn "Didn't come back healthy in time." ;;
-            4) status ;;
-            5) regen_token ;;
-            6) uninstall; break ;;
-            7|q|Q) echo "  Stay tactical."; break ;;
-            *) warn "Not a valid option." ;;
-        esac
-        echo
-        read -r -p "  Press Enter to continue..." _
-        echo
-    done
-}
-
-# ── Entry point ──────────────────────────────────────────────────────────────
-require_root
-PY_BIN="$(detect_python)"
-[ -z "${PY_BIN}" ] && fail "No usable python3 found. Install Python 3 and retry."
-
-if [ -t 0 ] && [ -t 1 ] && [ -z "${1:-}" ]; then
-    main_menu
+# ── 1. Target Directory Detection & Fallback ────────────────────────────────
+# NetHunter & standard Linux use /opt/usb_hid_deck.
+# Standalone Android (system-as-root read-only /) falls back to /data/local/usb_hid_deck.
+if [ -w /opt ] || mkdir -p /opt/usb_hid_deck 2>/dev/null; then
+    INSTALL_DIR="/opt/usb_hid_deck"
+elif [ -n "$PREFIX" ] && [ -d "$PREFIX" ]; then
+    INSTALL_DIR="$PREFIX/opt/usb_hid_deck"
+    mkdir -p "${INSTALL_DIR}" || true
 else
-    case "${1:-install}" in
-        install)   do_install ;;
-        https)     enable_https ;;
-        restart)   stop_server; start_server; wait_healthy && ok "Restarted." || warn "Didn't come back healthy in time." ;;
-        status)    status ;;
-        token)     regen_token ;;
-        uninstall) uninstall ;;
-        *)         do_install ;;
-    esac
+    INSTALL_DIR="/data/local/usb_hid_deck"
+    mkdir -p "${INSTALL_DIR}" || true
 fi
 
+echo "[*] Installing Emittr v${VERSION} to ${INSTALL_DIR}..."
+
+# Copy files if executing outside target directory
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ "${SCRIPT_DIR}" != "${INSTALL_DIR}" ]; then
+    mkdir -p "${INSTALL_DIR}"
+    cp -r "${SCRIPT_DIR}"/* "${INSTALL_DIR}/" || { echo "[-] File copy failed. Please run as root."; exit 1; }
+fi
+
+# Ensure executable permissions on all binaries and scripts
+chmod +x "${INSTALL_DIR}/server.py" 2>/dev/null || true
+chmod +x "${INSTALL_DIR}/setup_gadget.py" 2>/dev/null || true
+chmod +x "${INSTALL_DIR}/02-usb-deck.sh" 2>/dev/null || true
+chmod +x "${INSTALL_DIR}/usbtype" 2>/dev/null || true
+chmod +x "${INSTALL_DIR}/emittr" 2>/dev/null || true
+
+# ── 2. Python Environment & Dependency Auto-Installer ────────────────────────
+echo "[*] Checking Python runtime & dependencies..."
+find_py() {
+    if [ -x "/opt/tactical_venv/bin/python3" ]; then
+        echo "/opt/tactical_venv/bin/python3"
+    elif [ -x "/usr/bin/python3" ]; then
+        echo "/usr/bin/python3"
+    elif command -v python3 >/dev/null 2>&1; then
+        command -v python3
+    elif [ -n "$PREFIX" ] && [ -x "$PREFIX/bin/python3" ]; then
+        echo "$PREFIX/bin/python3"
+    else
+        echo "python3"
+    fi
+}
+PY_BIN="$(find_py)"
+
+# If Python3 is completely missing, attempt package manager install
+if ! command -v "$PY_BIN" >/dev/null 2>&1 && [ ! -x "$PY_BIN" ]; then
+    echo "[*] Python 3 not found. Installing via system package manager..."
+    if command -v apt-get >/dev/null 2>&1; then
+        apt-get update -qq 2>/dev/null || true
+        apt-get install -y -qq python3 python3-pip iptables curl 2>/dev/null || true
+    elif command -v pkg >/dev/null 2>&1; then
+        pkg install -y python python-pip iptables curl 2>/dev/null || true
+    fi
+    PY_BIN="$(find_py)"
+fi
+
+# Check for essential Python modules (FastAPI, Uvicorn, WebSockets)
+if ! "$PY_BIN" -c "import fastapi, uvicorn, websockets" >/dev/null 2>&1; then
+    echo "[*] Required Python packages (FastAPI, Uvicorn, WebSockets) missing. Installing..."
+    
+    # 1. Try apt-get system packages first (cleanest on Debian/Kali Bookworm)
+    if command -v apt-get >/dev/null 2>&1; then
+        apt-get update -qq 2>/dev/null || true
+        apt-get install -y -qq python3-fastapi python3-uvicorn python3-websockets 2>/dev/null || true
+    fi
+
+    # 2. Fallback to pip (handles PEP 668 externally-managed environments via --break-system-packages)
+    if ! "$PY_BIN" -c "import fastapi, uvicorn, websockets" >/dev/null 2>&1; then
+        echo "[*] Installing via pip..."
+        "$PY_BIN" -m pip install --break-system-packages -q -r "${INSTALL_DIR}/requirements.txt" 2>/dev/null || \
+        "$PY_BIN" -m pip install -q -r "${INSTALL_DIR}/requirements.txt" 2>/dev/null || \
+        pip3 install --break-system-packages -q -r "${INSTALL_DIR}/requirements.txt" 2>/dev/null || \
+        pip3 install -q -r "${INSTALL_DIR}/requirements.txt" 2>/dev/null || true
+    fi
+fi
+
+if "$PY_BIN" -c "import fastapi, uvicorn, websockets" >/dev/null 2>&1; then
+    echo "[+] Python dependencies verified successfully."
+else
+    echo "[-] Warning: Some Python packages could not be installed automatically."
+    echo "    Please run: pip3 install -r ${INSTALL_DIR}/requirements.txt"
+fi
+
+# ── 3. Global Binary Symlinks (PATH integration) ────────────────────────────
+for bin_dir in /usr/local/bin /usr/bin; do
+    if [ -d "$bin_dir" ] && [ -w "$bin_dir" ]; then
+        ln -sf "${INSTALL_DIR}/emittr" "${bin_dir}/emittr" 2>/dev/null || true
+        ln -sf "${INSTALL_DIR}/usbtype" "${bin_dir}/usbtype" 2>/dev/null || true
+    fi
+done
+
+# Termux integration
+if [ -d "/data/data/com.termux/files/usr/bin" ]; then
+    ln -sf "${INSTALL_DIR}/emittr" /data/data/com.termux/files/usr/bin/emittr 2>/dev/null || true
+    ln -sf "${INSTALL_DIR}/usbtype" /data/data/com.termux/files/usr/bin/usbtype 2>/dev/null || true
+fi
+
+# Expose wrapper to Android host /system/bin if writable
+if [ -w /proc/1/root/system/bin ]; then
+    cat << EOF > /proc/1/root/system/bin/emittr
+#!/system/bin/sh
+if [ -f /data/local/nhsystem/bin/bootkali ]; then
+    exec /data/local/nhsystem/bin/bootkali ${INSTALL_DIR}/emittr "\$@"
+else
+    exec ${INSTALL_DIR}/emittr "\$@"
+fi
+EOF
+    chmod +x /proc/1/root/system/bin/emittr 2>/dev/null || true
+fi
+
+# ── 4. Android USB & SELinux Guards ─────────────────────────────────────────
+# Suppress Android framework from forcing MTP / mass_storage
+/system/bin/setprop persist.sys.usb.config none 2>/dev/null || true
+/system/bin/setprop sys.usb.config none 2>/dev/null || true
+
+# Apply SELinux policies so untrusted apps & chroot can access /dev/hidg*
+if command -v supolicy >/dev/null 2>&1; then
+    supolicy --live "allow untrusted_app hid_device chr_file { read write open ioctl }" 2>/dev/null || true
+    supolicy --live "allow system_app hid_device chr_file { read write open ioctl }" 2>/dev/null || true
+elif command -v magiskpolicy >/dev/null 2>&1; then
+    magiskpolicy --live "allow * hid_device chr_file *" 2>/dev/null || true
+fi
+chcon u:object_r:hid_device:s0 /dev/hidg* 2>/dev/null || true
+
+# ── 5. Systemless Hosts File Configuration (emittr/ URL) ────────────────────
+# Add emittr hostname to chroot /etc/hosts
+for HOST_NAME in "emittr" "emittr.local" "hid.keyboard"; do
+    if ! grep -qw "${HOST_NAME}" /etc/hosts 2>/dev/null; then
+        echo "127.0.0.1 ${HOST_NAME}" >> /etc/hosts 2>/dev/null || true
+        echo "[+] Added ${HOST_NAME} to /etc/hosts"
+    fi
+done
+
+# Bind-mount Android system hosts so phone browsers (Chrome, Firefox) resolve 'emittr/'
+ANDROID_HOSTS=""
+if [ -f /proc/1/root/system/etc/hosts ]; then
+    ANDROID_HOSTS="/proc/1/root/system/etc/hosts"
+elif [ -f /system/etc/hosts ]; then
+    ANDROID_HOSTS="/system/etc/hosts"
+fi
+
+if [ -n "$ANDROID_HOSTS" ]; then
+    if ! grep -qw "emittr" "$ANDROID_HOSTS" 2>/dev/null; then
+        mkdir -p /data/local/tmp 2>/dev/null || true
+        cp "$ANDROID_HOSTS" /data/local/tmp/hosts 2>/dev/null || true
+        echo "127.0.0.1 emittr emittr.local hid.keyboard" >> /data/local/tmp/hosts 2>/dev/null || true
+        mount -o bind /data/local/tmp/hosts "$ANDROID_HOSTS" 2>/dev/null || \
+        echo "127.0.0.1 emittr emittr.local hid.keyboard" >> "$ANDROID_HOSTS" 2>/dev/null || true
+        echo "[+] Configured Android hosts resolution for 'emittr/'"
+    fi
+fi
+
+# ── 6. Idempotent Port 80 -> 8088 Loopback Redirection ───────────────────────
+if command -v iptables >/dev/null 2>&1; then
+    iptables -t nat -C PREROUTING -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port ${PORT} 2>/dev/null || \
+    iptables -t nat -A PREROUTING -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-port ${PORT} 2>/dev/null || true
+
+    iptables -t nat -C OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-port ${PORT} 2>/dev/null || \
+    iptables -t nat -A OUTPUT -p tcp -o lo --dport 80 -j REDIRECT --to-port ${PORT} 2>/dev/null || true
+fi
+
+# ── 7. Magisk / KernelSU Boot Autostart Persistence ─────────────────────────
+if [ -d "/data/adb/service.d" ]; then
+    cp "${INSTALL_DIR}/02-usb-deck.sh" /data/adb/service.d/02-usb-deck.sh 2>/dev/null || true
+    chmod +x /data/adb/service.d/02-usb-deck.sh 2>/dev/null || true
+    echo "[+] Registered boot autostart in /data/adb/service.d/02-usb-deck.sh"
+fi
+
+# ── 8. Launch Service ────────────────────────────────────────────────────────
+# Stop any stale instances
+pkill -f "server.py" 2>/dev/null || true
+sleep 0.8
+
+echo "[*] Launching Emittr daemon via CLI..."
+"${INSTALL_DIR}/emittr" start
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  [+] Emittr v${VERSION} installed successfully!"
+echo "      • emittr start     - Start daemon & port 80 redirect"
+echo "      • emittr stop      - Stop daemon & release stuck keys"
+echo "      • emittr status    - Show service & active IP addresses"
+echo "      • emittr ip        - Print all device IPs & URLs"
+echo "      • emittr logs      - Stream or view logs"
+echo "      • usbtype          - Inject scancodes/text directly via CLI"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

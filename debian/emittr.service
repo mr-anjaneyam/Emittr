@@ -1,0 +1,17 @@
+[Unit]
+Description=Emittr Tactical USB HID Controller & Local Network Relay
+After=network.target local-fs.target
+
+[Service]
+Type=forking
+ExecStart=/opt/usb_hid_deck/emittr start
+ExecStop=/opt/usb_hid_deck/emittr stop
+ExecReload=/opt/usb_hid_deck/emittr restart
+Restart=on-failure
+RestartSec=3s
+TimeoutSec=15
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

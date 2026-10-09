@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    purge)
+        rm -f /usr/bin/emittr /usr/bin/usbtype /usr/local/bin/emittr /usr/local/bin/usbtype
+        rm -f /var/log/usb_deck.log
+        rm -rf /opt/usb_hid_deck
+        if [ -d /run/systemd/system ]; then
+            systemctl daemon-reload 2>/dev/null || true
+        fi
+    ;;
+esac
+
+exit 0

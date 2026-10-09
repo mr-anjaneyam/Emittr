@@ -1,0 +1,58 @@
+name: "💡 Feature Request"
+description: "Suggest an idea, enhancement, or new hardware feature for Emittr"
+title: "[FEATURE]: "
+labels: ["enhancement", "proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for proposing an enhancement to Emittr! Please explain your idea, its tactical or practical use case, and how you envision it working.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your feature related to a problem or limitation?
+      description: A clear and concise description of the frustration, workflow bottleneck, or missing functionality.
+      placeholder: "e.g., When plugging into foreign laptops with French AZERTY keyboards, typed characters get garbled because Emittr only supports US QWERTY scancodes..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Describe the Proposed Solution
+      description: A detailed description of the feature, UI workflow, or protocol extension you would like to see.
+      placeholder: "Add a layout switcher in Preferences that translates characters to alternate HID scancode tables (AZERTY, QWERTZ, UK)..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Describe Alternatives Considered
+      description: Any alternative solutions or workarounds you've tested or considered.
+      placeholder: "Manually remapping strings beforehand, but this is error-prone and slow in the field..."
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Feature Domain
+      description: What part of the system would this feature touch?
+      options:
+        - "USB HID Protocol / Kernel Gadget Descriptor"
+        - "Web Deck UI (Material 3 PWA / Mobile UX)"
+        - "Automation / Scripting Engine (DuckyScript, Macros)"
+        - "Hardware Sensors (Gyro, Audio, Camera)"
+        - "CLI Tool (usbtype)"
+        - "Security / Cryptography / Access Control"
+        - "Documentation / Deployment Scripting"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: willingness
+    attributes:
+      label: Contribution
+      options:
+        - label: "I am willing to submit a Pull Request to help implement this feature."
+          required: false

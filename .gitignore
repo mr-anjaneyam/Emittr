@@ -27,11 +27,13 @@ temp/
 scratch/
 test_*.py
 
+# TLS Certificates
+ssl/
+*.pem
+*.key
+*.crt
 # Emittr runtime secrets & per-device state — never commit these
 .emittr_token
 .emittr_hid_mode
 certs/
-*.pem
-*.key
-*.crt
 

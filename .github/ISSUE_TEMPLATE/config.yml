@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "💬 Community Discussions & Questions"
+    url: "https://github.com/mr-anjaneyam/Emittr/discussions"
+    about: "Ask questions, share your mobile setups, and discuss ideas with fellow users."
+  - name: "📖 Official Documentation"
+    url: "https://mr-anjaneyam.github.io/Emittr/"
+    about: "Read the comprehensive guides, use cases, and installation walkthrough."
+  - name: "🔒 Report a Security Vulnerability"
+    url: "https://github.com/mr-anjaneyam/Emittr/security/advisories/new"
+    about: "Responsibly report potential security vulnerabilities."

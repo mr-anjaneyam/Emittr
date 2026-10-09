@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-server.py  —  Emittr Backend & HID Controller  v1.3.0
+server.py  -  Emittr Backend & HID Controller  v2.0.0
 =====================================================
 FastAPI server running on Android NetHunter (port 8088).
 Provides:
@@ -27,8 +27,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import Body, Depends, FastAPI, Header, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import Body, FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 _log_handlers = [logging.StreamHandler(sys.stdout)]
@@ -50,47 +50,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("emittr")
 
-VERSION = "1.3.0"
-MAX_TEXT_LENGTH = 50_000  # Guard against unbounded /api/type payloads
-LIVE_CHAR_MIN_INTERVAL = 0.003  # ~330/s ceiling per WebSocket client on live_char
-
-# ── Auth Token ──────────────────────────────────────────────────────────────
-# A per-install shared secret is required on every mutating REST/WS call.
-# It's generated once, persisted next to this file, and embedded into the
-# served index.html so the legitimate web UI can read it — third parties on
-# the same network never see it unless they already have page access.
-TOKEN_FILE = Path(__file__).parent / ".emittr_token"
-
-
-def _load_or_create_token() -> str:
-    try:
-        if TOKEN_FILE.exists():
-            existing = TOKEN_FILE.read_text(encoding="utf-8").strip()
-            if existing:
-                return existing
-        token = secrets.token_urlsafe(24)
-        TOKEN_FILE.write_text(token, encoding="utf-8")
-        try:
-            os.chmod(TOKEN_FILE, 0o600)
-        except Exception:
-            pass
-        return token
-    except Exception as e:
-        log.warning(f"Could not persist auth token ({e}); using in-memory token for this run.")
-        return secrets.token_urlsafe(24)
-
-
-AUTH_TOKEN = _load_or_create_token()
-
-
-def check_token(supplied: Optional[str]) -> bool:
-    return bool(supplied) and secrets.compare_digest(supplied, AUTH_TOKEN)
-
-
-async def verify_token(x_emittr_token: str = Header(default="")):
-    """FastAPI dependency: reject mutating requests that don't carry the shared token."""
-    if not check_token(x_emittr_token):
-        raise HTTPException(status_code=401, detail="Unauthorized")
+VERSION = "2.0.0"
 
 # ── HID Scancode Tables (Standard USB HID Boot Protocol) ───────────────────
 MOD_NONE   = 0x00
@@ -217,31 +177,58 @@ COMBOS: Dict[str, tuple] = {
     'alt+right':     (MOD_LALT, 0x4F),
 }
 
-HID_DEVICE_PATH = "/dev/hidg0"
-PORT = int(os.environ.get("EMITTR_PORT", "8088"))
+HID_DEVICE_PATH = os.environ.get("EMITTR_HID_PATH", "/dev/hidg0")
 
 
 class HIDDevice:
     def __init__(self, hid_path: str = HID_DEVICE_PATH):
-        self.hid_path = hid_path
+        self.hid_path = self._resolve_hid_path(hid_path)
         self.is_typing = False
         self.abort_requested = False
 
+    def _resolve_hid_path(self, default: str) -> str:
+        if os.path.exists(default):
+            return default
+        import glob
+        nodes = glob.glob("/dev/hidg*")
+        if nodes:
+            return sorted(nodes)[0]
+        return default
+
     def is_host_connected(self) -> bool:
-        """Return True if USB UDC is in 'configured' state."""
-        for p in Path("/sys/class/udc").glob("*"):
-            st = p / "state"
-            if st.exists():
-                try:
-                    return st.read_text().strip().lower() == "configured"
-                except Exception:
-                    pass
-        udc_hisi = Path("/sys/devices/hisi-usb-otg/udc/hisi-usb-otg/state")
-        if udc_hisi.exists():
+        """Return True if USB UDC is in 'configured' or 'addressed' state."""
+        # 1. Check all controllers under /sys/class/udc
+        try:
+            for p in Path("/sys/class/udc").glob("*"):
+                st = p / "state"
+                if st.exists():
+                    try:
+                        val = st.read_text().strip().lower()
+                        if val in ("configured", "addressed"):
+                            return True
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        # 2. Check Android system properties
+        try:
+            for cmd in ("/system/bin/getprop sys.usb.state", "getprop sys.usb.state"):
+                state = os.popen(f"{cmd} 2>/dev/null").read().strip().lower()
+                if any(x in state for x in ("hid", "configured", "connected")):
+                    return True
+        except Exception:
+            pass
+
+        # 3. Check legacy Android USB state
+        legacy_state = Path("/sys/class/android_usb/android0/state")
+        if legacy_state.exists():
             try:
-                return udc_hisi.read_text().strip().lower() == "configured"
+                if legacy_state.read_text().strip().lower() in ("configured", "addressed", "connected"):
+                    return True
             except Exception:
                 pass
+
         return False
 
     def _open_nonblock(self, path: str):
@@ -272,7 +259,7 @@ class HIDDevice:
                 pass
 
     def release_keys(self):
-        """Send keyboard null report (all keys released) — Report ID 1."""
+        """Send keyboard null report (all keys released): Report ID 1."""
         fd = self._open_nonblock(self.hid_path)
         if fd is None:
             return
@@ -289,7 +276,7 @@ class HIDDevice:
                 pass
 
     def release_mouse(self):
-        """Send mouse null report (all buttons & deltas zeroed) — Report ID 2 (6 bytes)."""
+        """Send mouse null report (all buttons & deltas zeroed): Report ID 2 (6 bytes)."""
         fd = self._open_nonblock(self.hid_path)
         if fd is None:
             return
@@ -385,21 +372,22 @@ class HIDDevice:
             udc_name = p.name
             break
 
-        if state == "not attached":
-            udc_hisi = Path("/sys/devices/hisi-usb-otg/udc/hisi-usb-otg/state")
-            if udc_hisi.exists():
-                try:
-                    state = udc_hisi.read_text().strip()
-                    udc_name = "hisi-usb-otg"
-                except Exception:
-                    pass
+        is_attached = state.lower() in ("configured", "addressed")
+        if not is_attached:
+            if self.is_host_connected():
+                is_attached = True
+                if state == "not attached":
+                    state = "configured"
 
         return {
-            "attached":        state.lower() in ("configured", "addressed"),
+            "attached":        is_attached,
+            "connected":       is_attached,       # Backward-compat alias for usbtype
             "state":           state,
+            "udc_state":       state,             # Backward-compat alias for usbtype
             "speed":           speed,
             "udc":             udc_name,
             "hid_node_exists": os.path.exists(self.hid_path),
+            "kbd_node":        self.hid_path,     # Backward-compat alias for usbtype
             "is_typing":       self.is_typing,
             "version":         VERSION,
         }
@@ -442,16 +430,18 @@ hid_mode_enabled = _load_hid_mode()
 
 
 def ensure_hid_gadget():
-    """Verify composite HID gadget is active. If Android reverted to mass_storage, restore it."""
+    """Verify composite HID gadget is active. If missing or Android reverted to mass_storage, restore it."""
     gadget_dir = "/config/usb_gadget/g1"
-    if not os.path.exists(gadget_dir):
-        return
+    if not os.path.exists("/config/usb_gadget") and os.path.exists("/sys/kernel/config/usb_gadget"):
+        gadget_dir = "/sys/kernel/config/usb_gadget/g1"
+
     cfg_f1 = f"{gadget_dir}/configs/b.1/f1"
-    if not os.path.exists(cfg_f1):
-        log.info("Detected USB configuration reversion. Restoring composite HID gadget...")
+    if not os.path.exists(cfg_f1) or not os.path.exists(hid.hid_path):
+        log.info("Detected missing or reverted HID endpoint. Initializing composite HID gadget...")
         try:
             import setup_gadget
             setup_gadget.init_gadget()
+            hid.hid_path = hid._resolve_hid_path(HID_DEVICE_PATH)
         except Exception as e:
             log.error(f"Failed to restore gadget: {e}")
 
@@ -543,6 +533,21 @@ async def get_index():
     return HTMLResponse("<h1>Emittr static assets missing</h1>", status_code=404)
 
 
+@app.get("/sw.js")
+async def get_service_worker():
+    sw_file = STATIC_DIR / "sw.js"
+    if sw_file.exists():
+        return Response(
+            content=sw_file.read_text(encoding="utf-8"),
+            media_type="application/javascript",
+            headers={
+                "Service-Worker-Allowed": "/",
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
+        )
+    return Response("Not found", status_code=404)
+
+
 @app.get("/api/status")
 async def get_status():
     return get_status_payload()
@@ -620,7 +625,21 @@ def _on_typing_task_done(task: asyncio.Task):
 
 
 async def _type_worker(text: str, delay_s: float, initial_delay: float):
-    # hid.is_typing is already set True by the caller under typing_lock.
+    # Normalize Windows CRLF line endings to single newlines to avoid double-Enters
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+
+    # Map Unicode smart quotes, curly quotes, and dashes to standard ASCII equivalents
+    smart_map = {
+        '“': '"', '”': '"', '„': '"', '«': '"', '»': '"',
+        '‘': "'", '’': "'", '‚': "'", '`': "'",
+        '\u2013': '-', '\u2014': '-', '\u2212': '-',
+        '…': '...',
+        '\u00a0': ' ',  # Non-breaking space
+    }
+    for smart_ch, ascii_ch in smart_map.items():
+        text = text.replace(smart_ch, ascii_ch)
+
+    hid.is_typing = True
     stop_event.clear()
     total = len(text)
     await broadcast_status({"type": "typing_start", "total": total})
@@ -724,8 +743,11 @@ async def websocket_endpoint(ws: WebSocket):
             data   = json.loads(raw)
             action = data.get("action")
 
-            if action == "release_all":
-                await loop.run_in_executor(None, hid.release_all)
+            if action == "ping":
+                await ws.send_text(json.dumps({"type": "pong", "t": data.get("t")}))
+
+            elif action == "release_all":
+                hid.release_all()
                 await ws.send_text(json.dumps({"type": "released", "ok": True}))
 
             elif action == "live_char":
@@ -822,28 +844,44 @@ async def connection_monitor_loop():
             log.warning(f"Connection monitor exception: {e}")
 
 
-# A conservative hostname/IPv4 matcher used to validate the client-supplied Host header
-# before echoing it back in a redirect (prevents header-injection / open-redirect abuse).
-_SAFE_HOST_RE = re.compile(r"^[A-Za-z0-9.\-]{1,253}$")
+def get_ssl_config():
+    """Detect SSL certificates from environment variables or default ssl/ directory."""
+    ssl_cert = os.environ.get("EMITTR_SSL_CERT")
+    ssl_key = os.environ.get("EMITTR_SSL_KEY")
+    ssl_dir = Path(__file__).parent / "ssl"
+    if not ssl_cert and (ssl_dir / "cert.pem").is_file():
+        ssl_cert = str(ssl_dir / "cert.pem")
+    if not ssl_key and (ssl_dir / "key.pem").is_file():
+        ssl_key = str(ssl_dir / "key.pem")
+    if ssl_cert and ssl_key and os.path.exists(ssl_cert) and os.path.exists(ssl_key):
+        return ssl_cert, ssl_key
+    return None, None
 
 
 async def start_http_port80_redirector():
     """Userland HTTP 302 redirect on port 80 -> the configured app port."""
     async def handle_port80(reader, writer):
         try:
-            req_data = await asyncio.wait_for(reader.read(1024), timeout=2.0)
-            host_header = "hid.keyboard"
-            for line in req_data.decode("utf-8", errors="ignore").split("\r\n"):
+            req_data = await asyncio.wait_for(reader.read(2048), timeout=2.0)
+            text = req_data.decode("utf-8", errors="ignore")
+            lines = text.split("\r\n")
+            path = "/"
+            if lines and lines[0]:
+                parts = lines[0].split(" ")
+                if len(parts) >= 2 and parts[1].startswith("/"):
+                    path = parts[1]
+            host_header = "emittr"
+            for line in lines:
                 if line.lower().startswith("host:"):
-                    candidate = line.split(":", 1)[1].strip().split(":")[0]
-                    # Reject anything that isn't a plausible hostname/IP to avoid
-                    # reflecting attacker-controlled values into the Location header.
-                    if _SAFE_HOST_RE.match(candidate):
-                        host_header = candidate
+                    raw_host = line.split(":", 1)[1].strip()
+                    # Strip any port number
+                    host_header = raw_host.split(":")[0] if raw_host else "emittr"
                     break
+            ssl_cert, ssl_key = get_ssl_config()
+            scheme = "https" if (ssl_cert and ssl_key) else "http"
             redirect_response = (
                 "HTTP/1.1 302 Found\r\n"
-                f"Location: http://{host_header}:{PORT}/\r\n"
+                f"Location: {scheme}://{host_header}:8088{path}\r\n"
                 "Connection: close\r\n"
                 "Content-Length: 0\r\n\r\n"
             )
@@ -860,7 +898,9 @@ async def start_http_port80_redirector():
 
     try:
         server = await asyncio.start_server(handle_port80, "0.0.0.0", 80)
-        log.info(f"Port 80 redirector listening (redirects to :{PORT})")
+        ssl_cert, ssl_key = get_ssl_config()
+        scheme = "https" if (ssl_cert and ssl_key) else "http"
+        log.info(f"Port 80 redirector listening (redirects to {scheme}://...:8088)")
         async with server:
             await server.serve_forever()
     except Exception as e:
@@ -869,18 +909,16 @@ async def start_http_port80_redirector():
 
 if __name__ == "__main__":
     import uvicorn
-
-    # Default preserves existing LAN-accessible behavior; set EMITTR_HOST=127.0.0.1
-    # to restrict to the device itself. Optional TLS via EMITTR_SSL_CERT/EMITTR_SSL_KEY.
     bind_host = os.environ.get("EMITTR_HOST", "0.0.0.0")
-    ssl_cert  = os.environ.get("EMITTR_SSL_CERT")
-    ssl_key   = os.environ.get("EMITTR_SSL_KEY")
+    ssl_cert, ssl_key = get_ssl_config()
+    if ssl_cert and ssl_key:
+        log.info(f"HTTPS enabled with SSL certificate: {ssl_cert}")
     uvicorn.run(
         "server:app",
         host=bind_host,
-        port=PORT,
+        port=8088,
         reload=False,
         access_log=False,
-        ssl_certfile=ssl_cert if ssl_cert and ssl_key else None,
-        ssl_keyfile=ssl_key if ssl_cert and ssl_key else None,
+        ssl_certfile=ssl_cert,
+        ssl_keyfile=ssl_key,
     )

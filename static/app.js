@@ -1,12 +1,12 @@
 /**
- * Emittr · Web App Controller v1.3.0
+ * Emittr: Web App Controller v2.0.0
  * Tactical USB HID Controller: Dual Xbox Joysticks, Universal Dashboard Mode,
  * Native AC Pan Horizontal Scroll, IME Keyboard Mirror, and Windows Shortcuts Deck.
  */
 
 'use strict';
 
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '2.0.0';
 
 const State = {
   ws: null,
@@ -27,9 +27,12 @@ const State = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  initServiceWorker();
+  initIntroAnimation();
   loadConfig();
   initVersionBadge();
   initWebSocket();
+  initLatencyMonitor();
   initTextareaCounter();
   initLiveKeyboard();
   initJoysticks();
@@ -37,36 +40,30 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchInitialStatus();
 });
 
-// ── Authenticated Fetch Helper ─────────────────────────────────────────────
-// window.EMITTR_TOKEN is embedded server-side into this page on load; it's
-// attached as a header (not just body) so cross-origin requests can't forge it.
+// ── PWA Service Worker Registration ───────────────────────────────────────
 
-function authHeaders(extra) {
-  const headers = Object.assign({ 'Content-Type': 'application/json' }, extra || {});
-  if (window.EMITTR_TOKEN) headers['X-Emittr-Token'] = window.EMITTR_TOKEN;
-  return headers;
+function initServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+      navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+    });
+  }
 }
 
-async function apiPost(path, body) {
-  let res;
-  try {
-    res = await fetch(path, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify(body || {})
-    });
-  } catch (e) {
-    throw new Error('Server unreachable — check the USB/Wi-Fi connection');
-  }
-  let json = {};
-  try { json = await res.json(); } catch (e) {}
-  if (res.status === 401) {
-    throw new Error('Unauthorized — reload the page to refresh your session token');
-  }
-  if (!res.ok && !json.msg) {
-    throw new Error(`Request rejected (HTTP ${res.status})`);
-  }
-  return json;
+// ── Opening Intro Animation ───────────────────────────────────────────────
+
+function initIntroAnimation() {
+  const introEl = document.getElementById('intro');
+  if (!introEl) return;
+  const timer = setTimeout(() => {
+    document.body.classList.add('ready');
+  }, 3100);
+
+  // Tap or click anywhere to dismiss immediately
+  introEl.addEventListener('click', () => {
+    clearTimeout(timer);
+    document.body.classList.add('ready');
+  });
 }
 
 // ── Version Badge Initialization ──────────────────────────────────────────
@@ -106,8 +103,6 @@ function loadConfig() {
     const d = parseInt(savedDelay, 10);
     if (!isNaN(d)) {
       State.delayMs = d;
-      document.getElementById('delay-slider').value  = d;
-      document.getElementById('delay-val').innerText = `${d} ms / char`;
       updatePresetPills(d);
     }
   }
@@ -207,12 +202,10 @@ function toggleDashboardMode() {
 }
 
 function updateDashboardUI(active) {
-  const btnHeader = document.getElementById('btn-header-dashboard');
-  const btnDesk   = document.getElementById('btn-dashboard-mode');
-  const navDash   = document.getElementById('nav-dashboard');
-  if (btnHeader) btnHeader.classList.toggle('active', active);
-  if (btnDesk)   btnDesk.classList.toggle('active', active);
-  if (navDash)   navDash.classList.toggle('active', active);
+  const btnDesk = document.getElementById('btn-dashboard-mode');
+  const navDash = document.getElementById('nav-dashboard');
+  if (btnDesk) btnDesk.classList.toggle('active', active);
+  if (navDash) navDash.classList.toggle('active', active);
 }
 
 // ── WebSocket & Status Monitor ────────────────────────────────────────────
@@ -251,8 +244,16 @@ function initWebSocket() {
 }
 
 function handleWsMessage(msg) {
-  if (msg.type === 'status' || msg.type === 'connection_change') {
+  if (msg.type === 'pong') {
+    const now = performance.now();
+    const rtt = Math.max(1, Math.round(now - (msg.t || lastPingTime || now)));
+    finishPing(rtt);
+  } else if (msg.type === 'status' || msg.type === 'connection_change') {
     updateConnectionUI(msg.data);
+    if (lastPingTime && isPinging) {
+      const rtt = Math.max(1, Math.round(performance.now() - lastPingTime));
+      finishPing(rtt);
+    }
   } else if (msg.type === 'typing_start') {
     setTypingUI(true, msg.total);
   } else if (msg.type === 'typing_end') {
@@ -285,26 +286,58 @@ async function fetchInitialStatus() {
 
 function updateConnectionUI(data) {
   if (!data) return;
-  const badge = document.getElementById('usb-badge');
-  const text  = document.getElementById('usb-status-text');
-  State.connected = data.attached;
+  State.connected = !!data.attached;
+  State.usbData   = data;
+
+  const btnStatus  = document.getElementById('btn-status');
+  const statusText = document.getElementById('status-pill-text');
+
+  // Modal elements
+  const modalHeroTitle = document.getElementById('conn-hero-status');
+  const modalHeroSub   = document.getElementById('conn-hero-sub');
+  const modalState     = document.getElementById('metric-state');
+  const modalStrength  = document.getElementById('metric-strength');
+  const modalSpeed     = document.getElementById('metric-speed');
+  const modalUdc       = document.getElementById('metric-udc');
+  const modalHid       = document.getElementById('metric-hid');
+
+  const speedLabel = data.speed === 'HS' ? 'USB 2.0 High-Speed (480 Mbps)' : (data.speed ? `USB Speed: ${data.speed}` : 'High-Speed USB 2.0 (480 Mbps)');
+  const udcLabel   = data.udc || 'hisi-usb-otg';
+  const nodeLabel  = data.hid_node || '/dev/hidg0, hidg1';
+
+  const rttText = currentLatency !== null ? ` · ${currentLatency <= 1 ? '< 1 ms' : currentLatency + ' ms'} RTT` : '';
 
   if (data.attached) {
-    badge.className = 'connection-badge connected';
-    text.innerText  = `Connected (${data.speed || 'FS'})`;
+    if (btnStatus) {
+      btnStatus.className = 'status-btn connected';
+      btnStatus.title = `Connected (${data.speed || 'HS'})${rttText} - Click for diagnostics`;
+    }
+    if (statusText) statusText.innerText = 'Connected';
+    if (modalHeroTitle) modalHeroTitle.innerText = `Connected (${data.speed || 'High-Speed'})`;
+    if (modalHeroSub) modalHeroSub.innerText = 'USB Host Active & Enumerated';
+    if (modalState) modalState.innerText = 'Attached';
+    if (modalStrength) modalStrength.innerText = '100% Solid';
   } else {
-    badge.className = 'connection-badge disconnected';
-    text.innerText  = 'Waiting USB...';
+    if (btnStatus) {
+      btnStatus.className = 'status-btn waiting';
+      btnStatus.title = `Waiting for USB Host${rttText} - Click for diagnostics`;
+    }
+    if (statusText) statusText.innerText = 'Waiting...';
+    if (modalHeroTitle) modalHeroTitle.innerText = 'Waiting for Connection';
+    if (modalHeroSub) modalHeroSub.innerText = 'Connect phone to target PC with USB cable';
+    if (modalState) modalState.innerText = 'Waiting Host...';
+    if (modalStrength) modalStrength.innerText = 'Ready to Link';
   }
 
-  const udc     = document.getElementById('hw-udc');
-  const speed   = document.getElementById('hw-speed');
-  const node    = document.getElementById('hw-node');
-  const clients = document.getElementById('hw-clients');
-  const hidmode = document.getElementById('cfg-hidmode');
-  if (udc)     udc.innerText     = data.udc   || 'hisi-usb-otg';
-  if (speed)   speed.innerText   = data.speed || 'N/A';
-  if (clients && typeof data.clients === 'number') clients.innerText = String(data.clients);
+  if (modalSpeed) modalSpeed.innerText = speedLabel;
+  if (modalUdc) modalUdc.innerText = `UDC: ${udcLabel}`;
+  if (modalHid) modalHid.innerText = nodeLabel;
+
+  const udc   = document.getElementById('hw-udc');
+  const speed = document.getElementById('hw-speed');
+  const node  = document.getElementById('hw-node');
+  if (udc)   udc.innerText   = udcLabel;
+  if (speed) speed.innerText = data.speed || 'N/A';
   if (node)  node.innerText  = data.hid_node || '/dev/hidg0';
   if (hidmode && typeof data.hid_mode_enabled === 'boolean') hidmode.checked = data.hid_mode_enabled;
 
@@ -365,24 +398,24 @@ function selectPreset(btn, delay) {
   document.querySelectorAll('.preset-pill').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   State.delayMs = delay;
-  document.getElementById('delay-slider').value  = delay;
-  document.getElementById('delay-val').innerText = `${delay} ms / char`;
   localStorage.setItem('emittr_delay', delay);
   triggerHaptic(8);
 }
 
-function onSliderChange(val) {
-  const d = parseInt(val, 10);
-  State.delayMs = d;
-  document.getElementById('delay-val').innerText = `${d} ms / char`;
-  updatePresetPills(d);
-  localStorage.setItem('emittr_delay', d);
-}
-
 function updatePresetPills(val) {
+  let matched = false;
   document.querySelectorAll('.preset-pill').forEach(p => {
-    p.classList.toggle('active', parseInt(p.dataset.delay, 10) === val);
+    const isMatch = parseInt(p.dataset.delay, 10) === val;
+    p.classList.toggle('active', isMatch);
+    if (isMatch) matched = true;
   });
+  if (!matched) {
+    const fastPill = document.querySelector('.preset-pill[data-delay="15"]');
+    if (fastPill) {
+      fastPill.classList.add('active');
+      State.delayMs = 15;
+    }
+  }
 }
 
 function clearText() {
@@ -479,7 +512,7 @@ function initLiveKeyboard() {
 
   input.addEventListener('focus', () => {
     zone.classList.add('focused');
-    hint.innerText = '🟢 Keyboard active — type now';
+    hint.innerText = '🟢 Keyboard active: type now';
     input.value = ''; lastValue = '';
   });
 
@@ -585,7 +618,7 @@ function sendSingleKey(keyName) { triggerHaptic(12); sendLiveChar(keyName); }
 
 async function sendCombo(combo) {
   triggerHaptic(15);
-  showToast(`Injected ${combo}`);
+  showToast(`Sent ${combo}`);
   try {
     await apiPost('/api/key', { combo });
   } catch (e) {
@@ -909,6 +942,164 @@ function closeSettings(e) {
   if (e && e.target !== document.getElementById('settings-modal')) return;
   document.getElementById('settings-modal').classList.remove('open');
   triggerHaptic(8);
+}
+
+// ── Connection Diagnostics Modal & Latency Test ───────────────────────────
+
+let lastPingTime = 0;
+let currentLatency = null;
+let latencyInterval = null;
+let pingTimeoutId = null;
+let isPinging = false;
+
+function initLatencyMonitor() {
+  // Initial ping test
+  testLatency(true);
+
+  // Update every 10 seconds automatically
+  if (latencyInterval) clearInterval(latencyInterval);
+  latencyInterval = setInterval(() => {
+    testLatency(true);
+  }, 10000);
+
+  // Auto-refresh when returning to tab/app
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      testLatency(true);
+    }
+  });
+}
+
+function openConnectionModal() {
+  document.getElementById('connection-modal').classList.add('open');
+  triggerHaptic(8);
+  testLatency();
+  fetchInitialStatus();
+}
+
+function closeConnectionModal(e) {
+  if (e && e.target !== document.getElementById('connection-modal')) return;
+  document.getElementById('connection-modal').classList.remove('open');
+  triggerHaptic(8);
+}
+
+function testLatency(isAuto = false) {
+  if (isPinging && !isAuto) return;
+  isPinging = true;
+
+  const t0 = performance.now();
+  lastPingTime = t0;
+
+  const pingBtn     = document.getElementById('btn-ping-test');
+  const latencyPill = document.getElementById('conn-latency-val');
+  const metricVal   = document.getElementById('metric-latency');
+  const metricHint  = document.getElementById('metric-latency-hint');
+  const refreshInd  = document.getElementById('latency-refresh-indicator');
+
+  if (refreshInd) refreshInd.classList.add('spinning');
+  if (pingBtn && !isAuto) pingBtn.classList.add('testing');
+
+  if (!isAuto) {
+    triggerHaptic(8);
+    if (currentLatency === null) {
+      if (latencyPill) latencyPill.innerText = 'Testing...';
+      if (metricVal)   metricVal.innerText   = '...';
+    }
+    if (metricHint) metricHint.innerText = 'Measuring packet turnaround...';
+  }
+
+  if (pingTimeoutId) clearTimeout(pingTimeoutId);
+
+  let finished = false;
+  const complete = (rtt) => {
+    if (finished) return;
+    finished = true;
+    finishPing(rtt);
+  };
+
+  // 1. Try WebSocket ping if open
+  if (State.ws && State.ws.readyState === WebSocket.OPEN) {
+    try {
+      State.ws.send(JSON.stringify({ action: 'ping', t: t0 }));
+    } catch (_) {}
+
+    // Fallback if WS ping response not received within 250ms (or server without ping handler)
+    pingTimeoutId = setTimeout(() => {
+      if (!finished) {
+        const fetchStart = performance.now();
+        fetch('/api/status?_t=' + Date.now())
+          .then(res => res.json())
+          .then(data => {
+            const rtt = Math.max(1, Math.round(performance.now() - fetchStart));
+            if (data) updateConnectionUI(data);
+            complete(rtt);
+          })
+          .catch(() => complete(null));
+      }
+    }, 250);
+  } else {
+    // 2. HTTP ping measurement
+    fetch('/api/status?_t=' + Date.now())
+      .then(res => res.json())
+      .then(data => {
+        const rtt = Math.max(1, Math.round(performance.now() - t0));
+        if (data) updateConnectionUI(data);
+        complete(rtt);
+      })
+      .catch(() => complete(null));
+  }
+}
+
+function finishPing(rtt) {
+  if (pingTimeoutId) {
+    clearTimeout(pingTimeoutId);
+    pingTimeoutId = null;
+  }
+  isPinging = false;
+  lastPingTime = 0;
+
+  const pingBtn    = document.getElementById('btn-ping-test');
+  const refreshInd = document.getElementById('latency-refresh-indicator');
+  if (refreshInd) refreshInd.classList.remove('spinning');
+  if (pingBtn) pingBtn.classList.remove('testing');
+
+  applyLatency(rtt);
+}
+
+function applyLatency(rtt) {
+  currentLatency = rtt;
+  const latencyPill = document.getElementById('conn-latency-val');
+  const metricVal   = document.getElementById('metric-latency');
+  const metricHint  = document.getElementById('metric-latency-hint');
+  const btnStatus   = document.getElementById('btn-status');
+
+  if (rtt === null) {
+    if (latencyPill) latencyPill.innerText = 'Offline';
+    if (metricVal)   metricVal.innerText   = 'Timeout';
+    if (metricHint)  metricHint.innerText  = 'No response from server';
+  } else {
+    const text = rtt <= 1 ? '< 1 ms' : `${rtt} ms`;
+    if (latencyPill) {
+      latencyPill.innerText = text;
+      latencyPill.classList.remove('ping-pop');
+      void latencyPill.offsetWidth;
+      latencyPill.classList.add('ping-pop');
+    }
+    if (metricVal) {
+      metricVal.innerText = text;
+      metricVal.classList.remove('ping-pop');
+      void metricVal.offsetWidth;
+      metricVal.classList.add('ping-pop');
+    }
+    if (metricHint) {
+      if (rtt < 8) metricHint.innerText = '⚡ Ultra-Low · 10s auto-refresh';
+      else if (rtt < 25) metricHint.innerText = '✓ Nominal · 10s auto-refresh';
+      else metricHint.innerText = '⚠ Elevated Link · 10s auto-refresh';
+    }
+    if (btnStatus && State.connected) {
+      btnStatus.title = `Connected (${State.usbData?.speed || 'HS'}) · ${text} RTT - Click for diagnostics`;
+    }
+  }
 }
 
 // ── Toast Utility ─────────────────────────────────────────────────────────

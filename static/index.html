@@ -3,16 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#131318" />
+  <meta name="theme-color" content="#09090c" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="description" content="Emittr: High-performance tactical USB HID controller with dual Xbox joysticks and universal multi-panel dashboard" />
-  <title>Emittr — Tactical USB HID Controller</title>
+  <title>Emittr: Tactical USB HID Controller</title>
+  <meta name="application-name" content="Emittr" />
+  <meta name="apple-mobile-web-app-title" content="Emittr" />
   <link rel="manifest" href="/static/manifest.json" />
-  <link rel="icon" type="image/png" href="/static/icon.png" />
+  <link rel="icon" type="image/svg+xml" href="/static/emittr-logo.svg" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="512x512" href="/static/icon-512.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
   
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -25,9 +31,9 @@
       justify-content: space-between !important;
       height: 56px;
       padding: 0 14px;
-      background-color: #1a1a24;
-      color: #e4e2e6;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background-color: #09090c;
+      color: #f5f2ea;
+      border-bottom: 1px solid rgba(245, 242, 234, 0.08);
       box-sizing: border-box;
       position: sticky;
       top: 0;
@@ -36,53 +42,89 @@
     .header-left, .header-right {
       display: flex !important;
       align-items: center !important;
-      gap: 8px;
+      gap: 10px;
     }
-    .dashboard-header-btn, .unstick-btn {
+    .app-brand-link {
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .app-logo {
+      height: 42px;
+      width: auto;
+      display: block;
+    }
+    .version-badge {
+      display: inline-block;
+      font-family: var(--font-mono, monospace);
+      font-size: 11px;
+      font-weight: 600;
+      color: #e5d7a3;
+      background: rgba(229, 215, 163, 0.12);
+      border: 1px solid rgba(229, 215, 163, 0.28);
+      border-radius: 9999px;
+      padding: 2px 7px;
+      line-height: 1;
+    }
+    .status-btn {
       display: inline-flex !important;
       align-items: center !important;
       justify-content: center !important;
       gap: 6px;
       height: 34px;
-      padding: 0 10px;
+      padding: 0 11px 0 9px;
       border-radius: 9999px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
       box-sizing: border-box;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(245, 242, 234, 0.12);
+      background-color: #171820;
+      color: #f5f2ea;
       white-space: nowrap;
+      transition: all 0.2s ease;
     }
-    .dashboard-header-btn {
-      background-color: #252836;
-      color: #c7c6ca;
+    .status-pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: #f59e0b;
+      box-shadow: 0 0 6px #f59e0b;
+      flex-shrink: 0;
     }
-    .unstick-btn {
-      background-color: rgba(242, 184, 181, 0.12);
-      color: #ffb4ab;
-      border-color: rgba(242, 184, 181, 0.3);
+    .status-btn.connected .status-pulse-dot {
+      background-color: #86efac;
+      box-shadow: 0 0 8px #86efac;
+    }
+    .status-btn.connected {
+      border-color: rgba(134, 239, 172, 0.3);
+      color: #86efac;
+      background: rgba(134, 239, 172, 0.08);
+    }
+    .status-btn.waiting .status-pulse-dot {
+      background-color: #f59e0b;
+      box-shadow: 0 0 8px #f59e0b;
+    }
+    .status-btn.waiting {
+      border-color: rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+      background: rgba(245, 158, 11, 0.08);
     }
     @media (max-width: 520px) {
       .app-header {
-        height: 52px;
-        padding: 0 10px;
+        height: 56px;
+        padding: 0 12px;
       }
-      .dashboard-header-btn .btn-text,
-      .unstick-btn .btn-text {
-        display: none !important;
-      }
-      .dashboard-header-btn,
-      .unstick-btn {
-        width: 34px;
+      .app-logo {
         height: 34px;
-        padding: 0 !important;
-        border-radius: 50% !important;
       }
-      #usb-status-text {
-        max-width: 70px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+      .status-btn {
+        padding: 0 9px;
+        font-size: 11px;
+      }
+      .status-btn .status-icon {
+        display: none;
       }
     }
     .joysticks-dock {
@@ -94,8 +136,8 @@
       box-sizing: border-box;
     }
     .joystick-card {
-      background-color: #1e1e2d;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background-color: #171820;
+      border: 1px solid rgba(245, 242, 234, 0.08);
       border-radius: 12px;
       padding: 10px 10px 12px 10px;
       display: flex !important;
@@ -264,24 +306,68 @@
       text-align: center;
       margin-top: 4px;
     }
+    /* ── Critical Intro Overlay (Zero-FOUC) ── */
+    .intro {
+      position: fixed; inset: 0; z-index: 99999; background: #09090c;
+      display: grid; place-items: center; align-content: center; gap: 28px;
+      cursor: pointer;
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.7s;
+    }
+    body.ready .intro { opacity: 0; visibility: hidden; pointer-events: none; }
   </style>
-  <link rel="stylesheet" href="/static/style.css?v=1.3.0" />
+  <link rel="stylesheet" href="/static/style.css?v=2.0.0" />
 </head>
 <body>
+
+  <!-- ───────────────────────────── INTRO: Opening Animation -->
+  <div class="intro" id="intro" aria-label="Emittr Intro" title="Click anywhere to skip">
+    <svg viewBox="391 289 756 403">
+      <g class="ig a" stroke-width="8.5">
+        <path class="af" d="M411.5 340.5 L555.5 380 L500.5 412.8 L477.5 466.5 Z"/>
+        <path class="dr wire" pathLength="1" d="M500.5 412.8 C508.0 418.7 515.5 425.3 523.1 430.4 C530.6 435.4 538.1 439.2 545.8 443.2 C553.5 447.2 561.4 451.0 569.4 454.4 C577.4 457.8 585.6 460.9 593.8 463.7 C602.0 466.5 610.4 469.0 618.9 471.1 C627.3 473.2 635.9 474.8 644.5 476.2 C653.1 477.5 661.8 478.5 670.4 479.0 C679.1 479.6 687.9 479.8 696.5 479.4 C705.2 479.1 713.9 478.1 722.5 477.0 C731.2 475.8 739.8 474.4 748.3 472.6 C756.8 470.7 765.2 468.5 773.5 465.9 C781.8 463.3 790.0 460.3 798.0 456.9 C806.1 453.5 813.9 449.8 821.6 445.7 C829.3 441.6 836.9 437.3 844.2 432.6 C851.5 427.8 858.7 422.8 865.4 417.3 C872.2 411.8 878.8 406.1 884.7 399.8 C890.7 393.5 896.6 386.8 901.2 379.5 C905.7 372.2 910.4 364.1 912.1 355.9 C913.8 347.7 914.6 337.4 911.3 330.2 C908.1 323.0 900.1 316.1 892.7 312.6 C885.3 309.1 875.6 309.0 867.0 309.1 C858.4 309.2 849.7 311.2 841.3 313.2 C832.9 315.3 824.6 318.3 816.5 321.5 C808.4 324.7 800.5 328.4 792.8 332.4 C785.1 336.4 777.6 341.0 770.3 345.7 C763.0 350.4 755.9 355.4 749.0 360.7 C742.1 366.0 735.3 371.6 728.9 377.4 C722.4 383.3 716.2 389.4 710.3 395.8 C704.4 402.2 698.7 408.8 693.4 415.7 C688.2 422.6 683.0 429.8 678.6 437.2 C674.2 444.7 669.5 453.1 666.8 460.5 C664.1 467.9 662.3 474.3 662.3 481.5 C662.3 488.7 662.9 496.7 666.8 503.5 C670.7 510.3 678.5 517.5 685.8 522.0 C693.2 526.5 702.3 528.9 711.0 530.8 C719.6 532.6 728.8 533.2 737.6 533.1 C746.5 533.0 755.5 531.7 764.3 530.3 C773.1 528.8 781.9 526.9 790.4 524.5 C799.0 522.0 807.4 518.8 815.6 515.4 C823.8 512.0 832.1 507.9 839.8 503.9 C847.5 499.9 854.0 495.4 862.0 491.3 C870.0 487.2 879.3 482.6 888.0 479.2 C896.7 475.8 905.0 473.0 914.0 470.8 C923.0 468.6 931.8 467.2 942.0 466.1 C952.2 465.0 962.3 464.4 975.0 464.0 C987.7 463.6 1003.7 463.7 1018.0 463.5"/>
+      </g>
+      <g class="ig b" stroke-width="8.5">
+        <path class="dr" pathLength="1" d="M1028.3 431 H1076.5 a6 6 0 0 1 6 6 V490 a6 6 0 0 1 -6 6 H1028.3 a6 6 0 0 1 -6 -6 V437 a6 6 0 0 1 6 -6 Z"/>
+        <path class="dr" pathLength="1" d="M1082.5 433.8 H1122.2 a5 5 0 0 1 5 5 V488.5 a5 5 0 0 1 -5 5 H1082.5"/>
+      </g>
+      <g class="fadeg" fill="currentColor">
+        <rect x="1099" y="447" width="10.5" height="10.5" rx="1.5"/>
+        <rect x="1099" y="468.5" width="10.5" height="10.5" rx="1.5"/>
+        <g transform="translate(1054.5 463.5) scale(0.72) translate(-1054.5 -463.5)">
+          <circle cx="1034.5" cy="463.5" r="4"/>
+          <path d="M1075 463.5 L1066 458.3 V468.7 Z"/>
+          <circle cx="1057.5" cy="450.5" r="3.3"/>
+          <rect x="1058" y="473.2" width="6.6" height="6.6"/>
+          <g fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1034.5 463.5 H1067"/>
+            <path d="M1040.5 463.5 L1048 450.5 H1057"/>
+            <path d="M1046 463.5 L1053.5 476.5 H1059"/>
+          </g>
+        </g>
+      </g>
+      <defs><clipPath id="icap"><rect x="500" y="614" width="530" height="58"/></clipPath></defs>
+      <g class="ig c" clip-path="url(#icap)" stroke-width="8" stroke-linecap="butt" stroke-linejoin="miter">
+        <path class="dr" pathLength="1" d="M562 618 H519 V668 H562 M519 643 H557"/>
+        <path class="dr" pathLength="1" d="M613 676 V618 L641 652 L669 618 V676"/>
+        <path class="dr" pathLength="1" d="M726 614 V672"/>
+        <path class="dr" pathLength="1" d="M772 618 H825 M798.5 618 V672"/>
+        <path class="dr" pathLength="1" d="M860 618 H913 M886.5 618 V672"/>
+        <path class="dr" pathLength="1" d="M958 676 V618 H989 A13.5 13.5 0 0 1 989 645 H958 M988 645 L1011 676"/>
+      </g>
+    </svg>
+  </div>
+  <script>
+    // Immediate failsafe dismiss
+    setTimeout(function() { document.body.classList.add('ready'); }, 3100);
+  </script>
 
   <!-- App Header -->
   <header class="app-header">
     <div class="header-left">
-      <div class="app-title-group">
-        <div class="app-name-row">
-          <h1 class="app-title">Emittr</h1>
-          <span class="version-badge" id="app-version-badge">v1.3.0</span>
-        </div>
-        <div id="usb-badge" class="connection-badge disconnected">
-          <span class="status-indicator"></span>
-          <span id="usb-status-text">Checking USB...</span>
-        </div>
-      </div>
+      <a href="/" class="app-brand-link" aria-label="Emittr">
+        <img src="/static/emittr-logo.svg" alt="Emittr" class="app-logo" />
+      </a>
+      <span class="version-badge" id="app-version-badge">v2.0.0</span>
     </div>
 
     <!-- Desktop Navigation Pills (Visible on large screens) -->
@@ -297,22 +383,16 @@
     </nav>
 
     <div class="header-right">
-      <!-- Universal Dashboard Mode Toggle (Accessible on all screens) -->
-      <button id="btn-header-dashboard" class="dashboard-header-btn" onclick="toggleDashboardMode()" title="Toggle Dashboard Mode (All-in-One Multi-Panel View)" aria-label="Dashboard Mode">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-          <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+      <!-- Connection Status Button (Opens Diagnostics) -->
+      <button id="btn-status" class="status-btn disconnected" onclick="openConnectionModal()" title="Connection Status & Diagnostics" aria-label="Connection Status">
+        <span class="status-pulse-dot" id="status-dot"></span>
+        <svg class="status-icon" viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+          <path d="M15 7v4h1v2h-3V5h2l-3-4-3 4h2v8H8v-2.07c.7-.37 1.2-1.08 1.2-1.93 0-1.21-.99-2.2-2.2-2.2-1.21 0-2.2.99-2.2 2.2 0 .85.5 1.56 1.2 1.93V13c0 1.11.89 2 2 2h3v3.05c-.71.37-1.2 1.1-1.2 1.95a2.2 2.2 0 0 0 4.4 0c0-.85-.49-1.58-1.2-1.95V15h3c1.11 0 2-.89 2-2v-2h1V7h-4z"/>
         </svg>
-        <span class="btn-text">Dashboard</span>
+        <span class="status-pill-text" id="status-pill-text">Checking...</span>
       </button>
 
-      <!-- Emergency Unstick Keys Button -->
-      <button id="btn-unstick" class="unstick-btn" onclick="emergencyRelease()" title="Release stuck keys, Ctrl, or mouse buttons" aria-label="Release stuck keys">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-        </svg>
-        <span class="btn-text unstick-text">Unstick</span>
-      </button>
-
+      <!-- Settings Button -->
       <button id="btn-settings" class="icon-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
           <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
@@ -341,10 +421,6 @@
             <button class="preset-pill active" data-delay="15" onclick="selectPreset(this, 15)">Fast</button>
             <button class="preset-pill" data-delay="35" onclick="selectPreset(this, 35)">Normal</button>
             <button class="preset-pill" data-delay="60" onclick="selectPreset(this, 60)">Human</button>
-          </div>
-          <div class="slider-row">
-            <input type="range" id="delay-slider" min="1" max="150" value="15" oninput="onSliderChange(this.value)" />
-            <span id="delay-val" class="slider-val">15 ms / char</span>
           </div>
         </div>
 
@@ -398,7 +474,7 @@
           />
         </div>
 
-        <!-- Key stroke feed — collapsible -->
+        <!-- Key stroke feed: collapsible -->
         <div class="feed-section">
           <button class="feed-toggle" id="feed-toggle-btn" onclick="toggleKeyFeed()" aria-expanded="false">
             <span class="feed-toggle-label">Recent Strokes</span>
@@ -708,20 +784,23 @@
           </label>
         </div>
 
-        <div class="setting-item">
+        <!-- Emergency Release (Unstick Keys) -->
+        <div class="setting-item unstick-setting-row">
           <div class="setting-info">
-            <span class="setting-title">USB HID Mode</span>
-            <span class="setting-sub">Off (default) lets NetHunter's own USB-function switch decide. On makes Emittr hold the port for keyboard/mouse.</span>
+            <span class="setting-title">Emergency Release (Unstick)</span>
+            <span class="setting-sub">Flush stuck modifiers, Ctrl, Shift, or mouse buttons</span>
           </div>
-          <label class="switch">
-            <input type="checkbox" id="cfg-hidmode" onchange="toggleHidMode(this.checked)" />
-            <span class="slider"></span>
-          </label>
+          <button id="btn-unstick" class="unstick-btn" onclick="emergencyRelease()" title="Release stuck keys" aria-label="Release stuck keys">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            <span class="btn-text">Unstick</span>
+          </button>
         </div>
 
         <div class="hw-info-card">
           <div class="hw-title">Hardware Information</div>
-          <div class="hw-line"><span>App Version:</span> <strong id="hw-ver">v1.3.0</strong></div>
+          <div class="hw-line"><span>App Version:</span> <strong id="hw-ver">v2.0.0</strong></div>
           <div class="hw-line"><span>USB Gadget:</span> <strong id="hw-udc">Checking...</strong></div>
           <div class="hw-line"><span>Link Speed:</span> <strong id="hw-speed">Checking...</strong></div>
           <div class="hw-line"><span>HID Node:</span> <strong id="hw-node">/dev/hidg0</strong></div>
@@ -732,8 +811,78 @@
     </div>
   </div>
 
+  <!-- ── Connection Details & Diagnostics Modal ────────────────────────────── -->
+  <div id="connection-modal" class="modal-backdrop" onclick="closeConnectionModal(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="status-pulse-dot" id="modal-status-dot"></span>
+          <h2 class="modal-title">Connection Diagnostics</h2>
+        </div>
+        <button class="icon-btn close-modal-btn" onclick="closeConnectionModal()" title="Close" aria-label="Close">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+
+      <div class="modal-body connection-modal-body">
+        <!-- Hero Status Badge Card -->
+        <div class="connection-hero-card" id="conn-hero-card">
+          <div class="conn-hero-left">
+            <div class="conn-hero-icon-well" id="conn-hero-icon">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M15 7v4h1v2h-3V5h2l-3-4-3 4h2v8H8v-2.07c.7-.37 1.2-1.08 1.2-1.93 0-1.21-.99-2.2-2.2-2.2-1.21 0-2.2.99-2.2 2.2 0 .85.5 1.56 1.2 1.93V13c0 1.11.89 2 2 2h3v3.05c-.71.37-1.2 1.1-1.2 1.95a2.2 2.2 0 0 0 4.4 0c0-.85-.49-1.58-1.2-1.95V15h3c1.11 0 2-.89 2-2v-2h1V7h-4z"/></svg>
+            </div>
+            <div>
+              <div class="conn-hero-title" id="conn-hero-status">Checking USB...</div>
+              <div class="conn-hero-sub" id="conn-hero-sub">Direct Hardware Emulation</div>
+            </div>
+          </div>
+          <div class="conn-ping-pill clickable" id="conn-ping-badge" onclick="testLatency()" title="Click to test latency now">
+            <span class="ping-pulse"></span>
+            <span id="conn-latency-val">-- ms</span>
+          </div>
+        </div>
+
+        <!-- Diagnostics Metrics Grid -->
+        <div class="conn-metrics-grid">
+          <div class="conn-metric-tile clickable" id="tile-metric-latency" onclick="testLatency()" title="Click to test latency now">
+            <div class="metric-label metric-label-flex">
+              <span>Latency (RTT)</span>
+              <span class="refresh-indicator" id="latency-refresh-indicator" title="Auto-refreshes every 10 seconds">10s <span class="spin-icon">⟳</span></span>
+            </div>
+            <div class="metric-val" id="metric-latency">-- ms</div>
+            <div class="metric-hint" id="metric-latency-hint">Measuring turnaround...</div>
+          </div>
+          <div class="conn-metric-tile">
+            <div class="metric-label">Link Signal &amp; Speed</div>
+            <div class="metric-val text-gold" id="metric-strength">100% Solid</div>
+            <div class="metric-hint" id="metric-speed">USB 2.0 (480 Mbps)</div>
+          </div>
+          <div class="conn-metric-tile">
+            <div class="metric-label">USB Gadget State</div>
+            <div class="metric-val" id="metric-state">Attached</div>
+            <div class="metric-hint" id="metric-udc">UDC: detecting...</div>
+          </div>
+          <div class="conn-metric-tile">
+            <div class="metric-label">Active HID Endpoints</div>
+            <div class="metric-val" id="metric-hid">/dev/hidg0, hidg1</div>
+            <div class="metric-hint">Keyboard &amp; Mouse Nodes</div>
+          </div>
+        </div>
+
+        <!-- Diagnostics Action Footer -->
+        <div class="conn-action-row">
+          <button id="btn-ping-test" class="btn-primary conn-ping-btn" onclick="testLatency()">
+            <svg class="ping-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+            <span>Ping Test</span>
+          </button>
+          <button class="btn-secondary" onclick="closeConnectionModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
 
-  <script src="/static/app.js?v=1.3.0"></script>
+  <script src="/static/app.js?v=2.0.0"></script>
 </body>
 </html>
