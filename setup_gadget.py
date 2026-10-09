@@ -130,14 +130,14 @@ def init_gadget(force: bool = False) -> bool:
                     with open(entry_udc, "r") as f:
                         bound = f.read().strip()
                     if bound:
-                        with open(entry_udc, "w") as f:
-                            f.write("\n")
+                        try:
+                            with open(entry_udc, "w") as f:
+                                f.write("none\n")
+                        except Exception:
+                            with open(entry_udc, "w") as f:
+                                f.write("\n")
                 except Exception:
-                    try:
-                        with open(entry_udc, "w") as f:
-                            f.write("none\n")
-                    except Exception:
-                        pass
+                    pass
     except Exception:
         pass
 
@@ -156,12 +156,14 @@ def init_gadget(force: bool = False) -> bool:
     except Exception as e:
         print(f"[*] Note clearing configs: {e}")
 
-    # 4. Configure Device Vendor & Product IDs (Linux Foundation Composite HID)
+    # 4. Configure Device Vendor & Product IDs (Emittr Composite HID)
+    # Using VID 0x1d6b and PID 0x010a provides universal HID compatibility across
+    # Android (phones, tablets, TV), Windows, Linux, and macOS hosts.
     try:
         with open(f"{gadget_dir}/idVendor", "w") as f:
             f.write("0x1d6b\n")  # Linux Foundation
         with open(f"{gadget_dir}/idProduct", "w") as f:
-            f.write("0x0104\n")  # Multifunction Composite Gadget
+            f.write("0x010a\n")  # Emittr Composite HID (restores Android & Windows host compatibility)
         with open(f"{gadget_dir}/bcdDevice", "w") as f:
             f.write("0x0100\n")
         with open(f"{gadget_dir}/bcdUSB", "w") as f:
@@ -174,22 +176,24 @@ def init_gadget(force: bool = False) -> bool:
     os.makedirs(strings_dir, exist_ok=True)
     try:
         with open(f"{strings_dir}/serialnumber", "w") as f:
-            f.write("EMITTR01\n")
+            f.write("EMITTR-0001\n")
         with open(f"{strings_dir}/manufacturer", "w") as f:
             f.write("Emittr\n")
         with open(f"{strings_dir}/product", "w") as f:
-            f.write("Composite USB HID Deck\n")
+            f.write("Emittr Composite HID Keyboard & Mouse\n")
     except Exception as e:
         print(f"[*] Note writing strings: {e}")
 
     # 6. Configure Configuration Strings & Power Attributes
+    # MaxPower is set to 2mA (low-power profile). Android OTG hosts (phones, tabs, TV)
+    # enforce a strict 100mA bus power budget and reject configurations exceeding it.
     cfg_strings = f"{configs_dir}/strings/0x409"
     os.makedirs(cfg_strings, exist_ok=True)
     try:
         with open(f"{cfg_strings}/configuration", "w") as f:
             f.write("Config 1: Composite HID\n")
         with open(f"{configs_dir}/MaxPower", "w") as f:
-            f.write("250\n")  # 250mA
+            f.write("2\n")  # 2mA (universally accepted without bus-power rejection)
     except Exception as e:
         print(f"[*] Note writing config strings: {e}")
 
