@@ -104,6 +104,33 @@ def get_hardware_udc() -> Optional[str]:
     return None
 
 
+def _detect_udc() -> str:
+    """Return the first available UDC name from /sys/class/udc, falling back to the
+    historical HiSilicon name so behavior on already-supported devices is unchanged."""
+    try:
+        udc_root = "/sys/class/udc"
+        if os.path.isdir(udc_root):
+            names = sorted(os.listdir(udc_root))
+            if names:
+                return names[0]
+    except Exception:
+        pass
+    return "hisi-usb-otg"
+
+
+def _already_configured() -> bool:
+    """True if the composite HID function is already linked and a UDC is bound."""
+    f1_path = f"{GADGET}/configs/b.1/f1"
+    udc_file = f"{GADGET}/UDC"
+    if not os.path.islink(f1_path):
+        return False
+    try:
+        with open(udc_file, "r") as f:
+            return bool(f.read().strip())
+    except Exception:
+        return False
+
+
 def init_gadget(force: bool = False) -> bool:
     """Initialize or restore the composite HID gadget."""
     root = get_configfs_root()

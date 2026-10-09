@@ -32,3 +32,8 @@ ssl/
 *.pem
 *.key
 *.crt
+# Emittr runtime secrets & per-device state — never commit these
+.emittr_token
+.emittr_hid_mode
+certs/
+
