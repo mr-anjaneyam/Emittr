@@ -381,7 +381,6 @@ current_typing_task: Optional[asyncio.Task] = None
 stop_event = asyncio.Event()
 
 STATIC_DIR = Path(__file__).parent / "static"
-DOCS_DIR = Path(__file__).parent / "docs"
 
 
 def ensure_hid_gadget():
@@ -678,9 +677,6 @@ async def websocket_endpoint(ws: WebSocket):
 
 # Mount static files AFTER all routes
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-
-if DOCS_DIR.exists():
-    app.mount("/docs", StaticFiles(directory=str(DOCS_DIR), html=True), name="docs")
 
 
 # ── Background Tasks ───────────────────────────────────────────────────────
