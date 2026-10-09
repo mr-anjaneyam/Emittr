@@ -42,4 +42,3 @@ elif [ -x /opt/usb_hid_deck/emittr ]; then
 elif [ -x /data/local/usb_hid_deck/emittr ]; then
     /data/local/usb_hid_deck/emittr start >/dev/null 2>&1 || true
 fi
-

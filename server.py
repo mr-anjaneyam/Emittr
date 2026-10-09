@@ -11,16 +11,12 @@ Provides:
   - Automatic USB watchdog (prevents mass_storage reversion)
   - Emergency unstick release mechanism (flushes all keys & mouse buttons)
   - Port 80 -> 8088 redirector
-  - Shared-secret token auth on all mutating endpoints (REST + WebSocket)
 """
 
 import asyncio
 import json
 import logging
-import logging.handlers
 import os
-import re
-import secrets
 import select
 import sys
 import time
@@ -31,22 +27,10 @@ from fastapi import Body, FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-_log_handlers = [logging.StreamHandler(sys.stdout)]
-try:
-    # Bounded rotating log file (5MB x 3 backups) so /var/log/usb_deck.log can't grow unbounded.
-    _log_handlers.append(
-        logging.handlers.RotatingFileHandler(
-            "/var/log/usb_deck.log", maxBytes=5 * 1024 * 1024, backupCount=3
-        )
-    )
-except Exception:
-    pass  # Path may be unwritable outside the target device — stdout logging still works.
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=_log_handlers,
-    force=True,
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 log = logging.getLogger("emittr")
 
@@ -302,11 +286,9 @@ class HIDDevice:
         try:
             self.write_kbd_report(mod, key)
         finally:
-            # Floor scales with the requested delay so "Instant" presets aren't
-            # silently clamped to the old fixed ~20ms/char minimum.
-            time.sleep(max(0.004, min(delay_s, 0.012)))
+            time.sleep(max(0.012, delay_s))
             self.release_keys()
-            time.sleep(0.003)
+            time.sleep(0.008)
 
     def write_mouse_report(self, buttons: int, dx: int, dy: int, wheel: int = 0, pan: int = 0) -> bool:
         """
@@ -397,36 +379,8 @@ hid = HIDDevice()
 connected_websockets: List[WebSocket] = []
 current_typing_task: Optional[asyncio.Task] = None
 stop_event = asyncio.Event()
-typing_lock = asyncio.Lock()  # Serializes /api/type job start against concurrent requests
 
 STATIC_DIR = Path(__file__).parent / "static"
-
-# ── HID Mode (manual toggle) ────────────────────────────────────────────────
-# Whether Emittr is allowed to claim/hold the USB gadget as HID. This defers to
-# NetHunter's own USB-function switch by default: Emittr stays hands-off until the
-# user explicitly opts in from Settings, instead of silently claiming the UDC on
-# every boot. Toggling it off releases the UDC so NetHunter (or any other app) can
-# take over USB function selection; toggling it on hands control back to Emittr.
-HID_MODE_FILE = Path(__file__).parent / ".emittr_hid_mode"
-
-
-def _load_hid_mode() -> bool:
-    try:
-        if HID_MODE_FILE.exists():
-            return HID_MODE_FILE.read_text(encoding="utf-8").strip() == "1"
-    except Exception:
-        pass
-    return False  # default off: let NetHunter's own USB-function choice stand until opted in
-
-
-def _save_hid_mode(enabled: bool):
-    try:
-        HID_MODE_FILE.write_text("1" if enabled else "0", encoding="utf-8")
-    except Exception as e:
-        log.warning(f"Could not persist HID mode setting: {e}")
-
-
-hid_mode_enabled = _load_hid_mode()
 
 
 def ensure_hid_gadget():
@@ -446,35 +400,14 @@ def ensure_hid_gadget():
             log.error(f"Failed to restore gadget: {e}")
 
 
-def release_hid_gadget():
-    """Unbind the UDC so another USB function (e.g. one picked in NetHunter) can claim it."""
-    udc_file = "/config/usb_gadget/g1/UDC"
-    try:
-        if os.path.exists(udc_file):
-            with open(udc_file, "w") as f:
-                f.write("none\n")
-            log.info("HID gadget released; UDC freed for other USB functions.")
-    except Exception as e:
-        log.warning(f"Could not release HID gadget UDC: {e}")
-
-
-def get_status_payload() -> Dict[str, Any]:
-    """USB status plus the current authenticated WebSocket client count."""
-    payload = hid.get_usb_status()
-    payload["clients"] = len(connected_websockets)
-    payload["hid_mode_enabled"] = hid_mode_enabled
-    return payload
-
-
 async def lifespan(application: "FastAPI"):
-    # Startup: ensure gadget is bound (only if HID mode is enabled) and flush releases
-    if hid_mode_enabled:
-        ensure_hid_gadget()
+    # Startup: ensure gadget is bound and flush releases
+    ensure_hid_gadget()
     hid.release_all()
 
     asyncio.create_task(connection_monitor_loop())
     asyncio.create_task(start_http_port80_redirector())
-    log.info(f"Emittr Server v{VERSION} initialized on port {PORT}.")
+    log.info(f"Emittr Server v{VERSION} initialized on port 8088.")
 
     yield
 
@@ -518,12 +451,8 @@ async def broadcast_status(data: dict):
 async def get_index():
     index_file = STATIC_DIR / "index.html"
     if index_file.exists():
-        html = index_file.read_text(encoding="utf-8")
-        # Embed the shared auth token for the legitimate web UI to attach to its own requests.
-        token_script = f'<script>window.EMITTR_TOKEN="{AUTH_TOKEN}";</script>'
-        html = html.replace("<head>", "<head>\n  " + token_script, 1)
         return HTMLResponse(
-            content=html,
+            content=index_file.read_text(encoding="utf-8"),
             headers={
                 "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
                 "Pragma": "no-cache",
@@ -550,41 +479,17 @@ async def get_service_worker():
 
 @app.get("/api/status")
 async def get_status():
-    return get_status_payload()
+    return hid.get_usb_status()
 
 
-@app.post("/api/release", dependencies=[Depends(verify_token)])
+@app.post("/api/release")
 async def emergency_release():
     """Emergency unstick endpoint: release all modifier keys and mouse buttons."""
     hid.release_all()
     return {"ok": True, "msg": "All keys and mouse buttons released"}
 
 
-@app.post("/api/hid_mode", dependencies=[Depends(verify_token)])
-async def set_hid_mode(data: dict = Body(...)):
-    """Manually enable/disable USB HID mode. Mirrors NetHunter's own USB-function switch:
-    a persisted, user-controlled setting instead of Emittr silently re-claiming the UDC."""
-    global hid_mode_enabled
-    enabled = bool(data.get("enabled", True))
-    hid_mode_enabled = enabled
-    _save_hid_mode(enabled)
-    loop = asyncio.get_event_loop()
-
-    if enabled:
-        try:
-            import setup_gadget
-            ok = await loop.run_in_executor(None, lambda: setup_gadget.init_gadget(force=True))
-        except Exception as e:
-            log.error(f"Failed to enable HID gadget: {e}")
-            ok = False
-        msg = "HID mode enabled" if ok else "Failed to bind HID gadget (check logs)"
-        return {"ok": ok, "hid_mode_enabled": True, "msg": msg}
-
-    await loop.run_in_executor(None, release_hid_gadget)
-    return {"ok": True, "hid_mode_enabled": False, "msg": "HID mode released — you can now switch USB function from NetHunter"}
-
-
-@app.post("/api/type", dependencies=[Depends(verify_token)])
+@app.post("/api/type")
 async def type_text(data: dict = Body(...)):
     global current_typing_task
     text          = data.get("text", "")
@@ -594,34 +499,12 @@ async def type_text(data: dict = Body(...)):
     if not text:
         return JSONResponse({"ok": False, "msg": "No text provided"}, status_code=400)
 
-    if len(text) > MAX_TEXT_LENGTH:
-        return JSONResponse(
-            {"ok": False, "msg": f"Text exceeds max length of {MAX_TEXT_LENGTH} characters"},
-            status_code=413,
-        )
-
-    # Atomically check-and-set under a lock so two concurrent requests can't both
-    # slip past the busy check and interleave keystrokes on /dev/hidg0.
-    async with typing_lock:
-        if hid.is_typing:
-            return JSONResponse({"ok": False, "msg": "Another typing job is in progress"}, status_code=409)
-        hid.is_typing = True
+    if hid.is_typing:
+        return JSONResponse({"ok": False, "msg": "Another typing job is in progress"}, status_code=409)
 
     delay_s = max(0.001, delay_ms / 1000.0)
     current_typing_task = asyncio.create_task(_type_worker(text, delay_s, initial_delay))
-    current_typing_task.add_done_callback(_on_typing_task_done)
     return {"ok": True, "length": len(text), "delay_ms": delay_ms}
-
-
-def _on_typing_task_done(task: asyncio.Task):
-    """Surface otherwise-silent exceptions from the fire-and-forget typing task."""
-    if task.cancelled():
-        return
-    exc = task.exception()
-    if exc is not None:
-        log.error(f"Typing task failed: {exc}")
-        hid.is_typing = False
-        asyncio.create_task(broadcast_status({"type": "typing_error", "msg": str(exc)}))
 
 
 async def _type_worker(text: str, delay_s: float, initial_delay: float):
@@ -670,7 +553,7 @@ async def _type_worker(text: str, delay_s: float, initial_delay: float):
         await broadcast_status({"type": "typing_end", "aborted": stop_event.is_set()})
 
 
-@app.post("/api/stop", dependencies=[Depends(verify_token)])
+@app.post("/api/stop")
 async def stop_typing():
     if not hid.is_typing:
         return {"ok": True, "msg": "Not typing"}
@@ -679,27 +562,26 @@ async def stop_typing():
     return {"ok": True, "msg": "Typing stopped"}
 
 
-@app.post("/api/key", dependencies=[Depends(verify_token)])
+@app.post("/api/key")
 async def press_key(data: dict = Body(...)):
     combo = data.get("combo", "").lower().strip()
     key   = data.get("key",   "").lower().strip()
-    loop  = asyncio.get_event_loop()
     if combo and combo in COMBOS:
         mod, code = COMBOS[combo]
-        await loop.run_in_executor(None, hid.press_and_release, mod, code, 0.015)
+        hid.press_and_release(mod, code, 0.015)
         return {"ok": True, "combo": combo}
     if key and key in SPECIAL_KEYS:
         mod, code = SPECIAL_KEYS[key]
-        await loop.run_in_executor(None, hid.press_and_release, mod, code, 0.015)
+        hid.press_and_release(mod, code, 0.015)
         return {"ok": True, "key": key}
     if key and len(key) == 1 and key in ASCII_MAP:
         mod, code = ASCII_MAP[key]
-        await loop.run_in_executor(None, hid.press_and_release, mod, code, 0.015)
+        hid.press_and_release(mod, code, 0.015)
         return {"ok": True, "char": key}
     return JSONResponse({"ok": False, "msg": f"Unknown: {combo or key}"}, status_code=400)
 
 
-@app.post("/api/mouse", dependencies=[Depends(verify_token)])
+@app.post("/api/mouse")
 async def mouse_action(data: dict = Body(...)):
     """Send mouse event. Body: {dx, dy, buttons, wheel, wheel_h, pan, click}"""
     dx      = int(data.get("dx",      0))
@@ -727,17 +609,10 @@ async def mouse_action(data: dict = Body(...)):
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
-    token = ws.query_params.get("token", "")
-    if not check_token(token):
-        await ws.close(code=4401)
-        return
-
     await ws.accept()
     connected_websockets.append(ws)
-    loop = asyncio.get_event_loop()
-    last_live_char_ts = 0.0
     try:
-        await ws.send_text(json.dumps({"type": "status", "data": get_status_payload()}))
+        await ws.send_text(json.dumps({"type": "status", "data": hid.get_usb_status()}))
         while True:
             raw    = await ws.receive_text()
             data   = json.loads(raw)
@@ -751,30 +626,24 @@ async def websocket_endpoint(ws: WebSocket):
                 await ws.send_text(json.dumps({"type": "released", "ok": True}))
 
             elif action == "live_char":
-                # Simple per-connection throttle to prevent flooding the HID pipe.
-                now = time.monotonic()
-                if now - last_live_char_ts < LIVE_CHAR_MIN_INTERVAL:
-                    continue
-                last_live_char_ts = now
-
                 ch      = data.get("char", "")
                 k_lower = ch.lower().strip()
                 if ch in ASCII_MAP:
                     mod, code = ASCII_MAP[ch]
-                    await loop.run_in_executor(None, hid.press_and_release, mod, code, 0.015)
+                    hid.press_and_release(mod, code, 0.015)
                 elif k_lower in SPECIAL_KEYS:
                     mod, code = SPECIAL_KEYS[k_lower]
-                    await loop.run_in_executor(None, hid.press_and_release, mod, code, 0.015)
+                    hid.press_and_release(mod, code, 0.015)
                 elif k_lower in COMBOS:
                     mod, code = COMBOS[k_lower]
-                    await loop.run_in_executor(None, hid.press_and_release, mod, code, 0.015)
+                    hid.press_and_release(mod, code, 0.015)
                 else:
                     log.warning(f"Unmapped live_char: {ch!r}")
 
             elif action == "mouse_scroll":
                 wv = int(data.get("wheel_v", data.get("wheel", 0)))
                 wh = int(data.get("wheel_h", data.get("pan", 0)))
-                await loop.run_in_executor(None, hid.write_scroll, wv, wh)
+                hid.write_scroll(wheel_v=wv, wheel_h=wh)
 
             elif action == "mouse_move":
                 btn     = int(data.get("buttons", 0))
@@ -784,18 +653,18 @@ async def websocket_endpoint(ws: WebSocket):
                 wheel_h = int(data.get("wheel_h", data.get("pan", 0)))
 
                 if wheel != 0 or wheel_h != 0:
-                    await loop.run_in_executor(None, hid.write_scroll, wheel, wheel_h)
+                    hid.write_scroll(wheel_v=wheel, wheel_h=wheel_h)
                 else:
-                    await loop.run_in_executor(None, hid.write_mouse_report, btn, dx, dy, 0, 0)
+                    hid.write_mouse_report(btn, dx, dy, 0, 0)
 
             elif action == "mouse_click":
                 btn = int(data.get("button", 1))
-                await loop.run_in_executor(None, hid.write_mouse_report, btn, 0, 0, 0, 0)
+                hid.write_mouse_report(btn, 0, 0, 0, 0)
                 await asyncio.sleep(0.02)
-                await loop.run_in_executor(None, hid.write_mouse_report, 0, 0, 0, 0, 0)
+                hid.write_mouse_report(0, 0, 0, 0, 0)
 
             elif action == "get_status":
-                await ws.send_text(json.dumps({"type": "status", "data": get_status_payload()}))
+                await ws.send_text(json.dumps({"type": "status", "data": hid.get_usb_status()}))
 
     except WebSocketDisconnect:
         pass
@@ -820,25 +689,19 @@ async def connection_monitor_loop():
       3. Broadcasts state changes to all connected clients.
     """
     last_state = None
-    loop = asyncio.get_event_loop()
     while True:
         await asyncio.sleep(1.5)
         try:
-            # ensure_hid_gadget() does blocking filesystem I/O; keep it off the event loop.
-            # Only auto-restore while HID mode is enabled — when disabled, Emittr must not
-            # fight whatever USB function the user picked elsewhere (e.g. via NetHunter).
-            if hid_mode_enabled:
-                await loop.run_in_executor(None, ensure_hid_gadget)
-            st = await loop.run_in_executor(None, hid.get_usb_status)
+            ensure_hid_gadget()
+            st = hid.get_usb_status()
             current_state = st.get("attached", False)
 
             # Detect transition from not-attached -> attached (PC plugged in or rebooted)
             if last_state is not None and not last_state and current_state:
                 log.info("PC attached! Flushing zero report to unstick any rogue keys...")
-                await loop.run_in_executor(None, hid.release_all)
+                hid.release_all()
 
             last_state = current_state
-            st["clients"] = len(connected_websockets)
             await broadcast_status({"type": "status", "data": st})
         except Exception as e:
             log.warning(f"Connection monitor exception: {e}")
@@ -859,7 +722,7 @@ def get_ssl_config():
 
 
 async def start_http_port80_redirector():
-    """Userland HTTP 302 redirect on port 80 -> the configured app port."""
+    """Userland HTTP 302 redirect on port 80 -> port 8088."""
     async def handle_port80(reader, writer):
         try:
             req_data = await asyncio.wait_for(reader.read(2048), timeout=2.0)
@@ -921,4 +784,4 @@ if __name__ == "__main__":
         access_log=False,
         ssl_certfile=ssl_cert,
         ssl_keyfile=ssl_key,
-    )
+    )

@@ -11,7 +11,6 @@ const APP_VERSION = '2.0.0';
 const State = {
   ws: null,
   reconnectTimer: null,
-  wsBackoffMs: 500,
   connected: false,
   isTyping: false,
   delayMs: 15,
@@ -142,31 +141,6 @@ function applyTheme(theme) {
   document.body.classList.toggle('light-theme', theme === 'light');
 }
 
-async function toggleHidMode(enabled) {
-  const toggle = document.getElementById('cfg-hidmode');
-
-  if (enabled) {
-    const proceed = confirm(
-      'NetHunter should decide USB function first.\n\n' +
-      'Overwriting the enablement through Emittr can have unprecedented consequences. Continue?'
-    );
-    if (!proceed) {
-      if (toggle) toggle.checked = false;
-      return;
-    }
-  }
-
-  triggerHaptic(15);
-  try {
-    const result = await apiPost('/api/hid_mode', { enabled });
-    showToast(result.msg || (enabled ? 'HID mode enabled' : 'HID mode released'));
-    if (toggle) toggle.checked = !!result.hid_mode_enabled;
-  } catch (e) {
-    showToast(e.message || 'Failed to change HID mode');
-    if (toggle) toggle.checked = !enabled; // revert the switch on failure
-  }
-}
-
 function triggerHaptic(duration = 10) {
   if (State.config.haptic && navigator.vibrate) {
     try { navigator.vibrate(duration); } catch (e) {}
@@ -184,10 +158,10 @@ async function emergencyRelease() {
   }
 
   try {
-    await apiPost('/api/release');
+    await fetch('/api/release', { method: 'POST' });
     showToast('✓ All keys & modifiers released');
   } catch (e) {
-    showToast(e.message || 'Sent release signal');
+    showToast('Sent release signal');
   }
 }
 
@@ -216,27 +190,19 @@ function initWebSocket() {
                    State.ws.readyState === WebSocket.OPEN)) return;
 
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const tokenParam = window.EMITTR_TOKEN ? `?token=${encodeURIComponent(window.EMITTR_TOKEN)}` : '';
-  State.ws = new WebSocket(`${protocol}//${location.host}/ws${tokenParam}`);
+  State.ws = new WebSocket(`${protocol}//${location.host}/ws`);
 
   State.ws.onopen = () => {
     if (State.reconnectTimer) { clearTimeout(State.reconnectTimer); State.reconnectTimer = null; }
-    State.wsBackoffMs = 500; // reset backoff after a successful connection
   };
 
   State.ws.onmessage = (event) => {
     try { handleWsMessage(JSON.parse(event.data)); } catch (e) {}
   };
 
-  State.ws.onclose = (event) => {
-    if (event && event.code === 4401) {
-      showToast('Session expired — reload the page to reconnect');
-      return; // don't retry with a rejected token
-    }
+  State.ws.onclose = () => {
     if (!State.reconnectTimer) {
-      const delay = State.wsBackoffMs || 500;
-      State.reconnectTimer = setTimeout(() => { State.reconnectTimer = null; initWebSocket(); }, delay);
-      State.wsBackoffMs = Math.min(delay * 2, 30000); // exponential backoff, capped at 30s
+      State.reconnectTimer = setTimeout(() => { State.reconnectTimer = null; initWebSocket(); }, 2000);
     }
   };
 
@@ -269,19 +235,14 @@ function handleWsMessage(msg) {
     }
   } else if (msg.type === 'countdown') {
     showToast(`Typing starts in ${msg.remaining}s...`);
-  } else if (msg.type === 'error') {
-    showToast(msg.msg || 'Server reported an error');
   }
 }
 
 async function fetchInitialStatus() {
   try {
-    const res = await fetch('/api/status');
-    const data = await res.json();
+    const data = await (await fetch('/api/status')).json();
     updateConnectionUI(data);
-  } catch (e) {
-    showToast('Server unreachable — check the USB/Wi-Fi connection');
-  }
+  } catch (e) {}
 }
 
 function updateConnectionUI(data) {
@@ -339,7 +300,6 @@ function updateConnectionUI(data) {
   if (udc)   udc.innerText   = udcLabel;
   if (speed) speed.innerText = data.speed || 'N/A';
   if (node)  node.innerText  = data.hid_node || '/dev/hidg0';
-  if (hidmode && typeof data.hid_mode_enabled === 'boolean') hidmode.checked = data.hid_mode_enabled;
 
   if (data.version) {
     initVersionBadge(data.version);
@@ -433,24 +393,29 @@ async function sendText() {
   triggerHaptic(15);
 
   try {
-    const result = await apiPost('/api/type', {
-      text,
-      delay_ms: State.delayMs,
-      initial_delay_s: State.config.countdown
+    const res = await fetch('/api/type', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text,
+        delay_ms: State.delayMs,
+        initial_delay_s: State.config.countdown
+      })
     });
+    const result = await res.json();
     if (!result.ok) {
       setTypingUI(false);
       showToast(result.msg || 'Typing failed');
     }
   } catch (e) {
     setTypingUI(false);
-    showToast(e.message || 'Failed to reach server');
+    showToast('Failed to reach server');
   }
 }
 
 async function stopTyping() {
   try {
-    await apiPost('/api/stop');
+    await fetch('/api/stop', { method: 'POST' });
   } catch (e) {}
   setTypingUI(false);
   triggerHaptic(20);
@@ -547,20 +512,15 @@ function initLiveKeyboard() {
 
   input.addEventListener('input', () => {
     const cur = input.value;
-    if (cur !== lastValue) {
-      // Prefix+suffix diff so mid-string edits (e.g. autocorrect) send only the
-      // minimal backspace/insert sequence instead of assuming pure append/trim.
-      const maxPfx = Math.min(lastValue.length, cur.length);
+    if (cur.length > lastValue.length) {
       let pfx = 0;
-      while (pfx < maxPfx && lastValue[pfx] === cur[pfx]) pfx++;
-
-      const maxSfx = Math.min(lastValue.length - pfx, cur.length - pfx);
-      let sfx = 0;
-      while (sfx < maxSfx && lastValue[lastValue.length - 1 - sfx] === cur[cur.length - 1 - sfx]) sfx++;
-
-      const removed = lastValue.length - pfx - sfx;
+      while (pfx < lastValue.length && pfx < cur.length && lastValue[pfx] === cur[pfx]) pfx++;
+      const removed = lastValue.length - pfx;
       for (let i = 0; i < removed; i++) emitChar('Backspace');
-      for (const ch of cur.slice(pfx, cur.length - sfx)) emitChar(ch);
+      for (const ch of cur.slice(pfx)) emitChar(ch);
+    } else if (cur.length < lastValue.length) {
+      const diff = lastValue.length - cur.length;
+      for (let i = 0; i < diff; i++) emitChar('Backspace');
     }
     lastValue = cur;
     clearTimeout(resetTimer);
@@ -591,7 +551,11 @@ function sendLiveChar(ch) {
   if (State.ws && State.ws.readyState === WebSocket.OPEN) {
     State.ws.send(JSON.stringify({ action: 'live_char', char: ch }));
   } else {
-    apiPost('/api/key', { key: ch }).catch(() => {});
+    fetch('/api/key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: ch })
+    }).catch(() => {});
   }
 }
 
@@ -620,10 +584,12 @@ async function sendCombo(combo) {
   triggerHaptic(15);
   showToast(`Sent ${combo}`);
   try {
-    await apiPost('/api/key', { combo });
-  } catch (e) {
-    showToast(e.message || 'Failed to send combo');
-  }
+    await fetch('/api/key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ combo })
+    });
+  } catch (e) {}
 }
 
 // ── View 4: Dual Xbox Joystick Thumbsticks Engine ─────────────────────────
@@ -782,14 +748,22 @@ function emitScroll(axis, val) {
     if (State.ws && State.ws.readyState === WebSocket.OPEN) {
       State.ws.send(JSON.stringify({ action: 'mouse_scroll', wheel_v: val, wheel_h: 0 }));
     } else {
-      apiPost('/api/mouse', { wheel: val, wheel_h: 0 }).catch(() => {});
+      fetch('/api/mouse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wheel: val, wheel_h: 0 })
+      }).catch(() => {});
     }
   } else {
     // Horizontal scroll (Native HID AC Pan Usage 0x0238)
     if (State.ws && State.ws.readyState === WebSocket.OPEN) {
       State.ws.send(JSON.stringify({ action: 'mouse_scroll', wheel_v: 0, wheel_h: val }));
     } else {
-      apiPost('/api/mouse', { wheel: 0, wheel_h: val }).catch(() => {});
+      fetch('/api/mouse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wheel: 0, wheel_h: val })
+      }).catch(() => {});
     }
   }
 }
@@ -926,7 +900,11 @@ function onMouseClick(buttonNum) {
   if (State.ws && State.ws.readyState === WebSocket.OPEN) {
     State.ws.send(JSON.stringify({ action: 'mouse_click', button: buttonNum }));
   } else {
-    apiPost('/api/mouse', { buttons: buttonNum }).catch(() => {});
+    fetch('/api/mouse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ buttons: buttonNum })
+    }).catch(() => {});
   }
 }
 
