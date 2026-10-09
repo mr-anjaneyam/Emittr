@@ -13,11 +13,18 @@ Usage:
 import sys
 import os
 import time
+import ssl
 import argparse
 import urllib.request
 import json
 
-SERVER_URL = "http://127.0.0.1:8088"
+INSTALL_DIR = os.environ.get("EMITTR_INSTALL_DIR", "/opt/usb_hid_deck")
+_SSL_CERT = os.path.join(INSTALL_DIR, "ssl", "cert.pem")
+_SSL_KEY = os.path.join(INSTALL_DIR, "ssl", "key.pem")
+_PORT = os.environ.get("EMITTR_PORT", "8088")
+_HAS_TLS = (os.path.exists(_SSL_CERT) and os.path.exists(_SSL_KEY)) or bool(os.environ.get("EMITTR_SSL_CERT"))
+SERVER_URL = os.environ.get("EMITTR_SERVER_URL", f"{'https' if _HAS_TLS else 'http'}://127.0.0.1:{_PORT}")
+_SSL_CTX = ssl._create_unverified_context() if SERVER_URL.startswith("https") else None
 
 def send_via_api(endpoint, payload):
     try:
@@ -27,7 +34,7 @@ def send_via_api(endpoint, payload):
             data=data,
             headers={"Content-Type": "application/json"}
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=5, context=_SSL_CTX) as resp:
             return json.loads(resp.read().decode())
     except Exception as e:
         return {"ok": False, "error": str(e)}
@@ -45,7 +52,7 @@ def main():
 
     if args.status:
         try:
-            with urllib.request.urlopen(f"{SERVER_URL}/api/status", timeout=3) as resp:
+            with urllib.request.urlopen(f"{SERVER_URL}/api/status", timeout=3, context=_SSL_CTX) as resp:
                 status = json.loads(resp.read().decode())
                 is_conn = status.get('connected', status.get('attached', False))
                 udc_state = status.get('udc_state', status.get('state', 'Unknown'))
