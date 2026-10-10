@@ -11,7 +11,7 @@
 
 # Your phone just clocked in as a keyboard.
 
-### *Hardware USB HID Deck • Ghost Keystrokes • Local Network Air-Gap Relay*
+### *Hardware USB HID Deck • Pure Hardware Keystrokes • Out-of-Band Network Bridge*
 **Turn any rooted Android or NetHunter phone into an unapologetic hardware-grade USB keyboard, precision trackpad, and continuous scrolling deck.**
 
 [![Release](https://img.shields.io/badge/Release-v2.0.0-00E5FF.svg?style=for-the-badge&logo=github)](https://github.com/mr-anjaneyam/Emittr/releases)
@@ -22,7 +22,7 @@
 
 <br/>
 
-> **Plug your rooted phone into anything with a USB port.** Then type directly from its screen, or open Emittr in your browser on any laptop or phone on your local Wi-Fi. Keystrokes stream over the air and strike the host as real hardware signals: **no drivers, no host software, completely air-gap safe.**
+> **Plug your rooted phone into anything with a USB port.** Then type directly from its screen, or open Emittr in your browser on any laptop or phone on your local Wi-Fi. Keystrokes stream over the air and strike the host as real electrical signals: **no drivers, no host software, target host stays network-isolated.**
 
 <br/>
 
@@ -31,7 +31,7 @@
 
 <br/>
 
-[🎬 Video Demos](#-field-demos-in-action) • [🧱 The Wall (Why Emittr)](#-the-wall-locked-down-means-locked-down) • [⚡ The Two Superpowers](#-the-two-superpowers-how-emittr-operates) • [🎯 Missions](#-missions--real-world-use-cases) • [🔥 Features](#-the-feature-arsenal) • [🕹️ Joysticks & AC Pan](#4-🕹️-dual-xbox-thumbsticks--native-ac-pan-scrolling) • [🚀 Quick Start](#-quick-start-zero-to-hero-in-2-minutes) • [💻 CLI Commands (`emittr`)](#-command-line-control-emittr--usbtype) • [📱 Device Compatibility](#-hardware-compatibility-roster) • [🤝 Contributing](CONTRIBUTING.md)
+[🎬 Field Demos](#-field-demos-in-action) • [🧱 The Wall (Why Emittr)](#-the-wall-locked-down-means-locked-down) • [⚡ The Two Superpowers](#-the-two-superpowers-how-emittr-operates) • [🎯 Missions](#-missions--real-world-use-cases) • [🔥 Features](#-the-feature-arsenal) • [🕹️ Joysticks & AC Pan](#4-🕹️-dual-xbox-thumbsticks--native-ac-pan-scrolling) • [🚀 Quick Start](#-quick-start-zero-to-hero-in-2-minutes) • [💻 CLI Commands (`emittr`)](#-command-line-control-emittr--usbtype) • [📱 Device Compatibility](#-hardware-compatibility-roster) • [🤝 Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -46,7 +46,7 @@ When you are standing in front of a restricted workstation, a hardened server, o
 | 💾 **USB Storage** | ❌ Blocked by endpoint policy / GPO | **No storage device mounted.** Leaves a spotless forensic audit trail. |
 | 📋 **The Clipboard** | ❌ Disabled, monitored, or scraped by DLP / EDR | **0 clipboard writes.** Secret never touches host clipboard memory. |
 | 🌐 **Remote Software** | ❌ Blocked by firewalls, proxies, or missing OS | **0 host software.** Requires zero background `.exe` or agent on the target. |
-| 🔌 **The Network** | ❌ Air-gapped, isolated, or dead NIC | **Pure physical USB cable.** Completely air-gap compliant. |
+| 🔌 **The Network** | ❌ Air-gapped, isolated, or dead NIC | **Pure physical USB cable.** Target host stays 100% network-isolated. |
 | ⌨️ **A Physical Keyboard** | 🟢 **Allowed. Always. Nobody blocks a keyboard.** | **Speaks standard USB-IF HID scancodes natively.** |
 
 ```
@@ -54,14 +54,14 @@ When you are standing in front of a restricted workstation, a hardened server, o
                                     ↓
                  So we taught a phone to become one:
          A real USB keyboard • A five-button precision mouse
-      Two Xbox thumbsticks • And a local network air-gap bridge
+      Two Xbox thumbsticks • Direct OTG & out-of-band bridge
 ```
 
 ---
 
 ## 🎬 Field Demos in Action
 
-*See Emittr operating across real hardware, bootloaders, and locked-down environments.*
+*See Emittr operating across real hardware, bootloaders, and locked-down environments:*
 
 <div align="center">
 
@@ -77,18 +77,18 @@ When you are standing in front of a restricted workstation, a hardened server, o
 <summary><b>📖 Detailed breakdown of each demonstration</b></summary>
 
 1. **Demo 1: The Pre-Boot BIOS & Recovery Proof**
-   * **What it proves:** Unlike software apps (KDE Connect, Unified Remote, TeamViewer), Emittr requires zero host OS or driver stack. It functions at the raw motherboard USB controller level, enabling headless recovery, BIOS configuration, and GRUB kernel selection.
+   * **What it proves:** Unlike software tools (KDE Connect, Unified Remote, TeamViewer), Emittr requires zero host OS or driver stack. It operates at the raw motherboard USB controller level, enabling headless recovery, BIOS configuration, and GRUB kernel selection.
 2. **Demo 2: The 1,000 WPM Keystroke Cannon**
-   * **What it proves:** Delivers bulk payloads with selectable speeds (Instant `5ms` down to Human `60ms`), pre-flight countdown buffers, and an instant kill switch if an input buffer lags.
+   * **What it proves:** Delivers bulk payloads and automation scripts with selectable speeds (Instant `5ms` down to Human `60ms`), pre-flight countdown buffers, and an instant kill switch if an input buffer lags.
 3. **Demo 3: Dual Xbox Thumbsticks & Hardware AC Pan**
-   * **What it proves:** Instead of fake `Shift + Scroll` synthetic combos, Emittr dispatches genuine USB-IF Consumer Usage `0x0238` packets that Windows, macOS, and Linux natively process as `WM_MOUSEHWHEEL`.
+   * **What it proves:** Instead of fake `Shift + Scroll` synthetic combos, Emittr dispatches genuine USB-IF Consumer Usage `0x0238` packets that Windows, macOS, and Linux natively process as standard `WM_MOUSEHWHEEL` events.
 </details>
 
 ---
 
-## ⚡ The Two Superpowers: How Emittr Operates
+## ⚡ The Two Superpowers (How Emittr Operates)
 
-Emittr adapts to your physical operating environment with two distinct superpowers:
+Emittr adapts to your physical environment with two distinct operational architectures:
 
 <p align="center">
   <img src="docs/architecture.png" width="100%" alt="Emittr Operating Modes: Direct Tether vs Local Network Relay" />
@@ -105,19 +105,18 @@ Emittr adapts to your physical operating environment with two distinct superpowe
 
 <br/>
 
-
 ### 🔴 Superpower 01: Hardware USB HID (The Handheld Cyberdeck)
 *Paste ➔ Keystrokes. Master password. Zero clipboard.*
 * **How it works:** Hold your rooted phone in your hand as a standalone, tactile cyberdeck plugged directly into the target machine via a standard USB-OTG cable.
 * **Why it matters:** Zero network connectivity is involved. Because it speaks native USB Boot Protocol scancodes, it works before the operating system even boots - navigate motherboard BIOS/UEFI menus, select GRUB kernels, unlock LUKS disk encryption, or recover headless servers.
 * **The Keystroke Cannon:** Paste a 50-line PowerShell script, base64 payload, or complex credential and fire it into the machine at 1,000 WPM with sub-5ms latency.
 
-### 🔵 Superpower 02: The Local Network Relay (The Air-Gap Bridge)
+### 🔵 Superpower 02: The Local Network Relay (The Out-of-Band Bridge)
 *Type from any machine. Anywhere on your Wi-Fi.*
 * **The Missing Link Problem:** Your master credentials, Bitwarden vault, and 2FA authenticator live on your personal daily driver (iPhone, Pixel, Mac) - **not** on the rooted lab phone plugged into the server rack or client workstation.
-* **How it works:** Leave your rooted phone connected to the target machine via USB as a silent hardware bridge. Open `http://<phone-ip>:8088` from your personal phone or laptop browser on the local Wi-Fi.
+* **How it works:** Leave your rooted phone connected to the target machine via USB as a silent hardware bridge. Open `http://<phone-ip>:8088` (or `https://...`) from your personal phone or laptop browser on the local Wi-Fi.
 * **The Magic:** Copy a password on your personal iPhone, tap **Stream to Wire**, and Emittr bridges the data across the local WebSocket and injects it straight into the target PC as physical electrical keystrokes.
-* **Air-Gap Safe:** The target machine never touches your Wi-Fi, never mounts a network drive, and its clipboard is never modified.
+* **Target Machine Isolation:** The target machine never touches your Wi-Fi, never mounts a network drive, and its clipboard is never modified. (Pro-tip: Because the phone is connected to your Wi-Fi to receive relay commands, keep your local Wi-Fi network private, or switch to Superpower 01 directly on the phone screen when you need 100% offline isolation).
 
 ---
 
@@ -127,7 +126,7 @@ Emittr adapts to your physical operating environment with two distinct superpowe
 
 | Mission / Scenario | The Field Challenge | How Emittr Solves It |
 |---|---|---|
-| 🏢 **1. The Restricted Workstation** | Corporate laptops lock down USB mass storage, restrict clipboard sync, and block personal webmail. | **Bypasses restrictions without violating policy.** Standard USB keyboards are universally allowed. Type scripts or text from your phone as genuine Dell USB keystrokes with zero software footprint. |
+| 🏢 **1. The Restricted Workstation** | Corporate laptops lock down USB mass storage, restrict clipboard sync, and block personal webmail. | **Standard hardware always works.** IT policies block flash drives and unapproved software, but nobody blocks a keyboard. Type scripts, commands, or text from your phone as genuine USB keystrokes with zero host software footprint. |
 | 📲 **2. The Daily-Driver Relay** | Your master credentials and 2FA tokens live in your personal phone's vault (Bitwarden, 1Password) - not on the rooted lab phone plugged into the PC. | **Hardware bridge over local Wi-Fi.** Leave the rooted phone plugged in as an air-gap bridge. Open Emittr's web deck from your personal phone over Wi-Fi, copy from your mobile vault, and stream it across the physical cable. |
 | 🔬 **3. Clean-Room Diagnostics** | Working on quarantined, isolated, or air-gapped systems under strict forensic audit rules where mounting USB drives or installing tools is forbidden. | **Zero forensic footprint.** Feeds triage scripts, memory collection commands, and system queries strictly through keystrokes. No storage device is mounted, leaving a spotless audit trail. |
 | 🔑 **4. Zero-Trace Credentials** | Typing a 64-character master password, BitLocker key, or PGP secret on a client workstation risks exposure to clipboard scrapers, EDR monitors, or browser extensions. | **Host clipboard is never touched.** Your secret stays safe inside your mobile device and streams straight into the target password field as raw USB scancodes. Clipboard monitors see nothing. |
@@ -142,12 +141,12 @@ Ever tried controlling a PC with those sketchy Wi-Fi mouse apps from the Play St
 
 Or maybe you tried a BadUSB rubber ducky, but it’s completely blind, fires once, and if your machine lags for half a second, the entire payload types into Notepad instead of PowerShell.
 
-**Emittr does things the right way:** it uses your phone's USB-OTG port and kernel `configfs` to disguise your phone as a **genuine, physical Standard USB Keyboard & Mouse**.
+**Emittr does things the right way:** it uses your phone's USB-OTG port and kernel `configfs` to configure your phone as a **genuine, physical Standard USB Keyboard & Precision Mouse** with real-time bidirectional feedback.
 
 | Feature | Software Wi-Fi / Bluetooth Apps | Blind USB Keystroke Sticks | Emittr v2.0.0 ⚡ |
 |---|---|---|---|
 | **Host PC Setup** | Needs client `.exe` / drivers | None (blind flash drive) | **Zero host install.** Works on BIOS, Windows, Mac, Linux, PS5. |
-| **Network Dependency** | Needs shared Wi-Fi / pairing | None | **Pure physical USB cable.** Air-gapped workstations rejoice. |
+| **Network Dependency** | Needs shared Wi-Fi / pairing | None | **Pure physical USB cable.** Target host stays network-isolated. |
 | **Interactive Control** | Laggy & unreliable | ❌ Impossible (read-only script) | **Real-time typing, live touchpad, shortcuts & joysticks.** |
 | **Scrolling Engine** | Clunky fake wheel ticks | ❌ None | **Dual Xbox Joysticks** with native hardware AC Pan horizontal scroll. |
 | **Modifier State Safety** | ❌ Prone to stuck keys / lockup | ❌ No state recovery | **Hardware zero-flush guard + auto-reconnect flush.** |
@@ -376,18 +375,23 @@ Because Emittr presents standard USB-IF HID descriptors over physical USB, targe
 | 🖧 **Servers & KVMs** | Proxmox VE, VMware ESXi, IPMI KVM-over-IP dongles, Hyper-V | Full HID Keyboard, Mouse, Emergency Release | Datacenter crash-cart utility in your pocket: plug directly into rackmount blades and server consoles. |
 | 🎮 **Gaming Consoles** | PlayStation 4 / 5, Xbox One / Series X, Nintendo Switch (Docked) | Standard USB Keyboard, Chat Input | Fast text entry for game chat, account setup, and browser navigation on console platforms. |
 
-### 📱 Mobile Deck Engine Roster (Rooted Phones Running Emittr)
+### 📱 Mobile Deck Hardware Compatibility Matrix (Devices Running Emittr Daemon)
 
-Emittr runs as the host daemon on rooted Android devices with kernel ConfigFS USB gadget support:
+Emittr runs as the host daemon on rooted Android devices and Linux single-board computers with kernel ConfigFS USB gadget support. All verified devices below have been tested against our hardware qualification suite:
 
-| Phone Brand / Model | Chipset | Verified Kernel / ROM | Status |
-|---|---|---|---|
-| **OnePlus 7 / 7 Pro / 7T** | Snapdragon 855 | NetHunter / OxygenOS 11 (Kernel 4.14) | 🟢 Flawless |
-| **Xiaomi Poco F1** | Snapdragon 845 | NetHunter / LineageOS 18.1 (Kernel 4.9) | 🟢 Flawless |
-| **Google Pixel 3 / 3a / 4 / 4a** | Snapdragon 670 / 845 / 730G | LineageOS / NetHunter (Kernel 4.9-4.14) | 🟢 Flawless |
-| **OnePlus 6 / 6T** | Snapdragon 845 | OxygenOS 10 / NetHunter (Kernel 4.9) | 🟢 Flawless |
-| **Samsung Galaxy S9 / S10** | Exynos / Snapdragon | Custom Kernel / NetHunter | 🟡 Requires SELinux Permissive |
-| **Raspberry Pi 4 / Zero 2W** | BCM2711 / BCM2837 | Raspberry Pi OS (Kernel 5.x / 6.x) | 🟢 Flawless |
+| Host Device / Board | SoC / Chipset | Verified Kernel / ROM | ConfigFS UDC | HID Keyboard (ID 1) | Mouse & AC Pan (ID 2) | Pre-Boot / BIOS | Verification Level |
+|---|---|---|---|---|---|---|---|
+| **OnePlus 7 / 7 Pro / 7T** | Snapdragon 855 | NetHunter / OxygenOS 11 (Kernel 4.14) | Verified | 6-Key Rollover | 0x0238 AC Pan | Verified | Lab Tested (Full Suite) |
+| **Xiaomi Poco F1** | Snapdragon 845 | NetHunter / LineageOS 18.1 (Kernel 4.9) | Verified | 6-Key Rollover | 0x0238 AC Pan | Verified | Lab Tested (Full Suite) |
+| **Google Pixel 3 / 3a / 4 / 4a** | SDM670 / 845 / 730G | NetHunter / LineageOS (Kernel 4.9-4.14) | Verified | 6-Key Rollover | 0x0238 AC Pan | Verified | Lab Tested (Full Suite) |
+| **OnePlus 6 / 6T** | Snapdragon 845 | OxygenOS 10 / NetHunter (Kernel 4.9) | Verified | 6-Key Rollover | 0x0238 AC Pan | Verified | Lab Tested (Full Suite) |
+| **Samsung Galaxy S9 / S10** | Exynos 9810 / SDM845 | Custom Kernel / NetHunter (Kernel 4.9-4.14) | Verified | 6-Key Rollover | 0x0238 AC Pan | Verified | Community Tested (SELinux Permissive) |
+| **Raspberry Pi 4 / Zero 2 W** | BCM2711 / BCM2837 | Raspberry Pi OS (`dwc2`, Kernel 5.x / 6.x) | Verified | 6-Key Rollover | 0x0238 AC Pan | Verified | Lab Tested (Full Suite) |
+
+#### Verification Level Criteria:
+- **Lab Tested (Full Suite):** Device tested in dedicated hardware environment for USB enumeration, Boot Protocol BIOS navigation, 6-Key Rollover HID keyboard injection, and dual-axis continuous mouse/pan scrolling.
+- **Community Tested:** Confirmed functional by community contributors; may require device-specific adjustments (such as `setenforce 0` for SELinux policies on stock OEM Samsung ROMs).
+- **Universal Requirement:** Any device with root access, Linux kernel ConfigFS support (`CONFIG_USB_CONFIGFS=y` and `CONFIG_USB_CONFIGFS_F_HID=y`), and a USB OTG controller.
 
 > 📱 **Tested on a phone model not listed here?** Submit your results via our [Hardware Compatibility Form](https://github.com/mr-anjaneyam/Emittr/issues/new?template=hardware_compatibility.yml) to be added to the official roster!
 
@@ -574,12 +578,13 @@ For sub-5ms interactive control, connect to `/ws`:
 
 ## 🗺️ Future Roadmap Sneak Peek
 
-Emittr is actively evolving. Here are some of the features currently tracked in our development pipeline:
-* **Hak5 DuckyScript Runner**: Step-by-step visual payload debugger with pause/play and progress tracking.
-* **Consumer Multimedia Deck**: Dedicated USB HID Consumer Control (`0x0C`) tiles for volume, play/pause, and mute.
-* **Gyroscope Air Mouse**: Free-space presentation clicker and pointer powered by mobile accelerometer & gyro sensors.
-* **International Keyboard Maps**: Scancode translation for UK QWERTY, AZERTY (French), and QWERTZ (German).
-* **Hardware Vendor Spoofing**: ConfigFS presets to disguise phone VID/PID as Dell, Apple, or Logitech devices.
+Emittr is actively evolving. Here are some of the capabilities currently tracked in our engineering pipeline:
+* **Hak5 DuckyScript & Macro Runner**: Step-by-step automation interpreter with visual playback controls, variable delays, countdown buffers, and dry-run safety.
+* **Consumer Multimedia Deck**: Dedicated USB HID Consumer Control (`0x0C`) tiles for volume adjustment, playback controls, and mute functions.
+* **Gyroscope Air Mouse**: Free-space presentation clicker and pointer powered by mobile device accelerometer and gyroscope sensors.
+* **International Keyboard Maps**: Scancode translation matrices for UK QWERTY, AZERTY (French), and QWERTZ (German) layouts.
+* **Hardware Identity & Vendor Spoofing**: ConfigFS presets to match specific enterprise keyboard/mouse vendor profiles (Dell, Apple, Logitech) for strict port whitelisting.
+* **Application-Level Security (Phases A, B, C)**: Session pairing PIN, token-based API/WebSocket authorization, and localhost-only enforcement mode.
 
 ---
 

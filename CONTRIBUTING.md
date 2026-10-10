@@ -1,6 +1,6 @@
 # Contributing to Emittr ⚡
 
-Thank you for your interest in contributing to **Emittr**! Whether you are fixing a bug, expanding HID scancode maps, polishing the Material 3 Cyberdeck UI, or testing compatibility across phone hardware, your contributions are welcome.
+Thank you for your interest in contributing to **Emittr**! Whether you are fixing a bug, expanding HID scancode maps, polishing the Material Design 3 Web Deck UI, or testing compatibility across phone hardware, your contributions are welcome.
 
 ---
 
@@ -43,15 +43,18 @@ This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). By particip
 ```
 ├── server.py           # Core FastAPI backend, WebSocket server & HID writer
 ├── setup_gadget.py     # Linux USB ConfigFS composite gadget initializer (/dev/hidg0)
+├── emittr              # Global CLI daemon manager (start, stop, status, logs, ssl, unstick)
 ├── usbtype             # Standalone Python CLI tool for terminal/SSH typing
+├── 02-usb-deck.sh      # Magisk boot persistence script (/data/adb/service.d/)
 ├── static/             # PWA Web Deck UI (Vanilla HTML5 / CSS3 / ES6 JavaScript)
 │   ├── index.html      # Mobile-first Material 3 UI markup
 │   ├── style.css       # Unified design system & responsive layout styles
 │   ├── app.js          # Client WebSocket logic, touchpad digitizer, Xbox thumbsticks
 │   └── sw.js           # Progressive Web App service worker
-├── install.sh          # Kali NetHunter / Magisk automated deployment script
-├── start.sh            # NetHunter chroot startup script
-└── docs/               # GitHub Pages landing page & documentation
+├── install.sh          # NetHunter / Magisk / Linux automated deployment script
+├── build-deb.sh        # Debian package (.deb) builder
+├── debian/             # APT packaging control, rules, and systemd service
+└── docs/               # Visual architecture diagrams and documentation assets
 ```
 
 ---
@@ -94,15 +97,20 @@ When testing actual USB keystrokes, mouse deltas, and kernel ConfigFS bindings:
    ```bash
    adb push server.py /opt/usb_hid_deck/
    adb push setup_gadget.py /opt/usb_hid_deck/
+   adb push emittr /opt/usb_hid_deck/
    adb push static /opt/usb_hid_deck/
    ```
 2. Restart the daemon on the device:
    ```bash
-   adb shell "su -c 'bash /opt/usb_hid_deck/start.sh'"
+   adb shell "su -c 'emittr restart'"
    ```
 3. Inspect live logs:
    ```bash
-   adb shell "su -c 'tail -f /var/log/usb_deck.log'"
+   adb shell "su -c 'emittr logs -f'"
+   ```
+4. Verify USB controller status:
+   ```bash
+   adb shell "su -c 'emittr status'"
    ```
 
 ---
@@ -132,4 +140,4 @@ Because Emittr interacts directly with kernel USB hardware endpoints, keep these
 
 ---
 
-Thank you for building the future of tactical physical USB controllers with us! 🚀
+Thank you for building the future of open hardware USB HID controllers with us! 🚀
