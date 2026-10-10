@@ -496,7 +496,7 @@ cmd_ssl() {
                 echo -e "${CLR_DIM}[*] Start Emittr with 'emittr start' to launch in HTTPS mode.${CLR_RESET}"
             fi
             ;;
-        off|disable|remove)
+        off|disable|remove|clean)
             if [ -f "$cert" ] || [ -f "$key" ]; then
                 echo -e "${CLR_CYAN}[*] Disabling HTTPS...${CLR_RESET}"
                 mkdir -p "${ssl_dir}.bak" 2>/dev/null || true

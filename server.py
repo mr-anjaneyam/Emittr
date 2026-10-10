@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import select
+import socket
 import sys
 import time
 from pathlib import Path
@@ -721,8 +722,166 @@ def get_ssl_config():
     return None, None
 
 
+def find_internal_port(preferred: int = 8089) -> int:
+    """Find an available port on 127.0.0.1 for internal HTTPS binding."""
+    candidates = [preferred, 8090, 8091, 18088, 18089, 28088]
+    for port in candidates:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(("127.0.0.1", port))
+                return port
+        except OSError:
+            continue
+    return preferred
+
+
+async def start_ssl_http_multiplexer(bind_host: str, public_port: int, internal_port: int):
+    """
+    Transparent TCP Multiplexer on public_port:
+    - If incoming connection begins with TLS Handshake (0x16), pipes TCP stream to internal_port (HTTPS Uvicorn).
+    - If incoming connection is plain HTTP, returns HTTP 302 Found redirecting to https://<host>:<public_port><path>.
+    """
+    async def handle_connection(client_reader: asyncio.StreamReader, client_writer: asyncio.StreamWriter):
+        backend_writer = None
+        try:
+            initial_data = await asyncio.wait_for(client_reader.read(4096), timeout=5.0)
+            if not initial_data:
+                client_writer.close()
+                return
+
+            # Byte 0x16 (22) is TLS Handshake record type (ClientHello)
+            if initial_data[0] == 0x16:
+                backend_reader = None
+                for _ in range(25):
+                    try:
+                        backend_reader, backend_writer = await asyncio.open_connection("127.0.0.1", internal_port)
+                        break
+                    except (ConnectionRefusedError, OSError):
+                        await asyncio.sleep(0.08)
+
+                if not backend_writer or not backend_reader:
+                    client_writer.close()
+                    return
+
+                backend_writer.write(initial_data)
+                await backend_writer.drain()
+
+                async def pipe(r, w):
+                    try:
+                        while True:
+                            chunk = await r.read(65536)
+                            if not chunk:
+                                break
+                            w.write(chunk)
+                            await w.drain()
+                    except Exception:
+                        pass
+                    finally:
+                        try:
+                            w.close()
+                        except Exception:
+                            pass
+
+                await asyncio.gather(
+                    pipe(client_reader, backend_writer),
+                    pipe(backend_reader, client_writer),
+                    return_exceptions=True,
+                )
+            else:
+                # Plain HTTP request on SSL port: Return 302 Redirect to HTTPS
+                while b"\r\n\r\n" not in initial_data and len(initial_data) < 8192:
+                    try:
+                        more = await asyncio.wait_for(client_reader.read(1024), timeout=0.5)
+                        if not more:
+                            break
+                        initial_data += more
+                    except Exception:
+                        break
+
+                text = initial_data.decode("utf-8", errors="ignore")
+                lines = text.split("\r\n")
+                path = "/"
+                if lines and lines[0]:
+                    parts = lines[0].split(" ")
+                    if len(parts) >= 2 and parts[1].startswith("/"):
+                        path = parts[1]
+
+                host_header = ""
+                for line in lines:
+                    if line.lower().startswith("host:"):
+                        raw_host = line.split(":", 1)[1].strip()
+                        if raw_host:
+                            if raw_host.startswith("["):
+                                host_header = raw_host.split("]")[0] + "]"
+                            else:
+                                host_header = raw_host.split(":")[0]
+                        break
+
+                if not host_header:
+                    sock = client_writer.get_extra_info("sockname")
+                    host_header = sock[0] if (sock and sock[0] != "0.0.0.0") else "emittr"
+
+                port_str = f":{public_port}" if public_port != 443 else ""
+                redirect_target = f"https://{host_header}{port_str}{path}"
+
+                response = (
+                    "HTTP/1.1 302 Found\r\n"
+                    f"Location: {redirect_target}\r\n"
+                    "Connection: close\r\n"
+                    "Content-Type: text/plain\r\n"
+                    "Content-Length: 0\r\n\r\n"
+                )
+                client_writer.write(response.encode())
+                await client_writer.drain()
+        except Exception:
+            pass
+        finally:
+            try:
+                client_writer.close()
+                await client_writer.wait_closed()
+            except Exception:
+                pass
+            if backend_writer:
+                try:
+                    backend_writer.close()
+                    await backend_writer.wait_closed()
+                except Exception:
+                    pass
+
+    server = await asyncio.start_server(handle_connection, bind_host, public_port)
+    return server
+
+
+async def run_server_ssl_multiplex(bind_host: str, public_port: int, ssl_cert: str, ssl_key: str):
+    import uvicorn
+    internal_port = find_internal_port(public_port + 1)
+
+    config = uvicorn.Config(
+        "server:app",
+        host="127.0.0.1",
+        port=internal_port,
+        reload=False,
+        access_log=False,
+        ssl_certfile=ssl_cert,
+        ssl_keyfile=ssl_key,
+    )
+    uvi_server = uvicorn.Server(config)
+
+    multiplexer = await start_ssl_http_multiplexer(bind_host, public_port, internal_port)
+    log.info(
+        f"SSL Multiplexer active on {bind_host}:{public_port} "
+        f"(HTTPS -> internal :{internal_port}, plain HTTP auto-redirects to HTTPS)"
+    )
+
+    try:
+        await uvi_server.serve()
+    finally:
+        multiplexer.close()
+        await multiplexer.wait_closed()
+
+
 async def start_http_port80_redirector():
-    """Userland HTTP 302 redirect on port 80 -> port 8088."""
+    """Userland HTTP 302 redirect on port 80 -> public port."""
     async def handle_port80(reader, writer):
         try:
             req_data = await asyncio.wait_for(reader.read(2048), timeout=2.0)
@@ -742,9 +901,11 @@ async def start_http_port80_redirector():
                     break
             ssl_cert, ssl_key = get_ssl_config()
             scheme = "https" if (ssl_cert and ssl_key) else "http"
+            public_port = int(os.environ.get("EMITTR_PORT", "8088"))
+            port_part = f":{public_port}" if (scheme == "https" and public_port != 443) or (scheme == "http" and public_port != 80) else ""
             redirect_response = (
                 "HTTP/1.1 302 Found\r\n"
-                f"Location: {scheme}://{host_header}:8088{path}\r\n"
+                f"Location: {scheme}://{host_header}{port_part}{path}\r\n"
                 "Connection: close\r\n"
                 "Content-Length: 0\r\n\r\n"
             )
@@ -763,7 +924,9 @@ async def start_http_port80_redirector():
         server = await asyncio.start_server(handle_port80, "0.0.0.0", 80)
         ssl_cert, ssl_key = get_ssl_config()
         scheme = "https" if (ssl_cert and ssl_key) else "http"
-        log.info(f"Port 80 redirector listening (redirects to {scheme}://...:8088)")
+        public_port = int(os.environ.get("EMITTR_PORT", "8088"))
+        port_part = f":{public_port}" if (scheme == "https" and public_port != 443) or (scheme == "http" and public_port != 80) else ""
+        log.info(f"Port 80 redirector listening (redirects to {scheme}://...{port_part})")
         async with server:
             await server.serve_forever()
     except Exception as e:
@@ -773,15 +936,18 @@ async def start_http_port80_redirector():
 if __name__ == "__main__":
     import uvicorn
     bind_host = os.environ.get("EMITTR_HOST", "0.0.0.0")
+    public_port = int(os.environ.get("EMITTR_PORT", "8088"))
     ssl_cert, ssl_key = get_ssl_config()
     if ssl_cert and ssl_key:
         log.info(f"HTTPS enabled with SSL certificate: {ssl_cert}")
-    uvicorn.run(
-        "server:app",
-        host=bind_host,
-        port=8088,
-        reload=False,
-        access_log=False,
-        ssl_certfile=ssl_cert,
-        ssl_keyfile=ssl_key,
-    )
+        log.info(f"Starting SSL multiplexer on {bind_host}:{public_port} (HTTP requests auto-redirect to HTTPS)")
+        asyncio.run(run_server_ssl_multiplex(bind_host, public_port, ssl_cert, ssl_key))
+    else:
+        uvicorn.run(
+            "server:app",
+            host=bind_host,
+            port=public_port,
+            reload=False,
+            access_log=False,
+        )
+
