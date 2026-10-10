@@ -33,3 +33,7 @@ ssl/
 *.pem
 *.key
 *.crt
+
+# Debian binary packages
+*.deb
+
