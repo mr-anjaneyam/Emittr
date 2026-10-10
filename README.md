@@ -67,7 +67,7 @@ When you are standing in front of a restricted workstation, a hardened server, o
 
 | 1️⃣ BIOS & Pre-Boot Control | 2️⃣ 1,000 WPM Keystroke Cannon | 3️⃣ Dual Xbox Joysticks & AC Pan |
 |:---:|:---:|:---:|
-| <a href="#-field-demos-in-action"><img src="docs/demo-bios.svg" width="280" alt="BIOS Navigation Demo"/></a><br/><sub>*(Drop `demo-bios.gif` into `docs/`)*</sub> | <a href="#-field-demos-in-action"><img src="docs/demo-typing.svg" width="280" alt="1,000 WPM Typer Demo"/></a><br/><sub>*(Drop `demo-typing.gif` into `docs/`)*</sub> | <a href="#-field-demos-in-action"><img src="docs/demo-joystick.svg" width="280" alt="Xbox Joysticks Demo"/></a><br/><sub>*(Drop `demo-joystick.gif` into `docs/`)*</sub> |
+| <a href="#-field-demos-in-action"><img src="docs/demo-bios.svg" width="280" alt="BIOS Navigation Demo"/></a><br/><sub>*(Placeholder. Actual demo soon)*</sub> | <a href="#-field-demos-in-action"><img src="docs/demo-typing.svg" width="280" alt="1,000 WPM Typer Demo"/></a><br/><sub>*(Placeholder. Actual demo soon)*</sub> | <a href="#-field-demos-in-action"><img src="docs/demo-joystick.svg" width="280" alt="Xbox Joysticks Demo"/></a><br/><sub>*(Placeholder. Actual demo soon)*</sub> |
 | **Pre-Boot Hardware Proof** | **Lightning Script Injection** | **Hardware Horizontal Pan** |
 | Navigates motherboard BIOS & GRUB setup menus. Proves real physical USB HID before the OS or drivers boot. | Fires long shell commands, passwords, and multi-line scripts at 1,000 WPM with abort safety. | True hardware AC Pan (`Usage 0x0238`) gliding across wide codebases and Excel spreadsheets. |
 
@@ -93,6 +93,17 @@ Emittr adapts to your physical operating environment with two distinct superpowe
 <p align="center">
   <img src="docs/architecture.png" width="100%" alt="Emittr Operating Modes: Direct Tether vs Local Network Relay" />
 </p>
+
+<div align="center">
+
+| 🖥️ Desktops & Laptops | 📺 Smart TVs & Sticks | 📱 Phones & Tablets | ⚙️ BIOS / UEFI & GRUB | 🎮 Consoles & KVMs |
+|:---:|:---:|:---:|:---:|:---:|
+| Windows, macOS, Linux, ChromeOS | Android TV, Google TV, Fire TV | Android, iPadOS, iOS (USB-C) | Pre-Boot firmware, LUKS decrypt | PS5, Xbox, Proxmox, KVM-over-IP |
+| *Plug & play native HID* | *Instant search & setup typing* | *Direct keyboard & trackpad* | *Works before OS boots* | *Zero software or drivers* |
+
+</div>
+
+<br/>
 
 
 ### 🔴 Superpower 01: Hardware USB HID (The Handheld Cyberdeck)
@@ -152,6 +163,8 @@ Paste long shell scripts, base64 blobs, license keys, or multi-paragraph texts f
 * **Granular Speed Slider**: Set speeds from *Instant* (`5ms` per key) to *Human* (`60ms` per key) if your target machine has an overzealous input buffer or an observant sysadmin looking over your shoulder.
 * **Pre-Flight Countdown**: 1 to 5 second delay giving you time to click into the right input box or terminal window before the keystroke storm begins.
 * **Progress Bar & Abort Button**: Visual real-time progress with an instant kill switch.
+* **Smart Typographic Sanitizer**: Mobile keyboards love automatically converting standard ASCII into curly quotes (`“` `”` `‘` `’`), typographic dashes, and non-breaking spaces (`\u00A0`). Emittr silently normalizes these into standard ASCII quotes, hyphens, and whitespace before translation, ensuring code snippets, shell commands, and JSON payloads never choke with syntax errors on the target host.
+* **Universal Line Ending Normalizer**: Automatically normalizes CRLF (`\r\n`), CR (`\r`), and LF (`\n`) into standard hardware Return keystrokes, preserving code formatting across Windows, macOS, and Linux targets.
 
 ### 2. 📱 Live Keyboard Mirror (Brain-to-Wire)
 Type using whatever virtual keyboard you love on your phone - **SwiftKey, Gboard, Samsung Keyboard, or Voice-to-Text**.
@@ -225,7 +238,6 @@ wget https://github.com/mr-anjaneyam/Emittr/releases/latest/download/emittr_2.0.
 # Install via APT
 sudo apt install ./emittr_2.0.0_all.deb
 ```
-> 📦 Want to submit Emittr to official Kali NetHunter or Termux repositories? See our complete [Debian & APT Packaging Guide](PACKAGING.md).
 
 ---
 
@@ -289,6 +301,11 @@ emittr logs -f
 
 # Emergency zero-report release flush across physical USB
 emittr unstick
+
+# Turnkey SSL / TLS management for secure Wi-Fi access & PWA clipboard
+emittr ssl generate     # Generate local certificate with SAN IP support
+emittr ssl status       # Check certificate status and validity
+emittr ssl clean        # Remove certificates and revert to HTTP
 ```
 
 #### Example Output: `emittr status`
@@ -308,6 +325,17 @@ emittr unstick
     • Hotspot (ap0):    http://192.168.43.1:8088
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+### 🔒 Turnkey HTTPS & TLS Security (`emittr ssl`)
+
+Browsers enforce strict security boundaries: modern mobile browsers (Chrome, Safari) restrict **PWA clipboard access** (`navigator.clipboard`) and Service Worker features on remote network origins unless served over HTTPS or `localhost`.
+
+Emittr includes built-in, one-command SSL certificate orchestration:
+
+* **Automated SAN Certificate Generation (`emittr ssl generate`)**: Generates an ECDSA / RSA certificate signed directly on the device, embedding Subject Alternative Names (SAN) for `localhost`, `127.0.0.1`, and all detected local network IP addresses (`wlan0`, `ap0`).
+* **Instant HTTPS Switchover**: Automatically switches FastAPI into HTTPS mode on port `8443` (or your configured port).
+* **Safe Clipboard & Sensor Permissions**: Unlocks mobile clipboard pasting and Web APIs across your local Wi-Fi without browser warnings or security blocks.
+* **Certificate Lifecycle (`emittr ssl status` & `emittr ssl clean`)**: Check certificate expiry and SAN coverage at any time, or cleanly purge certificates and return to plaintext HTTP with a single command.
 
 ### ⚡ The `usbtype` Keystroke Injector
 
@@ -333,13 +361,30 @@ usbtype -k enter
 
 ## 📱 Hardware Compatibility Roster
 
-Emittr works across an extensive range of phone models and custom kernels:
+Emittr operates as a true dual-sided bridge: it runs on your rooted mobile deck, and it controls any USB host in existence.
+
+### 🌐 Universal Target Host Matrix (What Emittr Controls)
+
+Because Emittr presents standard USB-IF HID descriptors over physical USB, target hosts require zero drivers, zero companion software, and zero configuration:
+
+| Target Host Category | Supported Operating Systems & Devices | Peripheral Support | Field Practicality |
+|---|---|---|---|
+| 💻 **Desktops & Laptops** | Windows 10/11, macOS, Linux (Debian, Ubuntu, Arch, Fedora), ChromeOS | Keyboard, Mouse, Trackpad, AC Pan Scroll | Perfect for locked-down corporate workstations, secure labs, and everyday remote typing. |
+| 📺 **Smart TVs & Dongles** | Android TV, Google TV, Fire TV, Apple TV (USB-C), LG webOS | Arrow Navigation, Enter, Bulk Text, Virtual Mouse | Eliminates agonizing remote control on-screen typing for passwords, Wi-Fi keys, and search queries. |
+| 📱 **Phones & Tablets** | Android (OTG), iPadOS (USB-C / Lightning Camera Kit), iOS | Hardware Keyboard, Full Pointer / Trackpad | Stream text from your laptop straight into an iPad or secondary phone as physical keystrokes. |
+| ⚙️ **Pre-Boot & Firmware** | Motherboard BIOS / UEFI, GRUB bootloaders, LUKS disk decryption | Boot Protocol Keyboard, 4-Way Arrow Pad | Recover headless servers, configure BIOS settings, and enter disk encryption passwords before the OS boots. |
+| 🖧 **Servers & KVMs** | Proxmox VE, VMware ESXi, IPMI KVM-over-IP dongles, Hyper-V | Full HID Keyboard, Mouse, Emergency Release | Datacenter crash-cart utility in your pocket: plug directly into rackmount blades and server consoles. |
+| 🎮 **Gaming Consoles** | PlayStation 4 / 5, Xbox One / Series X, Nintendo Switch (Docked) | Standard USB Keyboard, Chat Input | Fast text entry for game chat, account setup, and browser navigation on console platforms. |
+
+### 📱 Mobile Deck Engine Roster (Rooted Phones Running Emittr)
+
+Emittr runs as the host daemon on rooted Android devices with kernel ConfigFS USB gadget support:
 
 | Phone Brand / Model | Chipset | Verified Kernel / ROM | Status |
 |---|---|---|---|
 | **OnePlus 7 / 7 Pro / 7T** | Snapdragon 855 | NetHunter / OxygenOS 11 (Kernel 4.14) | 🟢 Flawless |
 | **Xiaomi Poco F1** | Snapdragon 845 | NetHunter / LineageOS 18.1 (Kernel 4.9) | 🟢 Flawless |
-| **Google Pixel 3 / 3a / 4 / 4a** | Snapdragon 670 / 845 / 730G | LineageOS / NetHunter (Kernel 4.9–4.14) | 🟢 Flawless |
+| **Google Pixel 3 / 3a / 4 / 4a** | Snapdragon 670 / 845 / 730G | LineageOS / NetHunter (Kernel 4.9-4.14) | 🟢 Flawless |
 | **OnePlus 6 / 6T** | Snapdragon 845 | OxygenOS 10 / NetHunter (Kernel 4.9) | 🟢 Flawless |
 | **Samsung Galaxy S9 / S10** | Exynos / Snapdragon | Custom Kernel / NetHunter | 🟡 Requires SELinux Permissive |
 | **Raspberry Pi 4 / Zero 2W** | BCM2711 / BCM2837 | Raspberry Pi OS (Kernel 5.x / 6.x) | 🟢 Flawless |
@@ -455,6 +500,14 @@ Emittr works across an extensive range of phone models and custom kernels:
 0xC0               // End Collection
 ```
 </details>
+
+### ⚡ Low-Power OTG Host Compliance (MaxPower: 2mA)
+
+Connecting USB gadgets between two mobile devices (such as phone-to-phone, phone-to-tablet, or phone-to-Android TV) frequently fails on default gadget configurations due to host USB power budgeting:
+
+* **The OTG Power Budget Trap**: When a phone or smart TV operates in USB Host (OTG) mode, its kernel enforces strict VBUS power limits. If a connected USB gadget requests 100mA or 500mA in its configuration descriptor (`bMaxPower`), the host device rejects the peripheral or pops an error: *"Connected device draws too much power"*.
+* **Emittr's Self-Powered Architecture**: Emittr configures its ConfigFS USB descriptor with `MaxPower = 1` (2mA) and self-powered attributes (`bmAttributes = 0xC0` / `0x80`).
+* **Universal Acceptance**: Because Emittr explicitly signals that the phone is self-powered by its internal battery, host devices never throttle or reject enumeration. Android phones, tablets, iPads, smart TVs, and low-power IoT hubs accept Emittr instantly as a native zero-draw hardware peripheral.
 
 ---
 
