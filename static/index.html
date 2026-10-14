@@ -830,17 +830,53 @@
             <span class="card-title">Touchpad</span>
             <span class="badge-hint" style="margin-left:6px;">USB Mouse</span>
           </div>
-          <span class="trackpad-sub-hint">2-finger scroll • Tap click</span>
+          <div class="touchpad-header-badges">
+            <!-- Touch / Tablet: Infinite Pan toggle -->
+            <button class="badge-infinite-pan touch-only active" id="btn-infinite-pan" onclick="toggleInfinitePan()" title="Edge-Hold Continuous Glide: Infinite cursor panning at touchpad edges" aria-label="Toggle Edge-Hold Continuous Glide">
+              <span class="infinite-sym">∞</span>
+              <span class="infinite-txt">Infinite Pan</span>
+            </button>
+            <!-- Desktop: Click-to-capture indicator -->
+            <button class="badge-capture-status desktop-only" id="btn-desktop-capture" onclick="togglePointerLock()" title="Click pad to capture cursor (Hit Esc to escape)" aria-label="Desktop Pointer Lock">
+              <span class="capture-dot"></span>
+              <span class="lock-txt" id="desktop-capture-label">Click pad to capture</span>
+            </button>
+          </div>
         </div>
 
         <!-- Full width main touch surface -->
-        <div id="touchpad-surface" class="touchpad-surface">
+        <div id="touchpad-surface" class="touchpad-surface" tabindex="0">
+          <!-- Desktop Pointer Lock HUD Indicator ("Hit Esc to escape") -->
+          <div class="pointer-lock-hud" id="pointer-lock-hud" aria-hidden="true">
+            <span class="lock-hud-icon">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+              </svg>
+            </span>
+            <span class="lock-hud-text">Pointer Captured</span>
+            <span class="lock-hud-key">Hit Esc to escape</span>
+          </div>
+
+          <!-- Edge Glow Radiance Bars for Infinite Pan (Touch devices / Tablets) -->
+          <div class="edge-glow edge-glow-top" id="edge-glow-top"></div>
+          <div class="edge-glow edge-glow-bottom" id="edge-glow-bottom"></div>
+          <div class="edge-glow edge-glow-left" id="edge-glow-left"></div>
+          <div class="edge-glow edge-glow-right" id="edge-glow-right"></div>
+
+          <!-- Active Infinite Pan Floating HUD Pill (Touch devices / Tablets) -->
+          <div class="infinite-pan-hud" id="infinite-pan-hud" aria-hidden="true">
+            <span class="infinite-hud-pulse"></span>
+            <span class="infinite-hud-icon">∞</span>
+            <span class="infinite-hud-dir" id="infinite-hud-dir">GLIDE</span>
+            <span class="infinite-hud-speed" id="infinite-hud-speed">1.0×</span>
+          </div>
+
           <div class="touchpad-hint">
             <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor" style="opacity:0.35;margin-bottom:8px;">
               <path d="M9 11.24V7.5a2.5 2.5 0 0 1 5 0v3.74c1.21-.81 2-2.18 2-3.74a4.5 4.5 0 0 0-9 0c0 1.56.79 2.93 2 3.74zm9.84 4.63l-4.54-2.26c-.17-.07-.35-.11-.54-.11H13v-6c0-.83-.67-1.5-1.5-1.5S10 6.67 10 7.5v10.74l-3.43-.72c-.08-.01-.15-.02-.24-.02-.31 0-.59.13-.79.33l-.79.8 4.94 4.94c.27.27.65.43 1.06.43h6.79c.75 0 1.33-.55 1.44-1.28l.75-5.27c.01-.06.01-.13.01-.2 0-.49-.24-.92-.64-1.16z"/>
             </svg>
-            <div><strong>Glide</strong> to move cursor</div>
-            <div style="font-size:11px;opacity:0.8;margin-top:2px;">Two fingers to scroll (↕ vertical &amp; ↔ horizontal)</div>
+            <div id="touchpad-hint-title"><strong>Glide</strong> to move cursor</div>
+            <div id="touchpad-hint-sub" style="font-size:11px;opacity:0.8;margin-top:2px;">Edge-Hold for infinite glide • 2 fingers to scroll</div>
           </div>
         </div>
 
@@ -1035,6 +1071,18 @@
             <input type="range" id="cfg-sensitivity" min="5" max="30" value="15" step="1" oninput="onSensitivityChange(this.value)" />
             <span id="sensitivity-val" class="slider-val" style="min-width:40px;">1.0×</span>
           </div>
+        </div>
+
+        <!-- Edge-Hold Infinite Pan Toggle -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <span class="setting-title">Edge-Hold Infinite Pan</span>
+            <span class="setting-sub">Continuous cursor glide when finger is held against touchpad borders</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="cfg-infinite-pan" checked onchange="onInfinitePanToggle(this.checked)" />
+            <span class="slider"></span>
+          </label>
         </div>
 
         <div class="setting-item">

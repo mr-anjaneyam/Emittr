@@ -782,6 +782,110 @@ input[type=range] {
   color: var(--md-sys-color-outline);
 }
 
+/* Trackpad Header Badges & Actions */
+.touchpad-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge-infinite-pan {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  background-color: var(--md-sys-color-surface-container-high);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 13px;
+  color: var(--md-sys-color-outline);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: all 0.15s ease;
+}
+
+.badge-infinite-pan .infinite-sym {
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.badge-infinite-pan:hover {
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-surface);
+}
+
+.badge-infinite-pan.active {
+  background-color: rgba(229, 215, 163, 0.12);
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-primary);
+  box-shadow: 0 0 10px rgba(229, 215, 163, 0.22);
+}
+
+/* Desktop Click-to-Capture Status Badge */
+.badge-capture-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  background-color: var(--md-sys-color-surface-container-high);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 13px;
+  color: var(--md-sys-color-outline);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: all 0.15s ease;
+}
+
+.badge-capture-status .capture-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--md-sys-color-outline);
+  transition: all 0.15s ease;
+}
+
+.badge-capture-status:hover {
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-surface);
+}
+
+.badge-capture-status.active {
+  background-color: rgba(229, 215, 163, 0.14);
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-primary);
+  box-shadow: 0 0 10px rgba(229, 215, 163, 0.22);
+}
+
+.badge-capture-status.active .capture-dot {
+  background-color: #4ade80;
+  box-shadow: 0 0 6px #4ade80;
+}
+
+/* Device-Adaptive UI Alignment: Tablets / Phones vs Desktop Mouse */
+body.is-desktop-device .touch-only {
+  display: none !important;
+}
+
+body.is-touch-device .desktop-only {
+  display: none !important;
+}
+
+@media (pointer: coarse) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
 /* Full Width Touch Surface */
 .touchpad-surface {
   width: 100%;
@@ -795,12 +899,218 @@ input[type=range] {
   cursor: crosshair;
   touch-action: none;
   position: relative;
+  overflow: hidden;
+  outline: none;
+  user-select: none;
+  -webkit-user-select: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.touchpad-surface:active {
+.touchpad-surface:active,
+.touchpad-surface:focus-visible {
   border-color: var(--md-sys-color-primary);
   box-shadow: 0 0 18px rgba(229, 215, 163, 0.2);
+}
+
+.touchpad-surface.pointer-locked {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 24px rgba(229, 215, 163, 0.28);
+  cursor: none;
+}
+
+/* Desktop Pointer Lock HUD Indicator ("Hit Esc to escape") */
+.pointer-lock-hud {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-12px) scale(0.92);
+  background: rgba(14, 14, 18, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--md-sys-color-primary);
+  border-radius: 24px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 18px rgba(229, 215, 163, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pointer-lock-hud.active {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.pointer-lock-hud .lock-hud-icon {
+  display: flex;
+  align-items: center;
+  color: var(--md-sys-color-primary);
+}
+
+.pointer-lock-hud .lock-hud-text {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--md-sys-color-on-surface);
+}
+
+.pointer-lock-hud .lock-hud-key {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--md-sys-color-primary);
+  background: rgba(229, 215, 163, 0.16);
+  border: 1px solid rgba(229, 215, 163, 0.35);
+  padding: 2px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.3px;
+  animation: lockKeyGlow 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes lockKeyGlow {
+  0% {
+    box-shadow: 0 0 4px rgba(229, 215, 163, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 12px rgba(229, 215, 163, 0.6);
+  }
+}
+
+/* Edge Glow Radiance for Continuous Glide */
+.edge-glow {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 4;
+  transition: opacity 0.12s ease-out;
+}
+
+.edge-glow-top {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 22px;
+  background: linear-gradient(180deg, rgba(229, 215, 163, 0.85) 0%, rgba(229, 215, 163, 0.35) 45%, transparent 100%);
+  box-shadow: 0 0 20px rgba(229, 215, 163, 0.6);
+}
+
+.edge-glow-bottom {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 22px;
+  background: linear-gradient(0deg, rgba(229, 215, 163, 0.85) 0%, rgba(229, 215, 163, 0.35) 45%, transparent 100%);
+  box-shadow: 0 0 20px rgba(229, 215, 163, 0.6);
+}
+
+.edge-glow-left {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 22px;
+  background: linear-gradient(90deg, rgba(229, 215, 163, 0.85) 0%, rgba(229, 215, 163, 0.35) 45%, transparent 100%);
+  box-shadow: 0 0 20px rgba(229, 215, 163, 0.6);
+}
+
+.edge-glow-right {
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  background: linear-gradient(270deg, rgba(229, 215, 163, 0.85) 0%, rgba(229, 215, 163, 0.35) 45%, transparent 100%);
+  box-shadow: 0 0 20px rgba(229, 215, 163, 0.6);
+}
+
+.edge-glow.active {
+  opacity: 1;
+  animation: edgePulseAnim 0.75s ease-in-out infinite alternate;
+}
+
+@keyframes edgePulseAnim {
+  0% {
+    opacity: 0.75;
+    filter: brightness(1) drop-shadow(0 0 6px rgba(229, 215, 163, 0.4));
+  }
+  100% {
+    opacity: 1;
+    filter: brightness(1.25) drop-shadow(0 0 16px rgba(229, 215, 163, 0.85));
+  }
+}
+
+/* Active Infinite Pan Floating HUD Pill */
+.infinite-pan-hud {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px) scale(0.92);
+  background: rgba(14, 14, 18, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--md-sys-color-primary);
+  border-radius: 20px;
+  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 14px rgba(229, 215, 163, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+  transition: opacity 0.16s ease-out, transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.infinite-pan-hud.active {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.infinite-hud-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #4ade80;
+  box-shadow: 0 0 8px #4ade80;
+  animation: hudDotPulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes hudDotPulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 1;
+    box-shadow: 0 0 12px #4ade80;
+  }
+}
+
+.infinite-hud-icon {
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--md-sys-color-primary);
+}
+
+.infinite-hud-dir {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: var(--md-sys-color-on-surface);
+  white-space: nowrap;
+}
+
+.infinite-hud-speed {
+  font-size: 10px;
+  font-family: var(--font-family-mono, monospace);
+  font-weight: 600;
+  color: var(--md-sys-color-primary);
+  background: rgba(229, 215, 163, 0.12);
+  padding: 1px 5px;
+  border-radius: 4px;
 }
 
 .touchpad-hint {
@@ -809,6 +1119,8 @@ input[type=range] {
   text-align: center;
   pointer-events: none;
   line-height: 1.5;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Mouse Buttons Row */

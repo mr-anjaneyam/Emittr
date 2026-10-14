@@ -142,8 +142,24 @@ This feature accelerates repetitive tabular data entry and form filling into tar
 
 ### View 6: Touchpad & Dual Xbox Joysticks
 - **Trackpad Surface**: Smooth touch surface tracking single-finger delta movements for USB mouse cursor glide.
+- **Intelligent Device Alignment**:
+  - **Touchscreen Devices (Phones & Tablets)**:
+    - Features **Edge-Hold Continuous Glide (Infinite Pan)**: when dragging towards any edge of the touchpad and holding the finger in the perimeter zone, the app continuously streams directional velocity deltas (50Hz) over WebSocket.
+    - Directional Champagne Gold neon glow along the active perimeter (top, bottom, left, right, or corners).
+    - Floating HUD pill displaying active glide direction (e.g., ↗ UP-RIGHT) and speed multiplier.
+    - Subtle periodic haptic feedback pulses (every 150ms) to provide tactile detent sensation while holding.
+    - Smooth acceleration ramp (from 1.0× to 1.75×) over hold duration for rapid traversal across multi-monitor setups.
+    - Immediate seamless release when moving finger back toward center or lifting touch.
+    - Toggleable via the "Infinite Pan" header badge and Settings modal.
+    - Touchscreen tablets (even with wide desktop viewports) do not feature pointer lock capture and instead provide the full Infinite Pan touch experience.
+  - **Desktop (Mouse / Trackpad)**:
+    - Infinite Pan feature and edge-hold tickers are removed for mice since physical mice have no touch edges.
+    - Clicking anywhere on the touchpad area automatically captures the cursor via native Pointer Lock API.
+    - Floating banner displays "Hit Esc to escape" with glowing Champagne Gold border while captured.
+    - Movements are streamed directly via movementX and movementY without screen boundary blockers.
+    - Mouse clicks and right clicks pass directly to host HID reports while locked.
 - **Gestures**:
-  - Tap: Left click.
+  - Tap: Left click (touch devices).
   - Two-finger glide: Vertical and horizontal scrolling.
 - **Physical Mouse Buttons**: Left Click, Middle Click, Right Click bar below the surface.
 - **Dual Virtual Thumbstick Dock**:
@@ -154,7 +170,7 @@ This feature accelerates repetitive tabular data entry and form filling into tar
 ### Global Components & Modals
 - **Header**: Brand logo, version badge, connection status pill, latency indicator (ms), settings gear icon, and Dashboard Mode toggle.
 - **Connection Status Modal**: USB gadget status (`configured`, `addressed`, `disconnected`), server uptime, USB vendor/product IDs, WebSockets health, and reconnect button.
-- **Settings Modal**: Countdown delay default, typing speed preset, auto-enter toggle, trackpad sensitivity slider, dark/light theme, and Raspberry Pi hardware health (CPU temp, memory usage).
+- **Settings Modal**: Countdown delay default, typing speed preset, auto-enter toggle, trackpad sensitivity slider, Edge-Hold Infinite Pan toggle, dark/light theme, and Phone hardware telemetry (CPU temp, memory usage).
 - **Dashboard Mode**: Wide-screen desktop layout displaying Typer, Shortcuts, Macros, and Trackpad simultaneously in a responsive tactical grid.
 
 ---

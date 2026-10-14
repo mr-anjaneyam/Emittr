@@ -24,17 +24,20 @@ const State = {
   sheetEditMode: false,
   sheetDraft: null,
   sheetLastSent: null,
+  isTouchDevice: false,
   config: {
     autoclear: true,
     haptic: true,
     countdown: 0,
     autoenter: false,
     sensitivity: 15,
+    infinitePan: true,
     theme: 'dark'
   }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  initDeviceAlignment();
   initServiceWorker();
   initIntroAnimation();
   loadConfig();
@@ -49,6 +52,62 @@ document.addEventListener('DOMContentLoaded', () => {
   initMacros();
   initSheets();
 });
+
+// ── Intelligent Device Alignment (Touchscreen Tablets & Phones vs Desktop) ──
+
+function detectIsTouchDevice() {
+  // Mobile or Tablet platform check (includes iPadOS which identifies as MacIntel)
+  const isMobileOrTabletUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  // Primary pointer capability (coarse pointer denotes touchscreen tablet or phone)
+  const isCoarsePrimary = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  const isFinePointer   = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+
+  // It is a touchscreen device if:
+  // 1. It is a mobile/tablet device (phone or tablet like iPad/Android tab)
+  // 2. OR its primary pointer is coarse
+  // 3. OR it has touch points and lacks a fine mouse pointer
+  return isMobileOrTabletUA || isCoarsePrimary || (!isFinePointer && navigator.maxTouchPoints > 0);
+}
+
+function initDeviceAlignment() {
+  // Accurately determine if the current device is a touchscreen device (phone or tablet)
+  // Tablets often feature wide desktop-class viewports (>= 1024px) but possess touchscreens.
+  State.isTouchDevice = detectIsTouchDevice();
+  applyDeviceClasses(State.isTouchDevice);
+
+  // Dynamic alignment on first user touch event
+  window.addEventListener('touchstart', () => {
+    if (!State.isTouchDevice) {
+      State.isTouchDevice = true;
+      applyDeviceClasses(true);
+    }
+  }, { once: true, passive: true });
+}
+
+function applyDeviceClasses(isTouch) {
+  if (isTouch) {
+    document.body.classList.add('is-touch-device');
+    document.body.classList.remove('is-desktop-device');
+  } else {
+    document.body.classList.add('is-desktop-device');
+    document.body.classList.remove('is-touch-device');
+  }
+  updateTouchpadHints(isTouch);
+}
+
+function updateTouchpadHints(isTouch) {
+  const hintTitle = document.getElementById('touchpad-hint-title');
+  const hintSub   = document.getElementById('touchpad-hint-sub');
+  if (isTouch) {
+    if (hintTitle) hintTitle.innerHTML = '<strong>Glide</strong> to move cursor';
+    if (hintSub)   hintSub.textContent = 'Edge-Hold for infinite glide • 2 fingers to scroll';
+  } else {
+    if (hintTitle) hintTitle.innerHTML = '<strong>Click anywhere</strong> to capture cursor';
+    if (hintSub)   hintSub.textContent = 'Hit Esc to escape • Shift+Scroll for horizontal';
+  }
+}
 
 // ── PWA Service Worker Registration ───────────────────────────────────────
 
@@ -107,6 +166,12 @@ function loadConfig() {
   State.sensitivity = rawSens / 15.0;
   document.getElementById('sensitivity-val').innerText = `${State.sensitivity.toFixed(1)}×`;
 
+  // Edge-Hold Continuous Glide (Infinite Pan)
+  if (State.config.infinitePan === undefined) {
+    State.config.infinitePan = true;
+  }
+  updateInfinitePanUI(State.config.infinitePan);
+
   // Typing Delay
   const savedDelay = localStorage.getItem('emittr_delay');
   if (savedDelay) {
@@ -131,7 +196,43 @@ function saveConfig() {
   State.config.countdown   = parseInt(document.getElementById('cfg-countdown').value, 10) || 0;
   State.config.autoenter   = document.getElementById('cfg-autoenter').checked;
   State.config.sensitivity = parseInt(document.getElementById('cfg-sensitivity').value, 10);
+  const cfgInf = document.getElementById('cfg-infinite-pan');
+  if (cfgInf) State.config.infinitePan = cfgInf.checked;
   localStorage.setItem('emittr_cfg', JSON.stringify(State.config));
+}
+
+function toggleInfinitePan() {
+  State.config.infinitePan = State.config.infinitePan === false;
+  saveConfig();
+  updateInfinitePanUI(State.config.infinitePan);
+  showToast(State.config.infinitePan ? 'Edge-Hold Infinite Pan: Active' : 'Edge-Hold Infinite Pan: Off', 1600);
+  triggerHaptic(10);
+}
+
+function onInfinitePanToggle(checked) {
+  State.config.infinitePan = !!checked;
+  saveConfig();
+  updateInfinitePanUI(State.config.infinitePan);
+}
+
+function updateInfinitePanUI(enabled) {
+  const btn = document.getElementById('btn-infinite-pan');
+  if (btn) btn.classList.toggle('active', !!enabled);
+  const cfg = document.getElementById('cfg-infinite-pan');
+  if (cfg) cfg.checked = !!enabled;
+}
+
+function togglePointerLock() {
+  if (State.isTouchDevice) return; // Touchscreens (tablets & phones) do not use pointer lock
+  const surface = document.getElementById('touchpad-surface');
+  if (!surface) return;
+  if (document.pointerLockElement === surface) {
+    document.exitPointerLock();
+  } else {
+    try {
+      surface.requestPointerLock();
+    } catch (e) {}
+  }
 }
 
 function onSensitivityChange(val) {
@@ -779,11 +880,19 @@ function emitScroll(axis, val) {
   }
 }
 
-// ── View 4: Touchpad & Two-Finger Gesture Engine ───────────────────────────
+// ── View 4: Touchpad & Edge-Hold Continuous Glide (Infinite Pan) ──────────
 
 function initTrackpad() {
   const surface = document.getElementById('touchpad-surface');
   if (!surface) return;
+
+  const glowTop    = document.getElementById('edge-glow-top');
+  const glowBottom = document.getElementById('edge-glow-bottom');
+  const glowLeft   = document.getElementById('edge-glow-left');
+  const glowRight  = document.getElementById('edge-glow-right');
+  const hudPill    = document.getElementById('infinite-pan-hud');
+  const hudDir     = document.getElementById('infinite-hud-dir');
+  const hudSpeed   = document.getElementById('infinite-hud-speed');
 
   let lastX = 0, lastY = 0, startX = 0, startY = 0;
   let lastMidX = 0, lastMidY = 0;
@@ -792,9 +901,147 @@ function initTrackpad() {
   let isTwoFinger = false;
   const SCROLL_THRESHOLD = 8; // Pixel distance per scroll tick
 
+  // Edge-Hold Continuous Glide state
+  let edgeGlideTimer = null;
+  let edgeGlideStartTime = 0;
+  let lastEdgeHapticTime = 0;
+  let curNormX = 0, curNormY = 0;
+  let isEdgeGliding = false;
+
+  function stopEdgeGlide() {
+    if (edgeGlideTimer) {
+      clearInterval(edgeGlideTimer);
+      edgeGlideTimer = null;
+    }
+    isEdgeGliding = false;
+    curNormX = 0;
+    curNormY = 0;
+    lastEdgeHapticTime = 0;
+    if (glowTop) glowTop.classList.remove('active');
+    if (glowBottom) glowBottom.classList.remove('active');
+    if (glowLeft) glowLeft.classList.remove('active');
+    if (glowRight) glowRight.classList.remove('active');
+    if (hudPill) hudPill.classList.remove('active');
+  }
+
+  function updateEdgeFeedback(nearLeft, nearRight, nearTop, nearBottom, ramp) {
+    if (glowTop) glowTop.classList.toggle('active', nearTop);
+    if (glowBottom) glowBottom.classList.toggle('active', nearBottom);
+    if (glowLeft) glowLeft.classList.toggle('active', nearLeft);
+    if (glowRight) glowRight.classList.toggle('active', nearRight);
+
+    if (hudPill && (nearLeft || nearRight || nearTop || nearBottom)) {
+      hudPill.classList.add('active');
+      let dirStr = 'GLIDE';
+      if (nearTop && nearLeft) dirStr = '↖ UP-LEFT';
+      else if (nearTop && nearRight) dirStr = '↗ UP-RIGHT';
+      else if (nearBottom && nearLeft) dirStr = '↙ DOWN-LEFT';
+      else if (nearBottom && nearRight) dirStr = '↘ DOWN-RIGHT';
+      else if (nearTop) dirStr = '↑ UP';
+      else if (nearBottom) dirStr = '↓ DOWN';
+      else if (nearLeft) dirStr = '← LEFT';
+      else if (nearRight) dirStr = '→ RIGHT';
+
+      if (hudDir) hudDir.textContent = dirStr;
+      if (hudSpeed) hudSpeed.textContent = `${(State.sensitivity * ramp).toFixed(1)}×`;
+    } else if (hudPill) {
+      hudPill.classList.remove('active');
+    }
+  }
+
+  function checkEdgeGlide(clientX, clientY) {
+    // Only touchscreen devices (Phones & Tablets) use Edge-Hold Continuous Glide.
+    // Desktop devices capture cursor via Pointer Lock without boundary blocks.
+    if (!State.isTouchDevice || State.config.infinitePan === false) {
+      stopEdgeGlide();
+      return;
+    }
+
+    const rect = surface.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const relX = clientX - rect.left;
+    const relY = clientY - rect.top;
+
+    // Edge boundary threshold: 10% of width, bounded between 28px and 44px
+    const THRESHOLD = Math.min(44, Math.max(28, rect.width * 0.1));
+
+    // Permit slight over-drag outside surface borders (up to 40px margin)
+    const inBoundsX = relX >= -40 && relX <= rect.width + 40;
+    const inBoundsY = relY >= -40 && relY <= rect.height + 40;
+
+    if (!inBoundsX || !inBoundsY) {
+      stopEdgeGlide();
+      return;
+    }
+
+    const nearLeft   = relX <= THRESHOLD;
+    const nearRight  = relX >= rect.width - THRESHOLD;
+    const nearTop    = relY <= THRESHOLD;
+    const nearBottom = relY >= rect.height - THRESHOLD;
+
+    if (nearLeft || nearRight || nearTop || nearBottom) {
+      // Calculate normalized penetration intensity [-1.0 .. 1.0]
+      let normX = 0;
+      if (nearLeft) {
+        normX = -Math.min(1.0, Math.max(0.3, (THRESHOLD - relX) / THRESHOLD));
+      } else if (nearRight) {
+        normX = Math.min(1.0, Math.max(0.3, (relX - (rect.width - THRESHOLD)) / THRESHOLD));
+      }
+
+      let normY = 0;
+      if (nearTop) {
+        normY = -Math.min(1.0, Math.max(0.3, (THRESHOLD - relY) / THRESHOLD));
+      } else if (nearBottom) {
+        normY = Math.min(1.0, Math.max(0.3, (relY - (rect.height - THRESHOLD)) / THRESHOLD));
+      }
+
+      curNormX = normX;
+      curNormY = normY;
+
+      if (!isEdgeGliding) {
+        isEdgeGliding = true;
+        edgeGlideStartTime = Date.now();
+        lastEdgeHapticTime = Date.now();
+        triggerHaptic(6); // Initial edge-lock tactile bite
+
+        edgeGlideTimer = setInterval(() => {
+          if (!isEdgeGliding) return;
+          const elapsed = Date.now() - edgeGlideStartTime;
+          // Ramp up acceleration smoothly over 1200ms: from 1.0x to 1.75x
+          const ramp = Math.min(1.75, 1.0 + (elapsed / 1200));
+
+          // Base velocity formula: responsive curve
+          const stepDx = Math.round(curNormX * (5 + 13 * Math.abs(curNormX)) * State.sensitivity * ramp);
+          const stepDy = Math.round(curNormY * (5 + 13 * Math.abs(curNormY)) * State.sensitivity * ramp);
+
+          if ((stepDx || stepDy) && State.ws && State.ws.readyState === WebSocket.OPEN) {
+            State.ws.send(JSON.stringify({ action: 'mouse_move', dx: stepDx, dy: stepDy, wheel: 0 }));
+          }
+
+          // Periodic tactile feedback pulse during continuous glide
+          const now = Date.now();
+          if (now - lastEdgeHapticTime >= 150) {
+            triggerHaptic(3);
+            lastEdgeHapticTime = now;
+          }
+
+          updateEdgeFeedback(nearLeft, nearRight, nearTop, nearBottom, ramp);
+        }, 20); // 50 Hz streaming loop
+      }
+
+      const elapsed = Date.now() - edgeGlideStartTime;
+      const ramp = Math.min(1.75, 1.0 + (elapsed / 1200));
+      updateEdgeFeedback(nearLeft, nearRight, nearTop, nearBottom, ramp);
+    } else {
+      stopEdgeGlide();
+    }
+  }
+
   // Touchstart
   surface.addEventListener('touchstart', (e) => {
     e.preventDefault();
+    stopEdgeGlide();
     if (e.touches.length === 1) {
       lastX = startX = e.touches[0].clientX;
       lastY = startY = e.touches[0].clientY;
@@ -817,6 +1064,7 @@ function initTrackpad() {
 
     // Two-Finger Touchpad Scrolling (Vertical + Horizontal)
     if (e.touches.length === 2) {
+      stopEdgeGlide();
       const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
       const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
       const dX   = midX - lastMidX;
@@ -847,7 +1095,10 @@ function initTrackpad() {
       return;
     }
 
-    if (!isMoving || e.touches.length !== 1) return;
+    if (!isMoving || e.touches.length !== 1) {
+      stopEdgeGlide();
+      return;
+    }
 
     // Single finger cursor glide
     const curX = e.touches[0].clientX;
@@ -859,10 +1110,14 @@ function initTrackpad() {
     if ((dx || dy) && State.ws && State.ws.readyState === WebSocket.OPEN) {
       State.ws.send(JSON.stringify({ action: 'mouse_move', dx, dy, wheel: 0 }));
     }
+
+    // Edge-Hold Continuous Glide check
+    checkEdgeGlide(curX, curY);
   }, { passive: false });
 
   // Touchend (Tap to Left Click)
   surface.addEventListener('touchend', (e) => {
+    stopEdgeGlide();
     if (!isTwoFinger && isMoving) {
       const elapsed  = Date.now() - tapStartTime;
       const movedDist = Math.hypot(lastX - startX, lastY - startY);
@@ -874,14 +1129,62 @@ function initTrackpad() {
     isTwoFinger = false;
   }, { passive: false });
 
-  // Desktop Mouse Glide fallback
+  surface.addEventListener('touchcancel', () => {
+    stopEdgeGlide();
+    isMoving    = false;
+    isTwoFinger = false;
+  });
+
+  // Desktop: Clicking on touchpad area automatically captures it
+  surface.addEventListener('click', (e) => {
+    if (State.isTouchDevice) return; // Touchscreens (tablets & phones) do not capture
+    if (document.pointerLockElement !== surface) {
+      try {
+        const p = surface.requestPointerLock();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      } catch (err) {}
+    }
+  });
+
+  // Desktop Mouse Glide fallback & Pointer Lock clicks
   let isMouseDown = false;
   surface.addEventListener('mousedown', (e) => {
+    if (document.pointerLockElement === surface) {
+      e.preventDefault();
+      const btn = e.button === 2 ? 2 : (e.button === 1 ? 4 : 1);
+      if (State.ws && State.ws.readyState === WebSocket.OPEN) {
+        State.ws.send(JSON.stringify({ action: 'mouse_move', buttons: btn, dx: 0, dy: 0, wheel: 0 }));
+      }
+      return;
+    }
+    if (State.isTouchDevice) return;
     isMouseDown = true;
     lastX = e.clientX; lastY = e.clientY;
   });
+
+  surface.addEventListener('contextmenu', (e) => {
+    if (document.pointerLockElement === surface) {
+      e.preventDefault();
+    }
+  });
+
   window.addEventListener('mousemove', (e) => {
-    if (!isMouseDown) return;
+    if (document.pointerLockElement === surface) {
+      // Desktop Pointer Lock mode (infinite capture)
+      const dx = Math.round((e.movementX || 0) * 1.5 * State.sensitivity);
+      const dy = Math.round((e.movementY || 0) * 1.5 * State.sensitivity);
+      if ((dx || dy) && State.ws && State.ws.readyState === WebSocket.OPEN) {
+        State.ws.send(JSON.stringify({
+          action: 'mouse_move',
+          buttons: e.buttons || 0,
+          dx,
+          dy,
+          wheel: 0
+        }));
+      }
+      return;
+    }
+    if (!isMouseDown || State.isTouchDevice) return;
     const dx = Math.round((e.clientX - lastX) * 1.5 * State.sensitivity);
     const dy = Math.round((e.clientY - lastY) * 1.5 * State.sensitivity);
     lastX = e.clientX; lastY = e.clientY;
@@ -889,7 +1192,20 @@ function initTrackpad() {
       State.ws.send(JSON.stringify({ action: 'mouse_move', dx, dy, wheel: 0 }));
     }
   });
-  window.addEventListener('mouseup', () => { isMouseDown = false; });
+
+  window.addEventListener('mouseup', (e) => {
+    if (document.pointerLockElement === surface) {
+      // Release held mouse buttons on host PC
+      if (State.ws && State.ws.readyState === WebSocket.OPEN) {
+        State.ws.send(JSON.stringify({ action: 'mouse_move', buttons: e.buttons || 0, dx: 0, dy: 0, wheel: 0 }));
+      }
+      return;
+    }
+    if (isMouseDown) {
+      isMouseDown = false;
+      stopEdgeGlide();
+    }
+  });
 
   // Desktop Mouse Wheel on Touchpad Surface
   surface.addEventListener('wheel', (e) => {
@@ -905,6 +1221,42 @@ function initTrackpad() {
     }
   }, { passive: false });
 }
+
+// Pointer lock change listener
+document.addEventListener('pointerlockchange', () => {
+  const surface = document.getElementById('touchpad-surface');
+  const isLocked = document.pointerLockElement === surface;
+  const hud = document.getElementById('pointer-lock-hud');
+  const btn = document.getElementById('btn-desktop-capture');
+  const label = document.getElementById('desktop-capture-label');
+
+  if (hud) hud.classList.toggle('active', isLocked);
+  if (surface) surface.classList.toggle('pointer-locked', isLocked);
+  if (btn) btn.classList.toggle('active', isLocked);
+  if (label) label.textContent = isLocked ? 'Captured (Hit Esc)' : 'Click pad to capture';
+
+  if (isLocked) {
+    triggerHaptic(8);
+  } else {
+    // Release any dangling mouse buttons when exiting pointer lock
+    if (State.ws && State.ws.readyState === WebSocket.OPEN) {
+      State.ws.send(JSON.stringify({ action: 'mouse_move', buttons: 0, dx: 0, dy: 0, wheel: 0 }));
+    }
+  }
+});
+
+// Pointer lock error listener
+document.addEventListener('pointerlockerror', () => {
+  const surface = document.getElementById('touchpad-surface');
+  const hud = document.getElementById('pointer-lock-hud');
+  const btn = document.getElementById('btn-desktop-capture');
+  const label = document.getElementById('desktop-capture-label');
+
+  if (hud) hud.classList.remove('active');
+  if (surface) surface.classList.remove('pointer-locked');
+  if (btn) btn.classList.remove('active');
+  if (label) label.textContent = 'Click pad to capture';
+});
 
 function onMouseClick(buttonNum) {
   triggerHaptic(15);
