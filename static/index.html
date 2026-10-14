@@ -375,6 +375,8 @@
       <button class="desktop-nav-btn active" data-view="typer" onclick="switchView('typer', this)">Typer</button>
       <button class="desktop-nav-btn" data-view="live" onclick="switchView('live', this)">Live Keys</button>
       <button class="desktop-nav-btn" data-view="shortcuts" onclick="switchView('shortcuts', this)">Shortcuts</button>
+      <button class="desktop-nav-btn" data-view="macros" onclick="switchView('macros', this)">Macros</button>
+      <button class="desktop-nav-btn" data-view="sheets" onclick="switchView('sheets', this)">Sheets</button>
       <button class="desktop-nav-btn" data-view="trackpad" onclick="switchView('trackpad', this)">Touchpad</button>
       <button class="desktop-nav-btn dashboard-toggle-btn" id="btn-dashboard-mode" onclick="toggleDashboardMode()">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
@@ -439,6 +441,22 @@
             <span>Stop</span>
           </button>
           <button class="btn-tonal" onclick="clearText()" title="Clear">Clear</button>
+        </div>
+
+        <!-- Quick Macros Strip -->
+        <div class="macros-quick-section" id="macros-quick-section">
+          <div class="macros-quick-header">
+            <div class="macros-quick-title-group">
+              <span class="section-label">Quick Macros</span>
+              <select id="quick-category-select" class="quick-category-select" onchange="onQuickCategoryChange(this.value)" title="Filter quick macros by folder">
+                <option value="all">All Folders</option>
+              </select>
+            </div>
+            <button type="button" class="macros-quick-manage" onclick="switchView('macros')">Manage ↗</button>
+          </div>
+          <div class="macros-quick-scroll" id="macros-quick-bar">
+            <!-- Populated dynamically by JS -->
+          </div>
         </div>
 
         <!-- Progress Bar -->
@@ -574,6 +592,236 @@
       </div>
     </section>
 
+    <!-- ── View 3b: Macros ───────────────────────────────────────────────────── -->
+    <section id="view-macros" class="view-panel">
+      <div class="card macros-deck-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <span class="card-title">Macro Deck</span>
+            <span class="badge-hint" id="macros-count-badge">0 macros</span>
+          </div>
+          <div class="card-header-actions">
+            <a href="/api/macros/template.csv" download="emittr-macros-template.csv" class="btn-tonal-sm" title="Download CSV Template for Excel">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+              <span>Template</span>
+            </a>
+            <button type="button" class="btn-tonal-sm" onclick="triggerImportMacros()" title="Import Macros (CSV or JSON)">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+              <span>Import</span>
+            </button>
+            <button type="button" class="btn-tonal-sm" onclick="exportMacros()" title="Export Macros">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM12 17l-5-5h3V8h4v4h3l-5 5z"/></svg>
+              <span>Export</span>
+            </button>
+            <button type="button" class="btn-primary-sm" onclick="openNewMacroModal()" title="Add New Macro">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              <span>New</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter / Search Box -->
+        <div class="macros-search-box">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" class="search-icon"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <input type="text" id="macros-search-input" placeholder="Search macros by name, text, or folder..." oninput="filterMacros()" />
+        </div>
+
+        <!-- Category / Folder Filter Tabs -->
+        <div class="macro-category-tabs-container">
+          <div class="macro-category-tabs" id="macro-category-tabs">
+            <!-- Populated dynamically: All, Alex Morgan, Commands, etc. -->
+          </div>
+        </div>
+
+        <!-- Active Category Details Banner (shown when a specific category is active) -->
+        <div id="macro-category-banner" class="macro-category-banner" style="display:none;">
+          <div class="macro-category-info">
+            <span class="macro-category-icon">📁</span>
+            <span class="macro-category-title" id="macro-current-category-name">Alex Morgan</span>
+            <span class="macro-category-badge" id="macro-current-category-count">4 items</span>
+          </div>
+          <div class="macro-category-actions">
+            <button type="button" class="btn-tonal-sm" onclick="renameCurrentCategory()" title="Rename this folder">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+              <span>Rename</span>
+            </button>
+            <button type="button" class="btn-tonal-sm btn-danger-sm" onclick="deleteCurrentCategory()" title="Delete entire folder and its macros">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+              <span>Delete Folder</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Macro Cards Grid -->
+        <div class="macros-grid" id="macros-grid">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ── View 3c: Macro Sheets & Temporary Cheat Sheet ─────────────────────── -->
+    <section id="view-sheets" class="view-panel">
+      <div class="card sheet-deck-card">
+        <!-- Segment Bar: Temporary Cheat Sheet vs Saved Sheets -->
+        <div class="sheet-segment-bar">
+          <button type="button" class="sheet-segment-btn active" id="btn-seg-cheatsheet" onclick="switchSheetTab('cheatsheet')">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            <span>Temporary Cheat Sheet</span>
+            <span class="cheat-sheet-pill-badge">Session Only</span>
+          </button>
+          <button type="button" class="sheet-segment-btn" id="btn-seg-savedsheets" onclick="switchSheetTab('savedsheets')">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+            <span>Saved Macro Sheets</span>
+          </button>
+        </div>
+
+        <!-- ── SUBVIEW 1: Temporary Cheat Sheet (Session-Only, Touch-First) ── -->
+        <div id="subview-cheatsheet" class="sheet-subview">
+          <div class="cheat-sheet-top-bar">
+            <div class="cheat-sheet-info-pill">
+              <span class="cheat-pulse-dot"></span>
+              <span>Tap any cell to auto-type instantly • Read-only • Disappears on refresh</span>
+            </div>
+            <div class="cheat-sheet-actions">
+              <button type="button" class="btn-tonal-sm" onclick="triggerImportCheatSheet()" title="Import CSV or Excel sheet">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                <span>Import CSV</span>
+              </button>
+              <button type="button" class="btn-tonal-sm" onclick="openPasteCheatSheetModal()" title="Paste table directly copied from Excel / Google Sheets">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg>
+                <span>Paste Table</span>
+              </button>
+              <button type="button" class="btn-tonal-sm" onclick="resetCheatSheetToSample()" title="Load sample dataset (Rahul Sharma, Priya Reddy, etc.)">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                <span>Sample Data</span>
+              </button>
+              <a href="/api/sheets/template.csv" download="emittr-sheet-template.csv" class="btn-tonal-sm" title="Download template CSV for Excel">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                <span>Template</span>
+              </a>
+              <button type="button" class="btn-tonal-sm text-danger" onclick="clearCheatSheet()" title="Clear temporary table">
+                <span>Clear</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="sheet-controls-bar">
+            <div class="sheet-search-box">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" class="search-icon"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+              <input type="text" id="cheat-filter-input" placeholder="Search rows across all columns..." oninput="filterCheatSheet()" />
+            </div>
+            <div class="sheet-action-options">
+              <div class="sheet-opt-group">
+                <span class="sheet-opt-label">On Tap:</span>
+                <select id="cheat-cell-action-select" class="sheet-mini-select" title="Action after typing cell">
+                  <option value="tab" selected>Type + Tab ⇥</option>
+                  <option value="enter">Type + Enter ↵</option>
+                  <option value="none">Type Raw</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Touch-First Horizontally Scrollable Cheat Sheet Grid -->
+          <div class="cheat-sheet-scroll-container" id="cheat-sheet-scroll-container">
+            <table class="cheat-sheet-table" id="cheat-sheet-table">
+              <!-- Dynamically populated -->
+            </table>
+          </div>
+        </div>
+
+        <!-- ── SUBVIEW 2: Saved Macro Sheets (Persistent) ──────────────────── -->
+        <div id="subview-savedsheets" class="sheet-subview" style="display:none;">
+          <!-- Sheet Header Bar -->
+          <div class="sheet-top-header">
+            <div class="sheet-header-left">
+              <span class="sheet-title-icon">📊</span>
+              <div class="sheet-selector-group">
+                <select id="active-sheet-select" class="sheet-select-dropdown" onchange="onActiveSheetChange(this.value)">
+                  <!-- Dynamically populated -->
+                </select>
+                <span class="sheet-meta-badge" id="sheet-meta-badge">0 rows • 0 cols</span>
+              </div>
+            </div>
+
+            <div class="sheet-header-actions">
+              <!-- Mode Toggle: Fill Mode vs Edit Mode -->
+              <button type="button" class="btn-tonal-sm" id="btn-sheet-mode-toggle" onclick="toggleSheetEditMode()" title="Toggle Edit Mode to customize rows and columns">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                <span id="sheet-mode-btn-text">Edit Table</span>
+              </button>
+
+              <!-- New Sheet Modal Trigger -->
+              <button type="button" class="btn-primary-sm" onclick="openNewSheetModal()" title="Create New Macro Sheet">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                <span>New</span>
+              </button>
+
+              <!-- Sheet Options Dropdown Menu Button -->
+              <div class="sheet-menu-wrapper">
+                <button type="button" class="btn-tonal-sm sheet-menu-btn" onclick="toggleSheetMenu(event)" title="Sheet Options">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                </button>
+                <div id="sheet-options-dropdown" class="sheet-dropdown-menu" style="display:none;">
+                  <button type="button" class="sheet-dropdown-item" onclick="openRenameSheetModal()">Rename Sheet</button>
+                  <button type="button" class="sheet-dropdown-item" onclick="duplicateCurrentSheet()">Duplicate Sheet</button>
+                  <a href="/api/sheets/template.csv" download="emittr-sheet-template.csv" class="sheet-dropdown-item">Download Template CSV</a>
+                  <button type="button" class="sheet-dropdown-item" onclick="exportSheetCSV()">Export as CSV</button>
+                  <button type="button" class="sheet-dropdown-item" onclick="triggerImportSheetCSV()">Import CSV / Sheet</button>
+                  <div class="sheet-dropdown-divider"></div>
+                  <button type="button" class="sheet-dropdown-item text-danger" onclick="deleteCurrentSheet()">Delete Sheet</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sheet Fill Mode Controls Bar -->
+          <div class="sheet-controls-bar" id="sheet-fill-controls">
+            <div class="sheet-search-box">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" class="search-icon"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+              <input type="text" id="sheet-filter-input" placeholder="Search / filter rows..." oninput="filterSheetTable()" />
+            </div>
+
+            <div class="sheet-action-options">
+              <div class="sheet-opt-group">
+                <span class="sheet-opt-label">On Cell Tap:</span>
+                <select id="sheet-cell-action-select" class="sheet-mini-select" title="Action after typing cell">
+                  <option value="tab" selected>Type + Tab ⇥</option>
+                  <option value="enter">Type + Enter ↵</option>
+                  <option value="none">Type Raw</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Edit Mode Helper Bar (only shown in Edit Mode) -->
+          <div class="sheet-edit-bar" id="sheet-edit-controls" style="display:none;">
+            <div class="sheet-edit-actions-left">
+              <button type="button" class="btn-tonal-sm" onclick="addSheetRow()">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                <span>+ Add Row</span>
+              </button>
+              <button type="button" class="btn-tonal-sm" onclick="addSheetColumn()">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                <span>+ Add Column</span>
+              </button>
+            </div>
+            <div class="sheet-edit-actions-right">
+              <button type="button" class="btn-tonal-sm" onclick="cancelSheetEdit()">Cancel</button>
+              <button type="button" class="btn-primary-sm" onclick="saveSheetEdit()">Save Changes</button>
+            </div>
+          </div>
+
+          <!-- Interactive Spreadsheet Grid Container -->
+          <div class="sheet-table-scroll" id="sheet-table-scroll">
+            <table class="sheet-table" id="sheet-table">
+              <!-- Dynamically rendered -->
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ── View 4: Trackpad & Xbox Joysticks ─────────────────────────────────── -->
     <section id="view-trackpad" class="view-panel">
       <div class="card trackpad-card">
@@ -686,6 +934,22 @@
         </svg>
       </span>
       <span class="nav-label">Shortcuts</span>
+    </button>
+    <button class="nav-item" id="nav-macros" onclick="switchView('macros', this)">
+      <span class="nav-icon-wrap">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+      </span>
+      <span class="nav-label">Macros</span>
+    </button>
+    <button class="nav-item" id="nav-sheets" onclick="switchView('sheets', this)">
+      <span class="nav-icon-wrap">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 19H5v-4h4v4zm0-6H5V9h4v4zm0-6H5V5h4v2zm6 12h-4v-4h4v4zm0-6h-4V9h4v4zm0-6h-4V5h4v2zm4 12h-4v-4h4v4zm0-6h-4V9h4v4zm0-6h-4V5h4v2z"/>
+        </svg>
+      </span>
+      <span class="nav-label">Sheets</span>
     </button>
     <button class="nav-item" id="nav-trackpad" onclick="switchView('trackpad', this)">
       <span class="nav-icon-wrap">
@@ -879,6 +1143,243 @@
       </div>
     </div>
   </div>
+
+  <!-- ── Macro Editor Modal Dialog ──────────────────────────────────────── -->
+  <div id="macro-modal" class="modal-backdrop" onclick="closeMacroModal(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title" id="macro-modal-title">New Macro</h2>
+        <button class="icon-btn close-modal-btn" onclick="closeMacroModal()" title="Close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-macro-id" value="" />
+        <input type="hidden" id="macro-type-input" value="text" />
+
+        <!-- Macro Type Toggle -->
+        <div class="macro-type-toggle">
+          <button type="button" class="macro-type-btn active" id="btn-macro-type-text" onclick="setMacroModalType('text')">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M2.5 4v3h5v12h3V7h5V4h-13zm19 5h-9v3h3v7h3v-7h3V9z"/></svg>
+            <span>Text Keystrokes</span>
+          </button>
+          <button type="button" class="macro-type-btn" id="btn-macro-type-hotkey" onclick="setMacroModalType('hotkey')">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+            <span>Multi-Key Hotkey</span>
+          </button>
+        </div>
+
+        <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:10px;">
+          <label class="setting-title" for="macro-category-input">Category / Folder / Person</label>
+          <input type="text" id="macro-category-input" class="material-input" list="macro-category-datalist" placeholder="e.g. Alex Morgan, Hotkeys, Commands" spellcheck="false" />
+          <datalist id="macro-category-datalist"></datalist>
+        </div>
+
+        <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:10px;">
+          <label class="setting-title" for="macro-name-input">Identifier / Macro Name</label>
+          <input type="text" id="macro-name-input" class="material-input" placeholder="e.g. Full Name, Copy, Task Manager, Open Terminal" spellcheck="false" />
+        </div>
+
+        <!-- Mode 1: Text Keystrokes Fields -->
+        <div id="macro-text-fields">
+          <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:10px;">
+            <label class="setting-title" for="macro-text-input">Text to Auto-Type</label>
+            <textarea id="macro-text-input" class="material-textarea" rows="3" placeholder="Enter text, detail, or command to type..." spellcheck="false"></textarea>
+          </div>
+          <div class="setting-item" style="margin-top:10px;">
+            <div class="setting-info">
+              <span class="setting-title">Action After Typing</span>
+              <span class="setting-sub">Key pressed automatically when typing finishes</span>
+            </div>
+            <select id="macro-action-input" class="material-select">
+              <option value="tab">Tab ⇥ (Advance to Next Field)</option>
+              <option value="enter">Enter ↵ (Submit / New Line)</option>
+              <option value="none">None (Leave Cursor in Field)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Mode 2: Multi-Key Hotkey Fields -->
+        <div id="macro-hotkey-fields" style="display:none;margin-top:10px;">
+          <label class="setting-title">Keyboard Modifiers</label>
+          <div class="hotkey-mod-chips">
+            <button type="button" class="hotkey-chip" id="chip-mod-ctrl" onclick="toggleHotkeyMod('ctrl')">Ctrl</button>
+            <button type="button" class="hotkey-chip" id="chip-mod-alt" onclick="toggleHotkeyMod('alt')">Alt</button>
+            <button type="button" class="hotkey-chip" id="chip-mod-shift" onclick="toggleHotkeyMod('shift')">Shift</button>
+            <button type="button" class="hotkey-chip" id="chip-mod-win" onclick="toggleHotkeyMod('win')">Win</button>
+          </div>
+
+          <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:10px;">
+            <label class="setting-title" for="hotkey-key-select">Trigger Key</label>
+            <select id="hotkey-key-select" class="material-select" onchange="updateHotkeyPreview()">
+              <optgroup label="Letters">
+                <option value="a">A</option><option value="b">B</option><option value="c" selected>C</option>
+                <option value="d">D</option><option value="e">E</option><option value="f">F</option>
+                <option value="g">G</option><option value="h">H</option><option value="i">I</option>
+                <option value="j">J</option><option value="k">K</option><option value="l">L</option>
+                <option value="m">M</option><option value="n">N</option><option value="o">O</option>
+                <option value="p">P</option><option value="q">Q</option><option value="r">R</option>
+                <option value="s">S</option><option value="t">T</option><option value="u">U</option>
+                <option value="v">V</option><option value="w">W</option><option value="x">X</option>
+                <option value="y">Y</option><option value="z">Z</option>
+              </optgroup>
+              <optgroup label="Function Keys">
+                <option value="f1">F1</option><option value="f2">F2</option><option value="f3">F3</option>
+                <option value="f4">F4</option><option value="f5">F5</option><option value="f6">F6</option>
+                <option value="f7">F7</option><option value="f8">F8</option><option value="f9">F9</option>
+                <option value="f10">F10</option><option value="f11">F11</option><option value="f12">F12</option>
+              </optgroup>
+              <optgroup label="Navigation &amp; Control">
+                <option value="tab">Tab</option><option value="enter">Enter</option><option value="esc">Esc</option>
+                <option value="space">Space</option><option value="backspace">Backspace</option><option value="delete">Delete</option>
+                <option value="up">Up Arrow</option><option value="down">Down Arrow</option><option value="left">Left Arrow</option><option value="right">Right Arrow</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="hotkey-preview-box">
+            <span class="hotkey-preview-label">Shortcut:</span>
+            <span class="hotkey-preview-badge" id="hotkey-preview-badge">Ctrl + C</span>
+          </div>
+
+          <!-- Quick Hotkey Presets -->
+          <div style="margin-top:10px;">
+            <label class="setting-title" style="display:block;margin-bottom:6px;">Quick Presets</label>
+            <div class="hotkey-presets-grid">
+              <button type="button" class="hotkey-preset-btn" onclick="applyHotkeyPreset('win+r', 'Run Dialog')">Win+R</button>
+              <button type="button" class="hotkey-preset-btn" onclick="applyHotkeyPreset('ctrl+shift+esc', 'Task Manager')">Ctrl+Shift+Esc</button>
+              <button type="button" class="hotkey-preset-btn" onclick="applyHotkeyPreset('win+shift+s', 'Snipping Tool')">Win+Shift+S</button>
+              <button type="button" class="hotkey-preset-btn" onclick="applyHotkeyPreset('alt+tab', 'Switch App')">Alt+Tab</button>
+              <button type="button" class="hotkey-preset-btn" onclick="applyHotkeyPreset('ctrl+c', 'Copy')">Ctrl+C</button>
+              <button type="button" class="hotkey-preset-btn" onclick="applyHotkeyPreset('ctrl+v', 'Paste')">Ctrl+V</button>
+              <button type="button" class="hotkey-preset-btn" onclick="applyHotkeyPreset('ctrl+a', 'Select All')">Ctrl+A</button>
+              <button type="button" class="hotkey-preset-btn" onclick="applyHotkeyPreset('ctrl+z', 'Undo')">Ctrl+Z</button>
+              <button type="button" class="hotkey-preset-btn" onclick="applyHotkeyPreset('alt+f4', 'Close App')">Alt+F4</button>
+              <button type="button" class="hotkey-preset-btn" onclick="applyHotkeyPreset('ctrl+alt+t', 'Open Terminal')">Ctrl+Alt+T</button>
+              <button type="button" class="hotkey-preset-btn" onclick="applyHotkeyPreset('ctrl+w', 'Close Tab')">Ctrl+W</button>
+              <button type="button" class="hotkey-preset-btn" onclick="applyHotkeyPreset('win+l', 'Lock PC')">Win+L</button>
+            </div>
+          </div>
+        </div>
+
+        <input type="checkbox" id="macro-autoenter-input" style="display:none;" />
+        <div class="setting-item" style="margin-top:10px;">
+          <div class="setting-info">
+            <span class="setting-title">Countdown Delay</span>
+            <span class="setting-sub">Seconds to wait before typing starts</span>
+          </div>
+          <select id="macro-delay-input" class="material-select">
+            <option value="0">Instant (0s)</option>
+            <option value="1">1 second</option>
+            <option value="2">2 seconds</option>
+            <option value="3">3 seconds</option>
+            <option value="5">5 seconds</option>
+          </select>
+        </div>
+        <div class="modal-action-row" style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end;">
+          <button class="btn-secondary" onclick="closeMacroModal()">Cancel</button>
+          <button class="btn-primary" onclick="saveMacro()">Save Macro</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Category Rename Modal Dialog ────────────────────────────────────── -->
+  <div id="category-rename-modal" class="modal-backdrop" onclick="closeCategoryRenameModal(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title" id="category-rename-modal-title">Rename Folder</h2>
+        <button class="icon-btn close-modal-btn" onclick="closeCategoryRenameModal()" title="Close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="category-old-name-input" value="" />
+        <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:6px;">
+          <label class="setting-title" for="category-new-name-input">New Folder / Person Name</label>
+          <input type="text" id="category-new-name-input" class="material-input" placeholder="e.g. Alex Morgan, Work Profiles" spellcheck="false" />
+        </div>
+        <div class="modal-action-row" style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end;">
+          <button class="btn-secondary" onclick="closeCategoryRenameModal()">Cancel</button>
+          <button class="btn-primary" onclick="confirmRenameCategory()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── New Sheet Modal Dialog ────────────────────────────────────────── -->
+  <div id="new-sheet-modal" class="modal-backdrop" onclick="closeNewSheetModal(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">New Macro Sheet</h2>
+        <button class="icon-btn close-modal-btn" onclick="closeNewSheetModal()" title="Close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:6px;">
+          <label class="setting-title" for="new-sheet-name-input">Sheet Name</label>
+          <input type="text" id="new-sheet-name-input" class="material-input" placeholder="e.g. Employee Directory, Application Form, Leads" spellcheck="false" />
+        </div>
+        <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:12px;">
+          <label class="setting-title" for="new-sheet-columns-input">Column Headers (comma separated)</label>
+          <input type="text" id="new-sheet-columns-input" class="material-input" placeholder="e.g. Name, Address, Ph. no, ID" value="Name, Address, Ph. no, ID" spellcheck="false" />
+          <span class="setting-sub" style="font-size:11px;">You can add, remove, and rename columns anytime in edit mode.</span>
+        </div>
+        <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:12px;">
+          <label class="setting-title" for="new-sheet-initial-rows">Initial Blank Rows</label>
+          <select id="new-sheet-initial-rows" class="material-select">
+            <option value="2">2 rows</option>
+            <option value="3" selected>3 rows</option>
+            <option value="5">5 rows</option>
+            <option value="10">10 rows</option>
+          </select>
+        </div>
+        <div class="modal-action-row" style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end;">
+          <button class="btn-secondary" onclick="closeNewSheetModal()">Cancel</button>
+          <button class="btn-primary" onclick="confirmCreateNewSheet()">Create Sheet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Rename Sheet Modal Dialog ─────────────────────────────────────── -->
+  <div id="rename-sheet-modal" class="modal-backdrop" onclick="closeRenameSheetModal(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Rename Sheet</h2>
+        <button class="icon-btn close-modal-btn" onclick="closeRenameSheetModal()" title="Close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:6px;">
+          <label class="setting-title" for="rename-sheet-name-input">New Sheet Name</label>
+          <input type="text" id="rename-sheet-name-input" class="material-input" placeholder="Enter sheet title..." spellcheck="false" />
+        </div>
+        <div class="modal-action-row" style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end;">
+          <button class="btn-secondary" onclick="closeRenameSheetModal()">Cancel</button>
+          <button class="btn-primary" onclick="confirmRenameSheet()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Paste Cheat Sheet Table Modal ─────────────────────────────────────── -->
+  <div id="paste-cheatsheet-modal" class="modal-backdrop" onclick="closePasteCheatSheetModal(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Paste Excel / CSV Table</h2>
+        <button class="icon-btn close-modal-btn" onclick="closePasteCheatSheetModal()" title="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="setting-sub" style="margin-bottom:10px;">
+          Copy rows directly from Microsoft Excel or Google Sheets and paste them below. The first row will be used as column headers.
+        </p>
+        <textarea id="paste-cheatsheet-textarea" class="material-textarea" rows="8" placeholder="Sample Name	DOB	Phone	ID	Email&#10;Rahul Sharma	15/03/2002	9876543210	ID1001	rahul.sharma@example.com&#10;Priya Reddy	22/07/2003	9876501234	ID1002	priya.reddy@example.com"></textarea>
+        <div class="modal-action-row" style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end;">
+          <button class="btn-secondary" onclick="closePasteCheatSheetModal()">Cancel</button>
+          <button class="btn-primary" onclick="loadPastedCheatSheet()">Load Table</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="cheat-file-input" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values" style="display:none;" onchange="handleCheatFileInput(event)" />
+  <input type="file" id="sheet-file-input" accept=".csv,.json,text/csv,application/json" style="display:none;" onchange="handleSheetFile(event)" />
+  <input type="file" id="macro-file-input" accept=".csv,.json,text/csv,application/json" style="display:none;" onchange="handleMacroFile(event)" />
 
   <div id="toast" class="toast"></div>
 

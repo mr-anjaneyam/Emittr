@@ -162,6 +162,59 @@ COMBOS: Dict[str, tuple] = {
     'alt+right':     (MOD_LALT, 0x4F),
 }
 
+
+def resolve_combo(combo_str: str) -> Optional[tuple]:
+    """
+    Dynamically resolve any keyboard shortcut combination like:
+    'ctrl+alt+t', 'win+shift+s', 'ctrl+shift+v', 'alt+space', 'ctrl+f5', 'win+1', etc.
+    Returns (modifier_bitmask, usb_scancode) or None if unresolvable.
+    """
+    if not combo_str:
+        return None
+    combo_clean = str(combo_str).lower().strip().replace(" ", "")
+    if combo_clean in COMBOS:
+        return COMBOS[combo_clean]
+
+    parts = [p for p in combo_clean.replace("-", "+").split("+") if p]
+    if not parts:
+        return None
+
+    mod = 0
+    main_key = None
+
+    mod_map = {
+        "ctrl": MOD_LCTRL, "control": MOD_LCTRL, "lctrl": MOD_LCTRL, "rctrl": MOD_RCTRL,
+        "shift": MOD_LSHIFT, "lshift": MOD_LSHIFT, "rshift": MOD_RSHIFT,
+        "alt": MOD_LALT, "lalt": MOD_LALT, "ralt": MOD_RALT, "opt": MOD_LALT, "option": MOD_LALT,
+        "win": MOD_LGUI, "gui": MOD_LGUI, "super": MOD_LGUI, "cmd": MOD_LGUI, "command": MOD_LGUI, "meta": MOD_LGUI,
+        "rgui": MOD_RGUI, "rwin": MOD_RGUI
+    }
+
+    for part in parts:
+        if part in mod_map:
+            mod |= mod_map[part]
+        else:
+            main_key = part
+
+    if main_key is None:
+        return None
+
+    code = None
+    if main_key in SPECIAL_KEYS:
+        _, code = SPECIAL_KEYS[main_key]
+    elif len(main_key) == 1 and main_key in ASCII_MAP:
+        char_mod, code = ASCII_MAP[main_key]
+        mod |= char_mod
+    elif main_key.startswith("f") and main_key[1:].isdigit():
+        f_num = int(main_key[1:])
+        if 1 <= f_num <= 12:
+            code = 0x39 + f_num
+
+    if code is not None:
+        return (mod, code)
+    return None
+
+
 HID_DEVICE_PATH = os.environ.get("EMITTR_HID_PATH", "/dev/hidg0")
 
 
@@ -335,6 +388,20 @@ class HIDDevice:
 
     def get_usb_status(self) -> Dict[str, Any]:
         """Return USB connection state, UDC details, version, and HID node status."""
+        if sys.platform == "win32":
+            return {
+                "attached":        True,
+                "connected":       True,
+                "state":           "configured (local)",
+                "udc_state":       "configured (local)",
+                "speed":           "high-speed",
+                "udc":             "local",
+                "hid_node_exists": True,
+                "kbd_node":        "local",
+                "is_typing":       self.is_typing,
+                "version":         VERSION,
+            }
+
         state    = "not attached"
         speed    = "unknown"
         udc_name = "unknown"
@@ -386,6 +453,9 @@ STATIC_DIR = Path(__file__).parent / "static"
 
 def ensure_hid_gadget():
     """Verify composite HID gadget is active. If missing or Android reverted to mass_storage, restore it."""
+    if sys.platform == "win32":
+        return
+
     gadget_dir = "/config/usb_gadget/g1"
     if not os.path.exists("/config/usb_gadget") and os.path.exists("/sys/kernel/config/usb_gadget"):
         gadget_dir = "/sys/kernel/config/usb_gadget/g1"
@@ -563,14 +633,516 @@ async def stop_typing():
     return {"ok": True, "msg": "Typing stopped"}
 
 
+# ── Macros Persistence & REST API ──────────────────────────────────────────
+
+def _get_macros_file() -> Path:
+    env_path = os.environ.get("EMITTR_MACROS_PATH")
+    if env_path:
+        return Path(env_path)
+    etc_path = Path("/etc/emittr/macros.json")
+    try:
+        if etc_path.parent.exists() or os.access("/etc", os.W_OK):
+            etc_path.parent.mkdir(parents=True, exist_ok=True)
+            return etc_path
+    except Exception:
+        pass
+    try:
+        user_cfg = Path.home() / ".config" / "emittr" / "macros.json"
+        user_cfg.parent.mkdir(parents=True, exist_ok=True)
+        return user_cfg
+    except Exception:
+        pass
+    return Path(__file__).parent / "macros.json"
+
+
+DEFAULT_MACROS: List[dict] = [
+    {
+        "id": "sysinfo",
+        "name": "System Info",
+        "text": "uname -a",
+        "category": "Commands",
+        "action_after": "enter",
+        "auto_enter": True,
+        "delay_s": 0
+    },
+    {
+        "id": "gitstatus",
+        "name": "Git Status",
+        "text": "git status",
+        "category": "Commands",
+        "action_after": "enter",
+        "auto_enter": True,
+        "delay_s": 0
+    },
+    {
+        "id": "dockerps",
+        "name": "Docker PS",
+        "text": "docker ps",
+        "category": "Commands",
+        "action_after": "enter",
+        "auto_enter": True,
+        "delay_s": 0
+    },
+    {
+        "id": "p_name",
+        "name": "Full Name",
+        "text": "Alex Morgan",
+        "category": "Alex Morgan",
+        "action_after": "tab",
+        "auto_enter": False,
+        "delay_s": 0
+    },
+    {
+        "id": "p_email",
+        "name": "Email Address",
+        "text": "alex.morgan@example.com",
+        "category": "Alex Morgan",
+        "action_after": "tab",
+        "auto_enter": False,
+        "delay_s": 0
+    },
+    {
+        "id": "p_phone",
+        "name": "Phone Number",
+        "text": "+1 (555) 019-2834",
+        "category": "Alex Morgan",
+        "action_after": "tab",
+        "auto_enter": False,
+        "delay_s": 0
+    },
+    {
+        "id": "p_address",
+        "name": "Street Address",
+        "text": "742 Evergreen Terrace",
+        "category": "Alex Morgan",
+        "action_after": "tab",
+        "auto_enter": False,
+        "delay_s": 0
+    }
+]
+
+
+def load_macros() -> List[dict]:
+    p = _get_macros_file()
+    if not p.exists():
+        save_macros(DEFAULT_MACROS)
+        return list(DEFAULT_MACROS)
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if isinstance(data, list):
+            # Normalize backward-compat fields
+            for m in data:
+                if not m.get("category"):
+                    m["category"] = "General"
+                if "action_after" not in m:
+                    m["action_after"] = "enter" if m.get("auto_enter", True) else "none"
+            return data
+        return list(DEFAULT_MACROS)
+    except Exception as e:
+        log.warning(f"Error reading macros file: {e}")
+        return list(DEFAULT_MACROS)
+
+
+def save_macros(macros: List[dict]):
+    try:
+        p = _get_macros_file()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(macros, indent=2, ensure_ascii=False), encoding="utf-8")
+    except Exception as e:
+        log.error(f"Error saving macros file: {e}")
+
+
+@app.get("/api/macros")
+async def get_macros():
+    return {"ok": True, "macros": load_macros()}
+
+
+@app.get("/api/macros/template.csv")
+async def get_macro_template_csv():
+    content = (
+        "\ufeffCategory,Name,Text,Type,Action After,Delay (s)\r\n"
+        "Alex Morgan,Full Name,Alex Morgan,text,tab,0\r\n"
+        "Alex Morgan,Work Email,alex.morgan@example.com,text,tab,0\r\n"
+        "Alex Morgan,Phone Number,+1 (555) 019-2834,text,tab,0\r\n"
+        "Alex Morgan,Street Address,742 Evergreen Terrace,text,tab,0\r\n"
+        "Hotkeys,Run Dialog,win+r,hotkey,none,0\r\n"
+        "Hotkeys,Task Manager,ctrl+shift+esc,hotkey,none,0\r\n"
+        "Hotkeys,Snipping Tool,win+shift+s,hotkey,none,0\r\n"
+        "Hotkeys,Copy,ctrl+c,hotkey,none,0\r\n"
+        "Hotkeys,Paste,ctrl+v,hotkey,none,0\r\n"
+        "Hotkeys,Switch App,alt+tab,hotkey,none,0\r\n"
+        "Hotkeys,Close Window,alt+f4,hotkey,none,0\r\n"
+        "Commands,System Info,uname -a,text,enter,0\r\n"
+        "Commands,Git Status,git status,text,enter,0\r\n"
+        "General,Greeting,Hello from Emittr!,text,none,0\r\n"
+    )
+    return Response(
+        content=content.encode("utf-8-sig"),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="emittr-macros-template.csv"',
+            "Content-Type": "text/csv; charset=utf-8",
+        }
+    )
+
+
+@app.get("/api/categories")
+async def get_categories():
+    macros = load_macros()
+    counts: Dict[str, int] = {}
+    for m in macros:
+        cat = str(m.get("category", "General")).strip() or "General"
+        counts[cat] = counts.get(cat, 0) + 1
+    result = [{"name": name, "count": counts[name]} for name in sorted(counts.keys())]
+    return {"ok": True, "categories": result}
+
+
+@app.put("/api/categories/{old_name}")
+async def rename_category(old_name: str, data: dict = Body(...)):
+    new_name = str(data.get("new_name", "")).strip()
+    if not new_name:
+        return JSONResponse({"ok": False, "msg": "New category name is required"}, status_code=400)
+
+    macros = load_macros()
+    renamed_count = 0
+    for m in macros:
+        if m.get("category", "General").lower() == old_name.lower():
+            m["category"] = new_name
+            renamed_count += 1
+
+    if renamed_count > 0:
+        save_macros(macros)
+    return {"ok": True, "renamed": renamed_count, "category": new_name}
+
+
+@app.delete("/api/categories/{category_name}")
+async def delete_category(category_name: str):
+    macros = load_macros()
+    orig_len = len(macros)
+    new_macros = [m for m in macros if m.get("category", "General").lower() != category_name.lower()]
+    deleted = orig_len - len(new_macros)
+    save_macros(new_macros)
+    return {"ok": True, "deleted": deleted, "category": category_name}
+
+
+@app.post("/api/macros")
+async def add_macro(data: dict = Body(...)):
+    name = str(data.get("name", "")).strip()
+    text = str(data.get("text", ""))
+    if not name or not text:
+        return JSONResponse({"ok": False, "msg": "Name and text are required"}, status_code=400)
+
+    macro_id = str(data.get("id", "")).strip() or f"m_{int(time.time()*1000)}"
+    category = str(data.get("category", "General")).strip() or "General"
+    action_after = str(data.get("action_after", "enter")).strip().lower()
+    if action_after not in ("none", "enter", "tab"):
+        action_after = "enter" if bool(data.get("auto_enter", True)) else "none"
+
+    auto_enter = (action_after == "enter")
+    delay_s = max(0, min(60, int(data.get("delay_s", 0))))
+    macro_type = str(data.get("type", "")).strip().lower()
+    if macro_type not in ("text", "hotkey"):
+        macro_type = "hotkey" if resolve_combo(text) else "text"
+
+    macros = load_macros()
+    new_macro = {
+        "id": macro_id,
+        "name": name,
+        "text": text,
+        "type": macro_type,
+        "category": category,
+        "action_after": action_after,
+        "auto_enter": auto_enter,
+        "delay_s": delay_s
+    }
+    macros = [m for m in macros if m.get("id") != macro_id]
+    macros.append(new_macro)
+    save_macros(macros)
+    return {"ok": True, "macro": new_macro}
+
+
+@app.put("/api/macros/{macro_id}")
+async def update_macro(macro_id: str, data: dict = Body(...)):
+    macros = load_macros()
+    idx = next((i for i, m in enumerate(macros) if m.get("id") == macro_id), -1)
+    if idx == -1:
+        return JSONResponse({"ok": False, "msg": "Macro not found"}, status_code=404)
+
+    name = str(data.get("name", macros[idx].get("name", ""))).strip()
+    text = str(data.get("text", macros[idx].get("text", "")))
+    if not name or not text:
+        return JSONResponse({"ok": False, "msg": "Name and text cannot be empty"}, status_code=400)
+
+    macros[idx]["name"] = name
+    macros[idx]["text"] = text
+    if "type" in data:
+        t = str(data["type"]).strip().lower()
+        if t in ("text", "hotkey"):
+            macros[idx]["type"] = t
+    elif not macros[idx].get("type"):
+        macros[idx]["type"] = "hotkey" if resolve_combo(text) else "text"
+
+    if "category" in data:
+        macros[idx]["category"] = str(data["category"]).strip() or "General"
+    if "action_after" in data:
+        act = str(data["action_after"]).strip().lower()
+        if act in ("none", "enter", "tab"):
+            macros[idx]["action_after"] = act
+            macros[idx]["auto_enter"] = (act == "enter")
+    elif "auto_enter" in data:
+        macros[idx]["auto_enter"] = bool(data["auto_enter"])
+        macros[idx]["action_after"] = "enter" if macros[idx]["auto_enter"] else "none"
+
+    if "delay_s" in data:
+        macros[idx]["delay_s"] = max(0, min(60, int(data.get("delay_s", 0))))
+
+    save_macros(macros)
+    return {"ok": True, "macro": macros[idx]}
+
+
+@app.delete("/api/macros/{macro_id}")
+async def delete_macro(macro_id: str):
+    macros = load_macros()
+    new_macros = [m for m in macros if m.get("id") != macro_id]
+    save_macros(new_macros)
+    return {"ok": True, "msg": "Macro deleted"}
+
+
+@app.post("/api/macros/import")
+async def import_macros(data: dict = Body(...)):
+    items = data.get("macros", [])
+    if not isinstance(items, list):
+        return JSONResponse({"ok": False, "msg": "Invalid format, array expected"}, status_code=400)
+
+    mode = str(data.get("mode", "merge")).lower()
+    valid_macros = []
+    for m in items:
+        if isinstance(m, dict) and m.get("name") and m.get("text"):
+            action_after = str(m.get("action_after", "")).strip().lower()
+            if action_after not in ("none", "enter", "tab"):
+                action_after = "enter" if bool(m.get("auto_enter", True)) else "none"
+            m_text = str(m["text"])
+            m_type = str(m.get("type", "")).strip().lower()
+            if m_type not in ("text", "hotkey"):
+                m_type = "hotkey" if resolve_combo(m_text) else "text"
+            valid_macros.append({
+                "id": str(m.get("id") or f"m_{int(time.time()*1000)}_{len(valid_macros)}"),
+                "name": str(m["name"]).strip(),
+                "text": m_text,
+                "type": m_type,
+                "category": str(m.get("category", "General")).strip() or "General",
+                "action_after": action_after,
+                "auto_enter": (action_after == "enter"),
+                "delay_s": max(0, min(60, int(m.get("delay_s", 0))))
+            })
+
+    if mode == "replace":
+        save_macros(valid_macros)
+        return {"ok": True, "count": len(valid_macros), "macros": valid_macros}
+
+    # Default merge mode: preserve existing, update matching, append new
+    existing = load_macros()
+    merged = list(existing)
+    for vm in valid_macros:
+        match_idx = next(
+            (i for i, em in enumerate(merged)
+             if em.get("name", "").strip().lower() == vm["name"].lower()
+             and em.get("category", "").strip().lower() == vm["category"].lower()),
+            None
+        )
+        if match_idx is not None:
+            vm["id"] = merged[match_idx].get("id", vm["id"])
+            merged[match_idx] = vm
+        else:
+            merged.append(vm)
+
+    save_macros(merged)
+    return {"ok": True, "count": len(valid_macros), "total": len(merged), "macros": merged}
+
+
+# ── Macro Sheets Persistence & REST API ──────────────────────────────────────
+def _get_sheets_file() -> Path:
+    env_path = os.environ.get("EMITTR_SHEETS_PATH")
+    if env_path:
+        return Path(env_path)
+    etc_path = Path("/etc/emittr/sheets.json")
+    if etc_path.exists() and os.access(etc_path, os.W_OK):
+        return etc_path
+    if sys.platform != "win32":
+        user_cfg = Path.home() / ".config" / "emittr" / "sheets.json"
+        if user_cfg.parent.exists() and os.access(user_cfg.parent, os.W_OK):
+            return user_cfg
+    return Path(__file__).parent / "sheets.json"
+
+
+DEFAULT_SHEETS: List[dict] = [
+    {
+        "id": "sheet_sample",
+        "name": "Sample Records",
+        "columns": ["Sample Name", "DOB", "Phone", "ID", "Email"],
+        "rows": [
+            ["Rahul Sharma", "15/03/2002", "9876543210", "ID1001", "rahul.sharma@example.com"],
+            ["Priya Reddy", "22/07/2003", "9876501234", "ID1002", "priya.reddy@example.com"],
+            ["Arjun Kumar", "10/11/2001", "9123456780", "ID1003", "arjun.kumar@example.com"],
+            ["Sneha Patel", "05/02/2004", "9988776655", "ID1004", "sneha.patel@example.com"],
+            ["Kiran Rao", "18/09/2002", "9012345678", "ID1005", "kiran.rao@example.com"],
+            ["Ananya Verma", "27/12/2003", "9098765432", "ID1006", "ananya.verma@example.com"],
+            ["Vikram Singh", "14/06/2001", "9345678120", "ID1007", "vikram.singh@example.com"],
+            ["Divya Nair", "30/01/2004", "9567812340", "ID1008", "divya.nair@example.com"]
+        ]
+    }
+]
+
+
+@app.get("/api/sheets/template.csv")
+async def get_sheet_template_csv():
+    content = (
+        "\ufeffSample Name,DOB,Phone,ID,Email\r\n"
+        "Rahul Sharma,15/03/2002,9876543210,ID1001,rahul.sharma@example.com\r\n"
+        "Priya Reddy,22/07/2003,9876501234,ID1002,priya.reddy@example.com\r\n"
+        "Arjun Kumar,10/11/2001,9123456780,ID1003,arjun.kumar@example.com\r\n"
+        "Sneha Patel,05/02/2004,9988776655,ID1004,sneha.patel@example.com\r\n"
+        "Kiran Rao,18/09/2002,9012345678,ID1005,kiran.rao@example.com\r\n"
+        "Ananya Verma,27/12/2003,9098765432,ID1006,ananya.verma@example.com\r\n"
+        "Vikram Singh,14/06/2001,9345678120,ID1007,vikram.singh@example.com\r\n"
+        "Divya Nair,30/01/2004,9567812340,ID1008,divya.nair@example.com\r\n"
+    )
+    return Response(
+        content=content.encode("utf-8-sig"),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="emittr-sheet-template.csv"',
+            "Content-Type": "text/csv; charset=utf-8",
+        }
+    )
+
+
+def load_sheets() -> List[dict]:
+    p = _get_sheets_file()
+    if not p.exists():
+        save_sheets(DEFAULT_SHEETS)
+        return list(DEFAULT_SHEETS)
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if isinstance(data, list):
+            return data
+        return list(DEFAULT_SHEETS)
+    except Exception as e:
+        log.warning(f"Error reading sheets file: {e}")
+        return list(DEFAULT_SHEETS)
+
+
+def save_sheets(sheets: List[dict]):
+    try:
+        p = _get_sheets_file()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(sheets, indent=2, ensure_ascii=False), encoding="utf-8")
+    except Exception as e:
+        log.error(f"Error saving sheets file: {e}")
+
+
+@app.get("/api/sheets")
+async def get_sheets():
+    return {"ok": True, "sheets": load_sheets()}
+
+
+@app.post("/api/sheets")
+async def add_sheet(data: dict = Body(...)):
+    name = str(data.get("name", "")).strip() or "Untitled Sheet"
+    columns = data.get("columns", ["Col 1", "Col 2", "Col 3"])
+    if not isinstance(columns, list) or len(columns) == 0:
+        columns = ["Col 1", "Col 2", "Col 3"]
+    columns = [str(c).strip() or f"Col {i+1}" for i, c in enumerate(columns)]
+
+    rows = data.get("rows", [])
+    if not isinstance(rows, list):
+        rows = []
+    normalized_rows = []
+    for r in rows:
+        if isinstance(r, list):
+            row_vals = [str(v) if v is not None else "" for v in r]
+            if len(row_vals) < len(columns):
+                row_vals.extend([""] * (len(columns) - len(row_vals)))
+            else:
+                row_vals = row_vals[:len(columns)]
+            normalized_rows.append(row_vals)
+
+    sheet_id = str(data.get("id", "")).strip() or f"sheet_{int(time.time()*1000)}"
+    new_sheet = {
+        "id": sheet_id,
+        "name": name,
+        "columns": columns,
+        "rows": normalized_rows
+    }
+
+    sheets = load_sheets()
+    sheets = [s for s in sheets if s.get("id") != sheet_id]
+    sheets.append(new_sheet)
+    save_sheets(sheets)
+    return {"ok": True, "sheet": new_sheet}
+
+
+@app.put("/api/sheets/{sheet_id}")
+async def update_sheet(sheet_id: str, data: dict = Body(...)):
+    sheets = load_sheets()
+    idx = next((i for i, s in enumerate(sheets) if s.get("id") == sheet_id), -1)
+    if idx == -1:
+        return JSONResponse({"ok": False, "msg": "Sheet not found"}, status_code=404)
+
+    if "name" in data:
+        name = str(data.get("name", "")).strip()
+        if name:
+            sheets[idx]["name"] = name
+
+    if "columns" in data and isinstance(data["columns"], list):
+        columns = [str(c).strip() or f"Col {i+1}" for i, c in enumerate(data["columns"])]
+        sheets[idx]["columns"] = columns
+
+    if "rows" in data and isinstance(data["rows"], list):
+        col_len = len(sheets[idx].get("columns", []))
+        normalized_rows = []
+        for r in data["rows"]:
+            if isinstance(r, list):
+                row_vals = [str(v) if v is not None else "" for v in r]
+                if len(row_vals) < col_len:
+                    row_vals.extend([""] * (col_len - len(row_vals)))
+                else:
+                    row_vals = row_vals[:col_len]
+                normalized_rows.append(row_vals)
+        sheets[idx]["rows"] = normalized_rows
+
+    save_sheets(sheets)
+    return {"ok": True, "sheet": sheets[idx]}
+
+
+@app.delete("/api/sheets/{sheet_id}")
+async def delete_sheet(sheet_id: str):
+    sheets = load_sheets()
+    orig_len = len(sheets)
+    sheets = [s for s in sheets if s.get("id") != sheet_id]
+    if len(sheets) == orig_len:
+        return JSONResponse({"ok": False, "msg": "Sheet not found"}, status_code=404)
+    save_sheets(sheets)
+    return {"ok": True, "msg": "Sheet deleted"}
+
+
+
 @app.post("/api/key")
 async def press_key(data: dict = Body(...)):
     combo = data.get("combo", "").lower().strip()
     key   = data.get("key",   "").lower().strip()
-    if combo and combo in COMBOS:
-        mod, code = COMBOS[combo]
-        hid.press_and_release(mod, code, 0.015)
-        return {"ok": True, "combo": combo}
+    if combo:
+        res = resolve_combo(combo)
+        if res:
+            mod, code = res
+            hid.press_and_release(mod, code, 0.015)
+            return {"ok": True, "combo": combo}
+    if key:
+        res = resolve_combo(key)
+        if res:
+            mod, code = res
+            hid.press_and_release(mod, code, 0.015)
+            return {"ok": True, "key": key}
     if key and key in SPECIAL_KEYS:
         mod, code = SPECIAL_KEYS[key]
         hid.press_and_release(mod, code, 0.015)
@@ -629,14 +1201,15 @@ async def websocket_endpoint(ws: WebSocket):
             elif action == "live_char":
                 ch      = data.get("char", "")
                 k_lower = ch.lower().strip()
-                if ch in ASCII_MAP:
+                res = resolve_combo(k_lower)
+                if res:
+                    mod, code = res
+                    hid.press_and_release(mod, code, 0.015)
+                elif ch in ASCII_MAP:
                     mod, code = ASCII_MAP[ch]
                     hid.press_and_release(mod, code, 0.015)
                 elif k_lower in SPECIAL_KEYS:
                     mod, code = SPECIAL_KEYS[k_lower]
-                    hid.press_and_release(mod, code, 0.015)
-                elif k_lower in COMBOS:
-                    mod, code = COMBOS[k_lower]
                     hid.press_and_release(mod, code, 0.015)
                 else:
                     log.warning(f"Unmapped live_char: {ch!r}")

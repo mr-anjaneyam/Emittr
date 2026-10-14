@@ -1,0 +1,65 @@
+[
+  {
+    "id": "sysinfo",
+    "name": "System Info",
+    "text": "uname -a",
+    "category": "Commands",
+    "action_after": "enter",
+    "auto_enter": true,
+    "delay_s": 0
+  },
+  {
+    "id": "gitstatus",
+    "name": "Git Status",
+    "text": "git status",
+    "category": "Commands",
+    "action_after": "enter",
+    "auto_enter": true,
+    "delay_s": 0
+  },
+  {
+    "id": "dockerps",
+    "name": "Docker PS",
+    "text": "docker ps",
+    "category": "Commands",
+    "action_after": "enter",
+    "auto_enter": true,
+    "delay_s": 0
+  },
+  {
+    "id": "p_name",
+    "name": "Full Name",
+    "text": "Alex Morgan",
+    "category": "Alex Morgan",
+    "action_after": "tab",
+    "auto_enter": false,
+    "delay_s": 0
+  },
+  {
+    "id": "p_email",
+    "name": "Email Address",
+    "text": "alex.morgan@example.com",
+    "category": "Alex Morgan",
+    "action_after": "tab",
+    "auto_enter": false,
+    "delay_s": 0
+  },
+  {
+    "id": "p_phone",
+    "name": "Phone Number",
+    "text": "+1 (555) 019-2834",
+    "category": "Alex Morgan",
+    "action_after": "tab",
+    "auto_enter": false,
+    "delay_s": 0
+  },
+  {
+    "id": "p_address",
+    "name": "Street Address",
+    "text": "742 Evergreen Terrace",
+    "category": "Alex Morgan",
+    "action_after": "tab",
+    "auto_enter": false,
+    "delay_s": 0
+  }
+]
